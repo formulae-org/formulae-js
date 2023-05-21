@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- <html> -->
+<head>
+
+<link rel="stylesheet" type="text/css" href="formulae.css">
+
+<script src='lib/decimal.min.js'></script>
+<script src="formulae/expression.js"></script>
+<script src="formulae/formulae.js"></script>
+<script src="formulae/formulae_data.js"></script>
+<script src="formulae/formulae_forms.js"></script>
+<script src="formulae/formulae_settings.js"></script>
+<script src="formulae/reduction.js"></script>
+
+<title>Fōrmulæ, a scientific programming language</title>
+
+<meta name="viewport" content="width=device-width">
+<meta name="description" content="Write, save and run Fōrmulæ programs online. Examine hundreds of Fōrmulæ programs and their results. Learn how to program in Fōrmulæ with tutorials and reference.">
+<meta name="keywords" content="Fōrmulæ, Fōrmulae, Formulæ, Formulae, Programming language, Programming, Language, Symbolic, Scientific, Research, Math, Mathematics, Experimental mathematics, Visual, Pretty print, Pretty-print, Research">
+<meta name="author" content="Laurence R. Ugalde">
+
+<meta charset="utf-8">
+
+</head>
+<body>
+
+<div id="header">
+
+<table border=0 cellspacing=0 cellpadding=0><tr>
+<td><img src='img/logo.png'>
+<td>&nbsp;
+<td style='vertical-align: middle;'>
+<button id="button-home" title="Home" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/home.png'></button>
+<button id="button-new" title="New" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/new.png'></button>
+<button id="button-open" title="Open..." style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/open.png'></button>
+<input id="file-input" type="file" accept=".formulae" style="display: none;"/>
+<button id="button-save" title="Save..." style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/save.png'></button>
+<button id="button-cut" title="Cut" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/cut.png'></button>
+<button id="button-copy" title="Copy" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/copy.png'></button>
+<button id="button-paste" title="Paste" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/paste.png'></button>
+<button id="button-ins-after" title="Insert row below" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/ins_row_after.png'></button>
+<button id="button-ins-before" title="Inser row above" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/ins_row_before.png'></button>
+<button id="button-delete" title="Delete row" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/del_row.png'></button>
+<button id="button-change-type" title="Change type" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/pin.png'></button>
+<button id="button-execute_sticky" title="Execute sticky rows" type" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/pin_run.png'></button>
+<button id="button-tools" title="Tools..." style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/tools.png'></button>
+<button id="button-settings" title="Settings..." style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/settings.png'></button>
+</table>
+
+</div> <!-- header -->
+
+<div id="sidebar">
+
+<ul id="tree"></ul>
+
+</div> <!-- sidebar -->
+
+<div id="dragbar"></div>
+
+<div id="main">
+
+<div class="container" id="container">
+</div>
+
+<div id="menu"></div>
+
+</div><!-- main -->
+
+<div id="footer">
+<span id="s_info"></span>
+<br>
+<span id="h_info" style="color: blue;"></span>
+</div>  <!-- footer -->
+
+<div id="mymodal" class="modal" tabindex="-1">
+<div id="modalContent" style="background-color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%)" />
+</div>
+
+<script>
+Formulae.start();
+</script>
+
+</body>
+</html>
+
