@@ -1,6 +1,6 @@
 # Fōrmulæ for JavaScript
 
-Fōrmulæ is a software framework for visualization, edition and mianipulation of complex expressions (either mathematical expressions or expressions from many other fields). If you want to know more about Fōrmulæ, please refer to its website [formulae.org](https://formulae.org).
+Fōrmulæ is a software framework for visualization, edition and manipulation of complex expressions (either mathematical expressions or expressions from many other fields). If you want to know more about Fōrmulæ, please refer to its website [formulae.org](https://formulae.org).
 
 The JavaScript edition for Fōrmulæ runs in a web browser.
 
@@ -14,12 +14,15 @@ This repository contains:
 
 ### Fōrmulæ packages
 
-Please notice that this repository contains only the core code (the framework). Code for visualizing, editing and manipulating expressions for a specific field —i.e. arithmetics— is grouped in a separate unit called a Fōrmulæ package. Every package has its own repository, you can check [here](https://github.com/formulae-org) the list of packages.
+Please notice that this repository contains the code for the main program only. Code for visualizing, editing and manipulating expressions for a specific field —i.e. arithmetics— is grouped in a separate unit called a Fōrmulæ package. Every package has its own repository, you can check [here](https://github.com/formulae-org) the list of packages.
 
 The main program is able to dynamically load packages. When the main program starts, it loads a set of base packages. The user can also choose for additional packages to be loaded. 
 
 ### The Fōrmulæ programming language
 
+There is a Fōrmulæ package for structured programming. This package makes that a new programming language emerges. This language, called **The Fōrmulæ programming language** is [proven](XXXX) to be [Turing-complete](https://en.wikipedia.org/wiki/Turing_completeness), in other words, it is able to run every possible algorithm.
+
+Since the expressions for programming —as well as the expressionf for the packages you choose— are pretty-print, it makes the Fōrmulæ language a visual programming language. Moreover, because you decide which packages to load and to use, you can use the Fōrmulæ language to create and inter-operate with expressions from these packages.
 
 
 
