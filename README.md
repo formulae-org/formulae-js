@@ -10,7 +10,7 @@ This repository contains:
 * A front-end —written in JavaScript—, an interface where the user can visualize, create and edit expressions. It works in a [read–eval–print loop](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) mode. The user can save a created scrip as a local file in order to be retrieved later or shared.
 * A back-end —written in JavaScript—, is a background program that evaluates the expressions created by the user and returns the result to the front-end, in order to be shown.
 * Message files —written in JSON— for messages in several human languages, in order to the main program can be used for different locales.
-* Because the main program runs as a web page, it requires some additional resources, such as HTML files, CSS files, images, icons, etc.
+* Because the main program runs as a web page, it requires some additional resources, such as a HTML file, a CSS file, images, icons, etc.
 
 ### Fōrmulæ packages
 
@@ -20,9 +20,15 @@ The main program is able to dynamically load packages. When the main program sta
 
 ### The Fōrmulæ programming language
 
-There is a Fōrmulæ package for structured programming. This package makes that a new programming language emerges. This language, called **The Fōrmulæ programming language** is [proven](XXXX) to be [Turing-complete](https://en.wikipedia.org/wiki/Turing_completeness), in other words, it is able to run every possible algorithm.
+There is a Fōrmulæ package for structured programming [(repository)](https://github.com/formulae-org/package-programming-js). This package makes that a new programming language emerges. This language, called **The Fōrmulæ programming language** is [proven](https://formulae.org/?script=examples/Universal_Turing_machine) to be [Turing-complete](https://en.wikipedia.org/wiki/Turing_completeness), in other words, it is able to run every possible algorithm.
 
-Since the expressions for programming —as well as the expressionf for the packages you choose— are pretty-print, it makes the Fōrmulæ language a visual programming language. Moreover, because you decide which packages to load and to use, you can use the Fōrmulæ language to create and inter-operate with expressions from these packages.
+Since the expressions for programming —as well as the expressions for the packages you choose— are pretty-print, it makes the Fōrmulæ language a visual programming language. Moreover, because you decide which packages to load and to use, you can use the Fōrmulæ language to create and inter-operate with expressions from these packages.
 
+### Formatting documents
 
+Because text, paragraphs, tables, colors, images, etc. can be abstracted as expressions, Fōrmulæ can also be used to format complex documents. There is a Fōrmulæ package for typesetting [(repository)](https://github.com/formulae-org/package-typesetting-js).
+
+All the content of the Fōrmulæ website [formulae.org](https://formulae.org), consisting of hundreds of pages for of articles, examples, tutorials, etc. are written entirely as Fōrmulæ files.
+
+That content is stored and mantained as a separate [repository](https://github.com/formulae-org/web-content).
 
