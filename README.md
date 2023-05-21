@@ -28,7 +28,7 @@ Since the expressions for programming —as well as the expressions for the pack
 
 Because text, paragraphs, tables, colors, images, etc. can be abstracted as expressions, Fōrmulæ can also be used to format complex documents. There is a Fōrmulæ package for typesetting [(repository)](https://github.com/formulae-org/package-typesetting-js).
 
-All the content of the Fōrmulæ website [formulae.org](https://formulae.org), consisting of hundreds of pages for of articles, examples, tutorials, etc. are written entirely as Fōrmulæ files.
+All the content of the Fōrmulæ website [formulae.org](https://formulae.org), consisting of hundreds of pages with articles, examples, tutorials, etc. are written entirely as Fōrmulæ files.
 
 That content is stored and mantained as a separate [repository](https://github.com/formulae-org/web-content).
 
