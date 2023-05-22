@@ -53,6 +53,8 @@ Formulae.PackageInfo = class {
 
 Formulae.packages = new Map(); // Map from package name to package info
 
+// Basic packages
+
 Formulae.packages.set("org.formulae.math.arithmetic",     new Formulae.PackageInfo("Arithmetic",            true ));
 Formulae.packages.set("org.formulae.relation",            new Formulae.PackageInfo("Relation",              true ));
 Formulae.packages.set("org.formulae.logic",               new Formulae.PackageInfo("Logic",                 true ));
@@ -65,22 +67,20 @@ Formulae.packages.set("org.formulae.programming",         new Formulae.PackageIn
 Formulae.packages.set("org.formulae.graphics.raster",     new Formulae.PackageInfo("Graphics",              true ));
 Formulae.packages.set("org.formulae.chart",               new Formulae.PackageInfo("Charts",                false));
 Formulae.packages.set("org.formulae.diagramming",         new Formulae.PackageInfo("Diagrams",              false ));
-Formulae.packages.set("org.formulae.time",                new Formulae.PackageInfo("Time",                  true )); // reduction
-Formulae.packages.set("org.formulae.typesetting",         new Formulae.PackageInfo("Typesetting",           true )); // reduction
+Formulae.packages.set("org.formulae.time",                new Formulae.PackageInfo("Time",                  true )); // WIP
+Formulae.packages.set("org.formulae.typesetting",         new Formulae.PackageInfo("Typesetting",           true )); // WIP
 Formulae.packages.set("org.formulae.visualization",       new Formulae.PackageInfo("Visualization",         true ));
-Formulae.packages.set("org.formulae.localization",        new Formulae.PackageInfo("Localization",          false)); // reduction
+Formulae.packages.set("org.formulae.localization",        new Formulae.PackageInfo("Localization",          false)); // WIP
 Formulae.packages.set("org.formulae.bitwise",             new Formulae.PackageInfo("Bitwise",               false));
-Formulae.packages.set("org.formulae.plot",                new Formulae.PackageInfo("Plots",                 false)); // reduction
+Formulae.packages.set("org.formulae.plot",                new Formulae.PackageInfo("Plots",                 false)); // WIP
 
-/*
-Formulae.packages.set("org.formulae.chemistry",           new Formulae.PackageInfo("Chemistry",             false)); // WIP
-*/
-Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming",   false)); // WIP
-/*
-Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem",            false)); // WIP
-Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography",          false)); // WIP
-Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data",                  false)); // WIP
-*/
+// Experimental packages
+
+Formulae.packages.set("org.formulae.chemistry",           new Formulae.PackageInfo("Chemistry (experimental)",           false));
+Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming (experimental)", false));
+Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem (experimental)",          false));
+Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography (experimental)",        false));
+//Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data (experimental)",                false));
 
 ///////////////
 // functions //
@@ -1799,30 +1799,15 @@ Formulae.fillFileInfo = function() {
 	let f;
 	
 	f = Formulae.parameters.get("script");
-	if (f != null) {
-		//f = "content/examples/" + f;
+	if (f !== null) {
 		f = "content/" + f;
 	}
-	/*
-	else {
-		f = Formulae.parameters.get("article");
-		if (f != null) {
-			f = "content/articles/" + f;
-		}
-		else {
-			f = Formulae.parameters.get("tutorial");
-			if (f != null) {
-				f = "content/tutorials/" + f;
-			}
-			else {
-				f = Formulae.parameters.get("reference");
-				if (f != null) {
-					f = "content/reference/" + f;
-				}
-			}
+	else { // backward compatibility, specially Rosetta code
+		f = Formulae.parameters.get("example");
+		if (f !== null) {
+			f = "content/examples/" + f;
 		}
 	}
-	*/
 	
 	if (f == null) {
 		f = "content/articles/Main_page";
