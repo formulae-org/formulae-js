@@ -2,7 +2,7 @@
 
 Fōrmulæ is a software framework for visualization, edition and manipulation of complex expressions (either mathematical expressions or expressions from many other fields). If you want to know more about Fōrmulæ, please refer to its website [formulae.org](https://formulae.org).
 
-The JavaScript edition for Fōrmulæ runs in a web browser.
+The JavaScript edition for Fōrmulæ runs in as web application.
 
 This repository contains:
 
