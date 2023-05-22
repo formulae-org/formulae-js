@@ -10,7 +10,7 @@ This repository contains:
 * A front-end —written in JavaScript—, an interface where the user can visualize, create and edit expressions. It works in a [read–eval–print loop](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) mode. The user can save a created scrip as a local file in order to be retrieved later or shared.
 * A back-end —written in JavaScript—, is a background program that evaluates the expressions created by the user and returns the result to the front-end, in order to be shown.
 * Message files —written in JSON— for messages in several human languages, in order to the main program can be used for different locales.
-* Because the main program runs as a web page, it requires some additional resources, such as a HTML file, a CSS file, images, icons, etc.
+* Because the main program is a web application, it requires some additional resources, such as a HTML file, a CSS file, images, icons, etc.
 
 ### Fōrmulæ packages
 
