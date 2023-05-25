@@ -853,20 +853,76 @@ Formulae.copyAsImage = function() {
 */
 
 Formulae.saveAsImage = function() {
-	/*
-	let dataURL = Formulae.sHandler.context.canvas.toDataURL();
-	console.log(dataURL);
-	try {
-		navigator.clipboard.write([ new ClipboardItem({ 'image/png': dataURL })]);
-	} catch (error) {
-		console.error(error);
+	if (Formulae.saveAsImageForm === undefined) {
+		let table;
+
+		table = document.createElement("table");
+		table.classList.add("bordered");
+		table.innerHTML =
+`
+<tr>
+<th colspan=2>Save expression as image
+<tr>
+<td>Background
+<td><input type='radio' name='radio' value='t' checked>Transparent<br><input type='radio' name='radio' value='w'>White
+<tr>
+<td>Border (pixels):
+<td><input type="number" value="0" min="-9999" max="9999">
+<tr>
+<th colspan=2><button>Ok</button>
+
+`;
+
+		Formulae.saveAsImageForm = table;
 	}
-	*/
+
+	let tableRows  = Formulae.saveAsImageForm.rows;
+	let background = tableRows[1].cells[1].firstChild;
+	let border     = tableRows[2].cells[1].firstChild;
+	let ok         = tableRows[3].cells[0].firstChild;
 	
-	//let xmlDocument = Formulae.scriptToXML();
-	//let blob = new Blob([new XMLSerializer().serializeToString(xmlDocument)], {type: 'text/xml'});
-	//console.log(new XMLSerializer().serializeToString(xmlDocument));
+	ok.onclick = () => {
+		let b = parseInt(border.value);
+		if (isNaN(b)) {
+			alert("Invalid value");
+			return;
+		}
+		
+		Formulae.resetModal();
+		
+		let a = document.createElement('a');
+		a.download = 'download.png';
+		
+		let e = Formulae.sExpression.clone();
+		
+		let newCanvas = document.createElement("canvas");
+		newCanvas.width = e.width + 2 * b;
+		newCanvas.height = e.height + 2 * b;
+		
+		let newContext = newCanvas.getContext('2d');
+		let newHandler = new ExpressionHandler(e, newContext, Formulae.ROW_EXPORT);
+		
+		newHandler.prepareDisplay(false);
+		
+		if (!background.checked) { // white
+			newContext.save();
+			newContext.fillStyle = "white";
+			newContext.fillRect(-1, -1, newCanvas.width, newCanvas.height);
+			newContext.restore();
+		}
+		
+		// newHandler.prepareDisplay set the coordinates at (1, 1)
+		newHandler.display(b - 1, b - 1);
+		
+		a.href = newCanvas.toDataURL();
+		a.textContent = 'Download ready';
+		a.style='display:none';
+		a.click();
+	};
 	
+	Formulae.setModal(Formulae.saveAsImageForm);
+	
+	/*
 	let a = document.createElement('a');
 	a.download = 'download.png';
 	
@@ -881,6 +937,7 @@ Formulae.saveAsImage = function() {
 	a.textContent = 'Download ready';
 	a.style='display:none';
 	a.click();
+	*/
 }
 
 Formulae.f1 = function() {

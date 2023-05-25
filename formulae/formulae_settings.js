@@ -141,7 +141,7 @@ Formulae.Tools.showTools = function() {
 <td><button onClick="Formulae.showScriptXML(); Formulae.Tools.close();" style="min-width: 100%;">${Formulae.messages.labelToolXMLScript}</button>
 <td>${Formulae.messages.descToolXMLScript}
 <tr>
-<td><button onClick="Formulae.saveAsImage(); Formulae.Tools.close();" style="min-width: 100%;">${Formulae.messages.labelToolSaveImage}</button>
+<td><button onClick="Formulae.saveAsImage();" style="min-width: 100%;">${Formulae.messages.labelToolSaveImage}</button>
 <td>${Formulae.messages.descToolSaveImage}
 `;
 		Formulae.Tools.toolsForm = table;

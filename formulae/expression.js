@@ -305,7 +305,7 @@ class ExpressionHandler extends Scopable {
 		return n;
 	}
 	
-	prepareDisplay() {
+	prepareDisplay(resizingCanvas = true) {
 		////////////////////////////
 		
 		this.expression.prepareDisplay(this.context);
@@ -313,8 +313,10 @@ class ExpressionHandler extends Scopable {
 		this.expression.x = 0;
 		this.expression.y = 0;
 		
-		this.context.canvas.width = this.expression.width + 2;
-		this.context.canvas.height = this.expression.height + 2;
+		if (resizingCanvas) {
+			this.context.canvas.width = this.expression.width + 2;
+			this.context.canvas.height = this.expression.height + 2;
+		}
 		
 		if (window.devicePixelRatio != 1.0) {
 			this.context.canvas.style.width = (this.context.canvas.width / window.devicePixelRatio) + "px";
@@ -337,7 +339,7 @@ class ExpressionHandler extends Scopable {
 		}
 	}
 	
-	display() {
+	display(x = 0, y = 0) {
 		if (this.type != Formulae.ROW_EXPORT) {
 			this.context.fillStyle = (this.type == Formulae.ROW_INPUT ? "white" : (this.type == Formulae.ROW_OUTPUT ? "lightgray" : "wheat"));
 			this.context.fillRect(-10, -10, this.context.canvas.width + 10, this.context.canvas.height + 10);
@@ -345,7 +347,7 @@ class ExpressionHandler extends Scopable {
 		
 		this.context.fillStyle = "black";
 		
-		this.expression.display(this.context, 0, 0);
+		this.expression.display(this.context, x, y);
 	}
 	
 	fromPoint(x, y) {
