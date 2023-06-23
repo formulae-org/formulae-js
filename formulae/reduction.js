@@ -144,7 +144,7 @@ class ReductionSession {
 	constructor(locale, timeZone, precision) {
 		this.locale = locale;
 		this.timeZone = timeZone;
-		this.Decimal = Decimal.clone({ precision: precision });
+		this.Decimal = Decimal.clone({ precision: precision, rounding: 1 });
 	}
 	
 	async reduceAndGet(expression, indexOfChild) {
@@ -399,20 +399,11 @@ CanonicalArithmetic.divMod = (D, d, isDiv, isMod, session) => {
 	
 	let q, r;
 	
-	//if (isDiv) q = (new session.Decimal(D)).div(d).round();
-	//if (isMod) r = (new session.Decimal(D)).mod(d);
-	
 	if (isDiv) q = session.Decimal.div(D, d).round();
 	if (isMod) r = session.Decimal.mod(D, d);
 	
-	//session.Decimal.rounding = bkpRounding;
-	//session.Decimal.modulo = bkpModulo;
-	
 	if (isMod && euclidean && r.lessThan(0)) {
 		let s = session.Decimal.sign(d);
-		
-		//if (isDiv) q = q.minus(s);
-		//if (isMod) r = r.plus(d.mul(s));
 		
 		if (isDiv) q = session.Decimal.sub(q, s);
 		if (isMod) r = session.Decimal.add(r, session.Decimal.mul(d, s));
@@ -422,6 +413,102 @@ CanonicalArithmetic.divMod = (D, d, isDiv, isMod, session) => {
 	session.Decimal.modulo = bkpModulo;
 	
 	return [ q, r ];
+};
+
+/*
+	D, d: BigInt
+	isDiv, isMod: boolean
+*/
+
+CanonicalArithmetic.divModIntegers = (D, d, isDiv, isMod, session) => {
+	let q, r;
+	
+	switch (session.Decimal.rounding) {
+		case 0: // ROUND UP, or AWAY FROM ZERO
+			q = (D / d) + (D % d === 0n ? 0n : ((D > 0n) === (d > 0n) ? 1n : -1n));
+			break;
+		
+		case 1: // TRUNCATION, ROUND DOWN or TOWARDS ZERO
+			q = D / d;
+			break;
+		
+		case 2: // CEILING or TOWARDS INFINITY
+			q = (D / d) + (D % d === 0n ? 0n : ((D > 0n) === (d > 0n) ? 1n : 0n));
+			break;
+		
+		case 3: // FLOOR or TOWARDS NEGATIVE INFINITY
+			q = (D / d) + (D % d === 0n ? 0n : ((D > 0n) === (d > 0n) ? 0n : -1n));
+			break;
+		
+		case 4: { // HALF ROUND UP or HALF AWAY FROM ZERO
+				let absD = D >= 0n ? D : -D;
+				let absd = d >= 0n ? d : -d;
+				let absRemainderDoubled = (absD % absd) * 2n;
+				q = (D / d) + (absRemainderDoubled < absd ? 0n : ((D > 0n) === (d > 0n) ? 1n : -1n));
+			}
+			break;
+		
+		case 5: { // HALF TRUNCATION, HALF ROUND DOWN or HALF TOWARDS ZERO 
+				let absD = D >= 0n ? D : -D;
+				let absd = d >= 0n ? d : -d;
+				let absRemainderDoubled = (absD % absd) * 2n;
+				q = (D / d) + (absRemainderDoubled <= absB ? 0n : ((D > 0n) === (d > 0n) ? 1n : -1n));
+			}
+			break;
+		
+		case 6: { // HALF EVEN
+				let absD = D >= 0n ? D : -D;
+				let absd = d >= 0n ? d : -d;
+				let absRemainderDoubled = (absD % absd) * 2n;
+				q = D / d;
+				q += (absRemainderDoubled < absd || (absRemainderDoubled === absd && q % 2n === 0n) ? 0n : ((D > 0n) === (d > 0n) ? 1n : -1n));
+			}
+			break;
+		
+		/*
+		case x: { // HALF ODD
+				let absD = D >= 0n ? D : -D;
+				let absd = d >= 0n ? d : -d;
+				let absRemainderDoubled = (absD % absd) * 2n;
+				q = D / d;
+				q += (absRemainderDoubled < absd || (absRemainderDoubled === absd && q % 2n !== 0n) ? 0n : ((D > 0n) === (d > 0n) ? 1n : -1n));
+			}
+			break;
+		*/
+		
+		case 7: { // HALF CEILING or HALF TOWARDS INFINITY
+				let absD = D >= 0n ? D : -D;
+				let absd = d >= 0n ? d : -d;
+				let absRemainderDoubled = (absD % absd) * 2n;
+				q = (D / d) + (absRemainderDoubled < absd ? 0n : (D > 0n) === (d > 0n) ? 1n : (absRemainderDoubled > absd ? -1n : 0n));
+			}
+			break;
+		
+		case 8: { // HALF FLOOR or HALF TOWARDS NEGATIVE INFINITY
+				let absD = D >= 0n ? D : -D;
+				let absd = d >= 0n ? d : -d;
+				let absRemainderDoubled = (absD % absd) * 2n;
+				q = (D / d) + (absRemainderDoubled < absd ? 0n : (D > 0n) === (d > 0n) ? (absRemainderDoubled > absd ? 1n : 0n) : -1n);
+			}
+			break;
+		
+		case 9: { // EUCLIDEAN MODE
+				if (d > 0n) {
+					q = (D / d) + (D % d === 0n ? 0n : ((D > 0n) === (d > 0n) ? 0n : -1n)); // FLOOR
+				}
+				else {
+					q = (D / d) + (D % d === 0n ? 0n : ((D > 0n) === (d > 0n) ? 1n : 0n)); // CEILING
+				}
+			}
+			break;
+	}
+	
+	if (isMod) r = D - d * q;
+	
+	return [
+		isDiv ? new CanonicalArithmetic.Integer(q) : undefined,
+		isMod ? new CanonicalArithmetic.Integer(r) : undefined
+	];
 };
 
 /*
@@ -588,17 +675,17 @@ CanonicalArithmetic.Integer = class {
 	
 	divMod(other, isDiv, isMod, session) {
 		if (other instanceof CanonicalArithmetic.Integer) {
-			let divMod = CanonicalArithmetic.divMod(
-				new session.Decimal(this.integer.toString()),
-				new session.Decimal(other.integer.toString()),
+			console.log("x");
+			let divMod = CanonicalArithmetic.divModIntegers(
+				this.integer, other.integer,
 				isDiv, isMod, session
 			);
 			return [
-				isDiv ? new CanonicalArithmetic.Integer(BigInt(divMod[0].toFixed())) : undefined,
-				isMod ? new CanonicalArithmetic.Integer(BigInt(divMod[1].toFixed())) : undefined,
+				isDiv ? divMod[0] : undefined,
+				isMod ? divMod[1] : undefined,
 			];
 		}
-		if (other instanceof CanonicalArithmetic.Decimal) {
+		else if (other instanceof CanonicalArithmetic.Decimal) {
 			let divMod = CanonicalArithmetic.divMod(
 				new session.Decimal(this.integer.toString()),
 				other.decimal,
