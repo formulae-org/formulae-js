@@ -864,7 +864,10 @@ Formulae.saveAsImage = function() {
 <th colspan=2>Save expression as image
 <tr>
 <td>Background
-<td><input type='radio' name='radio' value='t' checked>Transparent<br><input type='radio' name='radio' value='w'>White
+<td><input type='radio' name='radio' value='t' checked>Transparent
+<br><input type='radio' name='radio' value='w'>White
+<br><input type='radio' name='radio' value='a'>Answer
+<br><input type='radio' name='radio' value='d'>Definition
 <tr>
 <td>Border (pixels):
 <td><input type="number" value="0" min="-9999" max="9999">
@@ -877,7 +880,7 @@ Formulae.saveAsImage = function() {
 	}
 
 	let tableRows  = Formulae.saveAsImageForm.rows;
-	let background = tableRows[1].cells[1].firstChild;
+	let background = tableRows[1].cells[1].childNodes;
 	let border     = tableRows[2].cells[1].firstChild;
 	let ok         = tableRows[3].cells[0].firstChild;
 	
@@ -904,9 +907,11 @@ Formulae.saveAsImage = function() {
 		
 		newHandler.prepareDisplay(false);
 		
-		if (!background.checked) { // white
+		if (!background[0].checked) { // white
 			newContext.save();
-			newContext.fillStyle = "white";
+			if (background[3].checked) newContext.fillStyle = "white";
+			if (background[6].checked) newContext.fillStyle = "lightgray";
+			if (background[9].checked) newContext.fillStyle = "wheat";
 			newContext.fillRect(-1, -1, newCanvas.width, newCanvas.height);
 			newContext.restore();
 		}
