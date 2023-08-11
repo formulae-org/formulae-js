@@ -10,13 +10,16 @@ ReductionManager.PRECEDENCE_LOW    = -1;
 ReductionManager.PRECEDENCE_NORMAL =  0;
 ReductionManager.PRECEDENCE_HIGH   =  1;
 
-ReductionManager.normalMap  = new Map();
-ReductionManager.specialMap = new Map();
+ReductionManager.normalMap  = new Map(); // from tag to array of reducers
+ReductionManager.specialMap = new Map(); // from tag to array of reducers
 
 ReductionManager.normalLimits = new Map();
 ReductionManager.specialLimits = new Map();
 
-ReductionManager.addReducer = (tag, reducer, special = false, precedence = ReductionManager.PRECEDENCE_NORMAL) => {
+ReductionManager.addReducer = (tag, reducer, options = {}) => {
+	let special = options.special || false;
+	let precedence = options.precedence || ReductionManager.PRECEDENCE_NORMAL;
+	
 	let reducerMap = special ? ReductionManager.specialMap : ReductionManager.normalMap;
 	let limitMap = special ? ReductionManager.specialLimits : ReductionManager.normalLimits;
 	
