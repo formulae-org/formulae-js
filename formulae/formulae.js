@@ -870,7 +870,7 @@ Formulae.saveAsImage = function() {
 <br><input type='radio' name='radio' value='d'>Definition
 <tr>
 <td>Border (pixels):
-<td><input type="number" value="0" min="-9999" max="9999">
+<td><input type="number" value="10" min="-9999" max="9999">
 <tr>
 <th colspan=2><button>Ok</button>
 

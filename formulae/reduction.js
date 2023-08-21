@@ -10,18 +10,32 @@ ReductionManager.PRECEDENCE_LOW    = -1;
 ReductionManager.PRECEDENCE_NORMAL =  0;
 ReductionManager.PRECEDENCE_HIGH   =  1;
 
-ReductionManager.normalMap  = new Map(); // from tag to array of reducers
-ReductionManager.specialMap = new Map(); // from tag to array of reducers
+ReductionManager.normalMap          = new Map(); // from tag to array of reducers
+ReductionManager.specialMap         = new Map(); // from tag to array of reducers
+ReductionManager.normalSymbolicMap  = new Map(); // from tag to array of reducers
+ReductionManager.specialSymbolicMap = new Map(); // from tag to array of reducers
 
-ReductionManager.normalLimits = new Map();
-ReductionManager.specialLimits = new Map();
+ReductionManager.normalLimits          = new Map(); // from tag to array of two integers
+ReductionManager.specialLimits         = new Map(); // from tag to array of two integers
+ReductionManager.normalSymbolicLimits  = new Map(); // from tag to array of two integers
+ReductionManager.specialSymbolicLimits = new Map(); // from tag to array of two integers
 
 ReductionManager.addReducer = (tag, reducer, options = {}) => {
 	let special = options.special || false;
+	let symbolic = options.symbolic || false;
 	let precedence = options.precedence || ReductionManager.PRECEDENCE_NORMAL;
 	
-	let reducerMap = special ? ReductionManager.specialMap : ReductionManager.normalMap;
-	let limitMap = special ? ReductionManager.specialLimits : ReductionManager.normalLimits;
+	let reducerMap;
+	let limitMap;
+	
+	if (symbolic) {
+		reducerMap = special ? ReductionManager.specialSymbolicMap : ReductionManager.normalSymbolicMap;
+		limitMap = special ? ReductionManager.specialSymbolicLimits : ReductionManager.normalSymbolicLimits;
+	}
+	else {
+		reducerMap = special ? ReductionManager.specialMap : ReductionManager.normalMap;
+		limitMap = special ? ReductionManager.specialLimits : ReductionManager.normalLimits;
+	}
 	
 	let reducers = reducerMap.get(tag);
 	let limits = limitMap.get(tag);
@@ -99,6 +113,10 @@ ReductionManager.reduce = async (expression, session) => {
 	let tag = expression.getTag();
 	let result;
 	
+	//////////////////////
+	// special reducers //
+	//////////////////////
+	
 	let reducers = ReductionManager.specialMap.get(tag);
 	if (reducers !== undefined) {
 		//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
@@ -108,6 +126,22 @@ ReductionManager.reduce = async (expression, session) => {
 			if (result) return true;
 		}
 	}
+	
+	if (session.symbolic) {
+		reducers = ReductionManager.specialSymbolicMap.get(tag);
+		if (reducers !== undefined) {
+			//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
+			for (let i = 0, n = reducers.length; i < n; ++i) {
+				result = await reducers[i](expression, session);
+				//console.log("TAG: " + tag + ", REDUCER: " + reducers[i].displayName + ", RESULT: " + result);
+				if (result) return true;
+			}
+		}
+	}
+	
+	/////////////////////////////////
+	// reduction of subexpressions //
+	/////////////////////////////////
 	
 	let child;
 	//expression.children.forEach((child, i) => {
@@ -119,6 +153,10 @@ ReductionManager.reduce = async (expression, session) => {
 		}
 	};
 	
+	/////////////////////
+	// normal reducers //
+	//////////////////////
+	
 	reducers = ReductionManager.normalMap.get(tag);
 	if (reducers !== undefined) {
 		//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
@@ -126,6 +164,18 @@ ReductionManager.reduce = async (expression, session) => {
 			result = await reducers[i](expression, session);
 			//console.log("TAG: " + tag + ", REDUCER: " + reducers[i].displayName + ", RESULT: " + result);
 			if (result) return true;
+		}
+	}
+	
+	if (session.symbolic) {
+		reducers = ReductionManager.normalSymbolicMap.get(tag);
+		if (reducers !== undefined) {
+			//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
+			for (let i = 0, n = reducers.length; i < n; ++i) {
+				result = await reducers[i](expression, session);
+				//console.log("TAG: " + tag + ", REDUCER: " + reducers[i].displayName + ", RESULT: " + result);
+				if (result) return true;
+			}
 		}
 	}
 	
@@ -145,9 +195,10 @@ ReductionManager.setInError = (expression, description) => {
 
 class ReductionSession {
 	constructor(locale, timeZone, precision) {
-		this.locale = locale;
+		this.locale   = locale;
 		this.timeZone = timeZone;
-		this.Decimal = Decimal.clone({ precision: precision, rounding: 1 });
+		this.Decimal  = Decimal.clone({ precision: precision, rounding: 1 });
+		this.symbolic = false;
 	}
 	
 	async reduceAndGet(expression, indexOfChild) {
