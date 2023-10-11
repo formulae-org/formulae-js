@@ -202,7 +202,7 @@ CanonicalArithmetic.integerDivision = (D, d, session) => {
 				let absD = D >= 0n ? D : -D;
 				let absd = d >= 0n ? d : -d;
 				let absRemainderDoubled = (absD % absd) * 2n;
-				q = (D / d) + (absRemainderDoubled <= absB ? 0n : ((D > 0n) === (d > 0n) ? 1n : -1n));
+				q = (D / d) + (absRemainderDoubled <= absd ? 0n : ((D > 0n) === (d > 0n) ? 1n : -1n));
 			}
 			break;
 		
