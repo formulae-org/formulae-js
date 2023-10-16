@@ -348,7 +348,8 @@ CanonicalArithmetic.Integer = class {
 	
 	division(other, session) {
 		if (other instanceof CanonicalArithmetic.Integer) {
-			if (this.integer % other.integer === 0n) { // denominator exactly divides numerator
+			// === 0n fails!!!
+			if (this.integer % other.integer == 0) { // denominator exactly divides numerator
 				return new CanonicalArithmetic.Integer(
 					this.integer / other.integer
 				);

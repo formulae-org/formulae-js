@@ -2494,15 +2494,30 @@ Formulae.loadPackages = async () => {
 				packageInfo.classEdition.messages = packageInfo.messages;
 				packageInfo.classEdition.setActions(); // <-- here ???
 				
-				module = await import("../packages/" + packageName + "/reduction.js");
-				packageInfo.classReduction = module[Object.keys(module)[0]];
-				packageInfo.classReduction.messages = packageInfo.messages;
-				packageInfo.classReduction.setReducers();
+				//module = await import("../packages/" + packageName + "/reduction.js");
+				//packageInfo.classReduction = module[Object.keys(module)[0]];
+				//packageInfo.classReduction.messages = packageInfo.messages;
+				//packageInfo.classReduction.setReducers();
 			}
 		}
 	);
-	
 	await Promise.all(promises);
+	
+	// Reducers only, in order to ensure order they load
+	
+	let packageInfo;
+	let module;
+	
+	for (let packageName of Formulae.packages.keys()) {
+		packageInfo = Formulae.packages.get(packageName);
+		if (packageInfo.required) {
+			module = await import("../packages/" + packageName + "/reduction.js");
+			packageInfo.classReduction = module[Object.keys(module)[0]];
+			packageInfo.classReduction.messages = packageInfo.messages;
+			packageInfo.classReduction.setReducers();
+		}
+	}
+	
 	return newPackagesLoaded;
 };
 

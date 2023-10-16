@@ -20,7 +20,11 @@ ReductionManager.specialLimits         = new Map(); // from tag to array of two 
 ReductionManager.normalSymbolicLimits  = new Map(); // from tag to array of two integers
 ReductionManager.specialSymbolicLimits = new Map(); // from tag to array of two integers
 
-ReductionManager.addReducer = (tag, reducer, options = {}) => {
+ReductionManager.addReducer = (tag, reducer, description, options = {}) => {
+	//if (tag === "Math.Arithmetic.Addition" || tag === "Math.Arithmetic.Division" || description === "") {
+	//	console.log("Introducing: " + tag + " - " + description);
+	//}
+	
 	let special = options.special || false;
 	let symbolic = options.symbolic || false;
 	let precedence = options.precedence || ReductionManager.PRECEDENCE_NORMAL;
@@ -47,19 +51,17 @@ ReductionManager.addReducer = (tag, reducer, options = {}) => {
 	
 	switch (precedence) {
 		case ReductionManager.PRECEDENCE_HIGH:
-			reducers.splice(limits[0], null, reducer);
+			reducers.splice(limits[0], null, { reducer: reducer, description: description });
 			++limits[0];
 			break;
 		
 		case ReductionManager.PRECEDENCE_NORMAL:
-			//reducers.splice(reducers.length - limits[1], null, reducer);
-			reducers.splice(limits[1], null, reducer);
+			reducers.splice(limits[1], null, { reducer: reducer, description: description });
 			++limits[1];
-			//console.log(reducers);
 			break;
 		
 		case ReductionManager.PRECEDENCE_LOW:
-			reducers.splice(reducers.length, null, reducer);
+			reducers.splice(reducers.length, null, { reducer: reducer, description: description });
 			break;
 	}
 };
@@ -111,29 +113,32 @@ ReductionManager.reduceHandler = async (handler, session) => {
 
 ReductionManager.reduce = async (expression, session) => {
 	let tag = expression.getTag();
+	let reducerInfo;
 	let result;
 	
 	//////////////////////
 	// special reducers //
 	//////////////////////
 	
-	let reducers = ReductionManager.specialMap.get(tag);
-	if (reducers !== undefined) {
+	let reducerInfos = ReductionManager.specialMap.get(tag);
+	if (reducerInfos !== undefined) {
 		//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
-		for (let i = 0, n = reducers.length; i < n; ++i) {
-			result = await reducers[i](expression, session);
-			//console.log("TAG: " + tag + ", REDUCER: " + reducers[i].displayName + ", RESULT: " + result);
+		for (let i = 0, n = reducerInfos.length; i < n; ++i) {
+			reducerInfo = reducerInfos[i];
+			result = await reducerInfo.reducer(expression, session);
+			//console.log("SPECIAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
 			if (result) return true;
 		}
 	}
 	
 	if (session.symbolic) {
-		reducers = ReductionManager.specialSymbolicMap.get(tag);
-		if (reducers !== undefined) {
+		reducerInfos = ReductionManager.specialSymbolicMap.get(tag);
+		if (reducerInfos !== undefined) {
 			//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
-			for (let i = 0, n = reducers.length; i < n; ++i) {
-				result = await reducers[i](expression, session);
-				//console.log("TAG: " + tag + ", REDUCER: " + reducers[i].displayName + ", RESULT: " + result);
+			for (let i = 0, n = reducerInfos.length; i < n; ++i) {
+				reducerInfo = reducerInfos[i];
+				result = await reducerInfo.reducer(expression, session);
+				//console.log("SPECIAL SYMBOLIC: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
 				if (result) return true;
 			}
 		}
@@ -157,23 +162,25 @@ ReductionManager.reduce = async (expression, session) => {
 	// normal reducers //
 	//////////////////////
 	
-	reducers = ReductionManager.normalMap.get(tag);
-	if (reducers !== undefined) {
+	reducerInfos = ReductionManager.normalMap.get(tag);
+	if (reducerInfos !== undefined) {
 		//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
-		for (let i = 0, n = reducers.length; i < n; ++i) {
-			result = await reducers[i](expression, session);
-			//console.log("TAG: " + tag + ", REDUCER: " + reducers[i].displayName + ", RESULT: " + result);
+		for (let i = 0, n = reducerInfos.length; i < n; ++i) {
+			reducerInfo = reducerInfos[i];
+			result = await reducerInfo.reducer(expression, session);
+			//console.log("NORMAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
 			if (result) return true;
 		}
 	}
 	
 	if (session.symbolic) {
-		reducers = ReductionManager.normalSymbolicMap.get(tag);
-		if (reducers !== undefined) {
+		reducerInfos = ReductionManager.normalSymbolicMap.get(tag);
+		if (reducerInfos !== undefined) {
 			//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
-			for (let i = 0, n = reducers.length; i < n; ++i) {
-				result = await reducers[i](expression, session);
-				//console.log("TAG: " + tag + ", REDUCER: " + reducers[i].displayName + ", RESULT: " + result);
+			for (let i = 0, n = reducerInfos.length; i < n; ++i) {
+				reducerInfo = reducerInfos[i];
+				result = await reducerInfo.reducer(expression, session);
+				//console.log("NORMAL SYMBOLIC: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
 				if (result) return true;
 			}
 		}
