@@ -41,13 +41,19 @@ Formulae.actionMap     = new Map(); // map from tag to action
 Formulae.moduleNameMap = new Map(); // map from tag to module name
 
 Formulae.PackageInfo = class {
-	constructor(description, required) {
+	constructor(description, required, commonRequired) {
 		this.description = description;
 		this.required = required;
+		this.commonRequired = commonRequired;
+		
 		this.messages = null;
+		this.common = null;
+		
 		this.classExpression = null;
 		this.classEdition = null;
 		this.classReduction = null;
+		
+		this.reducersSet = false;
 	}
 };
 
@@ -55,31 +61,31 @@ Formulae.packages = new Map(); // Map from package name to package info
 
 // Basic packages
 
-Formulae.packages.set("org.formulae.math.arithmetic",     new Formulae.PackageInfo("Arithmetic",            true ));
-Formulae.packages.set("org.formulae.relation",            new Formulae.PackageInfo("Relation",              true ));
-Formulae.packages.set("org.formulae.logic",               new Formulae.PackageInfo("Logic",                 true ));
-Formulae.packages.set("org.formulae.expression",          new Formulae.PackageInfo("Expression management", true ));
-Formulae.packages.set("org.formulae.list",                new Formulae.PackageInfo("Lists",                 true ));
-Formulae.packages.set("org.formulae.symbolic",            new Formulae.PackageInfo("Symbolic",              true ));
-Formulae.packages.set("org.formulae.text.string",         new Formulae.PackageInfo("Strings",               true ));
-Formulae.packages.set("org.formulae.color",               new Formulae.PackageInfo("Color",                 true ));
-Formulae.packages.set("org.formulae.programming",         new Formulae.PackageInfo("Programming",           true ));
-Formulae.packages.set("org.formulae.graphics.raster",     new Formulae.PackageInfo("Graphics",              true ));
-Formulae.packages.set("org.formulae.chart",               new Formulae.PackageInfo("Charts",                false));
-Formulae.packages.set("org.formulae.diagramming",         new Formulae.PackageInfo("Diagrams",              false ));
-Formulae.packages.set("org.formulae.time",                new Formulae.PackageInfo("Time",                  true )); // WIP
-Formulae.packages.set("org.formulae.typesetting",         new Formulae.PackageInfo("Typesetting",           true )); // WIP
-Formulae.packages.set("org.formulae.visualization",       new Formulae.PackageInfo("Visualization",         true ));
-Formulae.packages.set("org.formulae.localization",        new Formulae.PackageInfo("Localization",          false)); // WIP
-Formulae.packages.set("org.formulae.bitwise",             new Formulae.PackageInfo("Bitwise",               false));
-Formulae.packages.set("org.formulae.plot",                new Formulae.PackageInfo("Plots",                 false)); // WIP
+Formulae.packages.set("org.formulae.math.arithmetic",     new Formulae.PackageInfo("Arithmetic",            true,  false));
+Formulae.packages.set("org.formulae.relation",            new Formulae.PackageInfo("Relation",              true,  false));
+Formulae.packages.set("org.formulae.logic",               new Formulae.PackageInfo("Logic",                 true,  false));
+Formulae.packages.set("org.formulae.expression",          new Formulae.PackageInfo("Expression management", true,  false));
+Formulae.packages.set("org.formulae.list",                new Formulae.PackageInfo("Lists",                 true,  false));
+Formulae.packages.set("org.formulae.symbolic",            new Formulae.PackageInfo("Symbolic",              true,  false));
+Formulae.packages.set("org.formulae.text.string",         new Formulae.PackageInfo("Strings",               true,  false));
+Formulae.packages.set("org.formulae.color",               new Formulae.PackageInfo("Color",                 true,  false));
+Formulae.packages.set("org.formulae.programming",         new Formulae.PackageInfo("Programming",           true,  false));
+Formulae.packages.set("org.formulae.graphics.raster",     new Formulae.PackageInfo("Graphics",              true,  false));
+Formulae.packages.set("org.formulae.chart",               new Formulae.PackageInfo("Charts",                false, false));
+Formulae.packages.set("org.formulae.diagramming",         new Formulae.PackageInfo("Diagrams",              false, false));
+Formulae.packages.set("org.formulae.time",                new Formulae.PackageInfo("Time",                  true,  false));
+Formulae.packages.set("org.formulae.typesetting",         new Formulae.PackageInfo("Typesetting",           true,  false));
+Formulae.packages.set("org.formulae.visualization",       new Formulae.PackageInfo("Visualization",         true,  false));
+Formulae.packages.set("org.formulae.localization",        new Formulae.PackageInfo("Localization",          false, false)); // WIP
+Formulae.packages.set("org.formulae.bitwise",             new Formulae.PackageInfo("Bitwise",               false, false));
+Formulae.packages.set("org.formulae.plot",                new Formulae.PackageInfo("Plots",                 false, false)); // WIP
+Formulae.packages.set("org.formulae.chemistry",           new Formulae.PackageInfo("Chemistry",             false, true ));
 
 // Experimental packages
 
-Formulae.packages.set("org.formulae.chemistry",           new Formulae.PackageInfo("Chemistry (experimental)",           false));
-Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming (experimental)", false));
-Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem (experimental)",          false));
-Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography (experimental)",        false));
+Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming (experimental)", false, false));
+Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem (experimental)",          false, false));
+Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography (experimental)",        false, false));
 //Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data (experimental)",                false));
 
 ///////////////
@@ -2384,6 +2390,13 @@ Formulae.savePreferences = function() {
 
 // returns: whether new packages were loaded
 
+Formulae.doesURLExist = function(url) {
+	let http = new XMLHttpRequest();
+	http.open("HEAD", url, false);
+	http.send();
+	return http.status != 404;
+}
+
 Formulae.loadPackages = async () => {
 	let newPackagesLoaded = false;
 	
@@ -2463,58 +2476,149 @@ Formulae.loadPackages = async () => {
 	//console.log(newPackagesLoaded);
 	//await Promise.all(promises);
 	
-	let promises = Array.from(Formulae.packages.keys()).map(
+	/////////////
+	// commons //
+	/////////////
+	
+	let packagesArray = Array.from(Formulae.packages);
+	let promises;
+	
+	promises = [];
+	packagesArray.map(async p => {
+		let packageName = p[0];
+		let packageInfo = p[1];
+		
+		if (packageInfo.required) {
+			if (packageInfo.messages === null) {
+				let promise = Formulae.loadMessages(packageName);
+				promises.push(promise);
+				promise.then(messages => {
+					packageInfo.messages = messages;
+					console.log(packageName + " MESSAGES DONE");
+				});
+			}
+			
+			if (packageInfo.commonRequired && packageInfo.common === null) {
+				let fileName = "../packages/" + packageName + "/common.js";
+				let promise = import(fileName);
+				promises.push(promise);
+				promise.then(module => {
+					packageInfo.common = module[Object.keys(module)[0]];
+					console.log(packageName + " COMMON DONE");
+				});
+			}
+		}
+	});
+	
+	await Promise.all(promises);
+	
+	////////////////////////////////////
+	// expressions, editions, reducers //
+	////////////////////////////////////
+	
+	promises = [];
+	packagesArray.map(async p => {
+		let packageName = p[0];
+		let packageInfo = p[1];
+		
+		if (packageInfo.required) {
+			let fileName = "../packages/" + packageName + "/expression.js";
+			if (packageInfo.classExpression === null) {
+				let promiseExpression = import(fileName);
+				promises.push(promiseExpression);
+				promiseExpression.then(module => {
+					packageInfo.classExpression = module[Object.keys(module)[0]];
+					packageInfo.classExpression.messages = packageInfo.messages;
+					packageInfo.classExpression.common = packageInfo.common;
+					packageInfo.classExpression.setExpressions(packageName);
+					console.log(packageName + " EXPRESSIONS DONE");
+				});
+			}
+			
+			fileName = "../packages/" + packageName + "/edition.js";
+			if (packageInfo.classEdition === null) {
+				let promiseEdition = import(fileName);
+				promises.push(promiseEdition);
+				promiseEdition.then(module => {
+					packageInfo.classEdition = module[Object.keys(module)[0]];
+					packageInfo.classEdition.messages = packageInfo.messages;
+					packageInfo.classEdition.common = packageInfo.common;
+					packageInfo.classEdition.setEditions();
+					packageInfo.classEdition.setActions();
+					console.log(packageName + " EDITIONS DONE");
+				});
+			}
+			
+			fileName = "../packages/" + packageName + "/reduction.js";
+			if (packageInfo.classReduction === null) {
+				let promiseReduction = import(fileName);
+				promises.push(promiseReduction);
+				promiseReduction.then(module => {
+					packageInfo.classReduction = module[Object.keys(module)[0]];
+					packageInfo.classReduction.messages = packageInfo.messages;
+					packageInfo.classReduction.common = packageInfo.common;
+					//packageInfo.classReduction.setReducers();
+					console.log(packageName + " REDUCERS DONE");
+				});
+			}
+		}
+	});
+	
+	await Promise.all(promises);
+	
+	/*
+	promises = Array.from(Formulae.packages.keys()).map(
 		async packageName => {
 			let packageInfo = Formulae.packages.get(packageName);
 			if (packageInfo.required && packageInfo.classExpression === null) {
 				newPackagesLoaded = true;
 				console.log("loading " + packageName);
 				
-				if (packageInfo.messages === null) {
-					packageInfo.messages = await Formulae.loadMessages(packageName);
-				}
+				//if (packageInfo.messages === null) {
+				//	packageInfo.messages = await Formulae.loadMessages(packageName);
+				//}
 				
 				let module;
-				//let module = await import("../packages/" + packageName + "/frontend.js");
-				//packageInfo.module = module[Object.keys(module)[0]];
-				
-				//packageInfo.module.messages = packageInfo.messages;
-				//packageInfo.module.setExpressions(packageName);
-				////packageInfo.module.setEditions();
-				//packageInfo.module.setActions();
-				//packageInfo.module.setReducers();
 				
 				module = await import("../packages/" + packageName + "/expression.js");
 				packageInfo.classExpression = module[Object.keys(module)[0]];
 				packageInfo.classExpression.messages = packageInfo.messages;
+				packageInfo.classExpression.common = packageInfo.common;
 				packageInfo.classExpression.setExpressions(packageName);
 				
 				module = await import("../packages/" + packageName + "/edition.js");
 				packageInfo.classEdition = module[Object.keys(module)[0]];
 				packageInfo.classEdition.messages = packageInfo.messages;
+				packageInfo.classEdition.common = packageInfo.common;
 				packageInfo.classEdition.setActions(); // <-- here ???
 				
-				//module = await import("../packages/" + packageName + "/reduction.js");
-				//packageInfo.classReduction = module[Object.keys(module)[0]];
-				//packageInfo.classReduction.messages = packageInfo.messages;
+				module = await import("../packages/" + packageName + "/reduction.js");
+				packageInfo.classReduction = module[Object.keys(module)[0]];
+				packageInfo.classReduction.messages = packageInfo.messages;
+				packageInfo.classReduction.common = packageInfo.common;
 				//packageInfo.classReduction.setReducers();
 			}
 		}
 	);
 	await Promise.all(promises);
+	*/
 	
-	// Reducers only, in order to ensure order they load
+	///////////////////////////////////////////////////////
+	// Reducers only, in order to ensure order they load //
+	///////////////////////////////////////////////////////
 	
-	let packageInfo;
-	let module;
-	
-	for (let packageName of Formulae.packages.keys()) {
-		packageInfo = Formulae.packages.get(packageName);
-		if (packageInfo.required) {
-			module = await import("../packages/" + packageName + "/reduction.js");
-			packageInfo.classReduction = module[Object.keys(module)[0]];
-			packageInfo.classReduction.messages = packageInfo.messages;
+	for (let p of packagesArray) {
+		let packageName = p[0];
+		let packageInfo = p[1];
+		
+		if (packageInfo.required && !packageInfo.reducersSet) {
+			//let module = await import("../packages/" + packageName + "/reduction.js");
+			//packageInfo.classReduction = module[Object.keys(module)[0]];
+			//packageInfo.classReduction.messages = packageInfo.messages;
+			//packageInfo.classReduction.common = packageInfo.common;
 			packageInfo.classReduction.setReducers();
+			packageInfo.reducersSet = true;
+			console.log(packageName + " REDUCERSET DONE");
 		}
 	}
 	
@@ -2959,8 +3063,6 @@ Formulae.Package.setActions = () => {};
 Formulae.Package.setReducers = () => {};
 Formulae.Package.isConfigurable = () => false;
 Formulae.Package.onConfiguration = () => {};
-
-
 
 Formulae.ExpressionPackage = class {};
 Formulae.ExpressionPackage.isConfigurable = () => false;
