@@ -73,7 +73,7 @@ Formulae.packages.set("org.formulae.programming",         new Formulae.PackageIn
 Formulae.packages.set("org.formulae.graphics.raster",     new Formulae.PackageInfo("Graphics",              true,  false));
 Formulae.packages.set("org.formulae.chart",               new Formulae.PackageInfo("Charts",                false, false));
 Formulae.packages.set("org.formulae.diagramming",         new Formulae.PackageInfo("Diagrams",              false, false));
-Formulae.packages.set("org.formulae.time",                new Formulae.PackageInfo("Time",                  true,  false));
+Formulae.packages.set("org.formulae.time",                new Formulae.PackageInfo("Time",                  true,  true ));
 Formulae.packages.set("org.formulae.typesetting",         new Formulae.PackageInfo("Typesetting",           true,  false));
 Formulae.packages.set("org.formulae.visualization",       new Formulae.PackageInfo("Visualization",         true,  false));
 Formulae.packages.set("org.formulae.localization",        new Formulae.PackageInfo("Localization",          false, false)); // WIP
