@@ -133,6 +133,40 @@ CanonicalArithmetic.abs = a => a < 0n ? -a : a;
 	isDiv, isMod: boolean
 */
 
+
+CanonicalArithmetic.divMod = (D, d, isDiv, isMod, session) => {
+	let bkpRounding = session.Decimal.rounding;
+	let bkpModulo = session.Decimal.modulo;
+	
+	let euclidean = false;
+	
+	if (session.Decimal.rounding == 9) {
+		euclidean = true;
+		session.Decimal.rounding = 1;
+		session.Decimal.modulo = 9;
+	}
+	
+	//session.Decimal.rounding = session.Decimal.modulo;
+	
+	let q, r;
+	
+	if (isDiv) q = session.Decimal.div(D, d).round();
+	if (isMod) r = session.Decimal.mod(D, d);
+	
+	if (isMod && euclidean && r.lessThan(0)) {
+		let s = session.Decimal.sign(d);
+		
+		if (isDiv) q = session.Decimal.sub(q, s);
+		if (isMod) r = session.Decimal.add(r, session.Decimal.mul(d, s));
+	}
+	
+	session.Decimal.rounding = bkpRounding;
+	session.Decimal.modulo = bkpModulo;
+	
+	return [ q, r ];
+};
+
+/*
 CanonicalArithmetic.divMod = (D, d, isDiv, isMod, session) => {
 	let bkpRounding = session.Decimal.rounding;
 	let bkpModulo = session.Decimal.modulo;
@@ -163,6 +197,7 @@ CanonicalArithmetic.divMod = (D, d, isDiv, isMod, session) => {
 	
 	return [ q, r ];
 };
+*/
 
 /*
 	D, d: BigInt
@@ -1287,15 +1322,21 @@ CanonicalArithmetic.canonicalNumeric2Expr = canonicalNumeric => {
 	else { // canonical rational
 		negative = canonicalNumeric.numerator < 0n;
 		
-		let n = Formulae.createExpression("Math.Number");
-		n.set("Value", negative ? -canonicalNumeric.numerator : canonicalNumeric.numerator);
-		
-		let d = Formulae.createExpression("Math.Number");
-		d.set("Value", canonicalNumeric.denominator);
-		
-		expr = Formulae.createExpression("Math.Arithmetic.Division");
-		expr.addChild(n);
-		expr.addChild(d);
+		if (canonicalNumeric.denominator === 1n) {
+			expr = Formulae.createExpression("Math.Number");
+			expr.set("Value", negative ? -canonicalNumeric.numerator : canonicalNumeric.numerator);
+		}
+		else {
+			let n = Formulae.createExpression("Math.Number");
+			n.set("Value", negative ? -canonicalNumeric.numerator : canonicalNumeric.numerator);
+			
+			let d = Formulae.createExpression("Math.Number");
+			d.set("Value", canonicalNumeric.denominator);
+			
+			expr = Formulae.createExpression("Math.Arithmetic.Division");
+			expr.addChild(n);
+			expr.addChild(d);
+		}
 	}
 	
 	if (negative) {
