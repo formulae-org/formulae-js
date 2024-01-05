@@ -61,7 +61,9 @@ Formulae.packages = new Map(); // Map from package name to package info
 
 // Basic packages
 
+//                                                                                                       default  common
 Formulae.packages.set("org.formulae.math.arithmetic",     new Formulae.PackageInfo("Arithmetic",            true,  false));
+Formulae.packages.set("org.formulae.math.complex",        new Formulae.PackageInfo("Complex",               true,  false));
 Formulae.packages.set("org.formulae.relation",            new Formulae.PackageInfo("Relation",              true,  false));
 Formulae.packages.set("org.formulae.logic",               new Formulae.PackageInfo("Logic",                 true,  false));
 Formulae.packages.set("org.formulae.expression",          new Formulae.PackageInfo("Expression management", true,  false));
