@@ -1219,6 +1219,9 @@ Formulae.onEnter = alt => {
 	
 	let hReduction = hResult.clone();
 	hReduction.setExpression(Formulae.handlers[index].expression.clone());
+	
+	CanonicalArithmetic.internalizeNumbersHandler(hReduction); /////
+	
 	let session = new ReductionSession(null, null, 20);
 	
 	let start = new Date().valueOf();
@@ -1226,13 +1229,16 @@ Formulae.onEnter = alt => {
 	setTimeout(async () => {
 		await ReductionManager.reduceHandler(hReduction, session);
 		console.log(Formulae.ellaspedTime(new Date().valueOf() - start));
-
+		
 		if (alt || isPersistent) {
 			Formulae.deleteExpressions(hResult.index, 1);
 			return;
 		}
-
+		
 		hResult.setExpression(hReduction.expression);
+		
+		CanonicalArithmetic.externalizeNumbersHandler(hResult); /////
+		
 		hResult.prepareDisplay();
 		hResult.display();
 	}, 0);

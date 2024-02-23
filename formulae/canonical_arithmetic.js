@@ -423,15 +423,30 @@ CanonicalArithmetic.Integer = class {
 	
 	exponentiation(other, session) {
 		if (other instanceof CanonicalArithmetic.Integer) {
-			return new CanonicalArithmetic.Integer(this.integer ** other.integer);
+			if (other.integer > 0n) {
+				return new CanonicalArithmetic.Integer(this.integer ** other.integer);
+			}
+			else { // other is negative
+				let rational = new CanonicalArithmetic.Rational(
+					1n,
+					this.integer ** -other.integer
+				);
+				rational.normalize();
+				return rational;
+			}
 		}
 		else if (other instanceof CanonicalArithmetic.Decimal) {
-			return new CanonicalArithmetic.Decimal(
-				session.Decimal.pow(this.integer.toString(), other.decimal)
-			);
+			if (this.isPositive()) {
+				return new CanonicalArithmetic.Decimal(
+					session.Decimal.pow(this.integer.toString(), other.decimal)
+				);
+			}
+			else { // negative
+				return null; // result is complex
+			}
 		}
 		else { // rational
-			return null;
+			return null; // because the result is symbolic
 		}
 	}
 	
@@ -640,7 +655,9 @@ CanonicalArithmetic.Decimal = class {
 	
 	exponentiation(other, session) {
 		if (other instanceof CanonicalArithmetic.Decimal) {
-			return new CanonicalArithmetic.Decimal(session.Decimal.pow(this.decimal, other.decimal));
+			return new CanonicalArithmetic.Decimal(
+				session.Decimal.pow(this.decimal, other.decimal)
+			);
 		}
 		else if (other instanceof CanonicalArithmetic.Integer) {
 			return new CanonicalArithmetic.Decimal(
@@ -928,23 +945,39 @@ CanonicalArithmetic.Rational = class {
 	
 	exponentiation(other, session) {
 		if (other instanceof CanonicalArithmetic.Integer) {
-			let rational = new CanonicalArithmetic.Rational(
-				this.numerator ** other.integer,
-				this.denominator ** other.integer
-			);
+			let rational;
+			
+			if (other.isPositive()) {
+				rational = new CanonicalArithmetic.Rational(
+					this.numerator   ** other.integer,
+					this.denominator ** other.integer
+				);
+			}
+			else {
+				rational = new CanonicalArithmetic.Rational(
+					this.denominator ** -other.integer,
+					this.numerator   ** -other.integer
+				);
+			}
+			rational.normalize();
 			rational.minimize();
 			return rational;
 		}
 		else if (other instanceof CanonicalArithmetic.Decimal) {
-			return new CanonicalArithmetic.Decimal(
-				session.Decimal.pow(
-					session.Decimal.div(this.numerator.toString(), this.denominator.toString()),
-					other.decimal
-				)
-			);
+			if (this.isPositive()) {
+				return new CanonicalArithmetic.Decimal(
+					session.Decimal.pow(
+						session.Decimal.div(this.numerator.toString(), this.denominator.toString()),
+						other.decimal
+					)
+				);
+			}
+			else { // negative
+				return null; // result is complex
+			}
 		}
 		else { // rational
-			return null;
+			return null; // result is symbolic
 		}
 	}
 	
@@ -1118,12 +1151,45 @@ CanonicalArithmetic.expr2CanonicalNumeric = expr => {
 	}
 	
 	if (tag === "Math.Arithmetic.Division") {
-		let n = expr.children[0], d = expr.children[1];
+		let n = expr.children[0];
+		let d = expr.children[1];
+		
+		let tagN = n.getTag();
+		let tagD = d.getTag();
+		
+		let negN, negD;
+		
+		if (negN = (tagN === "Math.Arithmetic.Negative")) {
+			n = n.children[0];
+			tagN = n.getTag();
+		}
+		
+		if (negD = (tagD === "Math.Arithmetic.Negative")) {
+			d = d.children[0];
+			tagD = d.getTag();
+		}
+		
 		if (n.getTag() === "Math.Number" && d.getTag() === "Math.Number") {
-			return new CanonicalArithmetic.Rational(
-				isNegative ? -n.get("Value") : n.get("Value"),
-				d.get("Value")
-			);
+			let N, D;
+			if (typeof (N = n.get("Value")) === "bigint" && typeof (D = d.get("Value")) === "bigint") {
+				let result = new CanonicalArithmetic.Rational(N, D);
+				result.normalize();
+				result.minimize();
+				
+				if (result.denominator === 1n) {
+					result = new CanonicalArithmetic.Integer(result.numerator);
+				}
+				
+				if (negN !== negD) {
+					result = result.negate();
+				}
+				
+				if (isNegative) {
+					result = result.negate();
+				}
+				
+				return result;
+			}
 		}
 	}
 	
@@ -1167,6 +1233,7 @@ CanonicalArithmetic.getNumber = expr => {
 };
 
 
+/*
 // input: An expression
 // output: Either:
 //            * An always integer number
@@ -1203,6 +1270,7 @@ CanonicalArithmetic.getInteger = expr => {
 	
 	return negative ? -int : int;
 };
+*/
 
 // input: An expression
 // output: Either:
@@ -1210,29 +1278,19 @@ CanonicalArithmetic.getInteger = expr => {
 //            * undefined, if the expression cannot be converted to a an BigInt number
 
 CanonicalArithmetic.getBigInt = expr => {
-	let tag = expr.getTag();
-	let negative = false;
-	
-	if (tag === "Math.Arithmetic.Negative") {
-		negative = true;
-		expr = expr.children[0];
-		tag = expr.getTag();
+	if (expr.isInternalNumber()) {
+		let canonical = expr.get("Value");
+		
+		if (canonical instanceof CanonicalArithmetic.Integer) {
+			return canonical.integer;
+		}
+		
+		if (canonical instanceof CanonicalArithmetic.Decimal && canonical.hasIntegerValue()) {
+			return BigInt(canonical.decimal.toFixed());
+		}
 	}
 	
-	if (tag !== "Math.Number") return undefined;
-	
-	let number = expr.get("Value");
-	let bigInt;
-	
-	if (typeof number === "bigint") {
-		bigInt = number;
-	}
-	else { // Decimal
-		if (!number.isInteger()) return undefined;
-		bigInt = BigInt(number.toFixed());
-	}
-	
-	return negative ? -bigInt : bigInt;
+	return undefined;
 };
 
 // input: An expression
@@ -1525,3 +1583,117 @@ CanonicalArithmetic._rationalAddition(
 }
 
 */
+
+CanonicalArithmetic.internalizeNumbersHandler = handler => {
+	CanonicalArithmetic.internalizeNumbers(handler.expression);
+};
+
+CanonicalArithmetic.internalizeNumbers = expr => {
+	let canonicalNumber = CanonicalArithmetic.expr2CanonicalNumeric(expr);
+	if (canonicalNumber !== null) {
+		let internalNumberExpr = Formulae.createExpression("Math.InternalNumber");
+		internalNumberExpr.set("Value", canonicalNumber);
+		
+		expr.replaceBy(internalNumberExpr);
+		
+		return;
+	}
+	
+	if (expr.getTag() === "Math.Arithmetic.Negative") {
+		let mult = expr.children[0];
+		if (mult.getTag() === "Math.Arithmetic.Multiplication") {
+			mult.addChildAt(
+				0,
+				CanonicalArithmetic.number2InternalNumber(-1)
+			);
+			expr.replaceBy(mult);
+		}
+	}
+	
+	for (let i = 0, n = expr.children.length; i < n; ++i) {
+		CanonicalArithmetic.internalizeNumbers(expr.children[i]);
+	}
+};
+
+CanonicalArithmetic.externalizeNumbersHandler = handler => {
+	CanonicalArithmetic.externalizeNumbers(handler.expression);
+};
+
+CanonicalArithmetic.externalizeNumbers = expr => {
+	if (expr.getTag() === "Math.InternalNumber") {
+		let numberExpr = CanonicalArithmetic.canonicalNumeric2Expr(expr.get("Value"));
+		expr.replaceBy(numberExpr);
+		return;
+	}
+	
+	for (let i = 0, n = expr.children.length; i < n; ++i) {
+		CanonicalArithmetic.externalizeNumbers(expr.children[i]);
+	}
+};
+
+// input: A number
+//        An optional boolean to indicate that the number will be decimal. Default is false
+// output: A canonical integer or decimal
+
+CanonicalArithmetic.number2Canonical = (n, isDecimal = false, session = null) => {
+	if (isDecimal) {
+		return new CanonicalArithmetic.Decimal(n, session);
+	}
+	else {
+		return Number.isInteger(n) ? new CanonicalArithmetic.Integer(n) : new CanonicalArithmetic.Decimal(n, session);
+	}
+};
+
+CanonicalArithmetic.canonical2InternalNumber = canonicalNumber => {
+	let internal = Formulae.createExpression("Math.InternalNumber");
+	internal.set("Value", canonicalNumber);
+	return internal;
+};
+
+CanonicalArithmetic.number2InternalNumber = (n, isDecimal = false, session = null) => {
+	return CanonicalArithmetic.canonical2InternalNumber(CanonicalArithmetic.number2Canonical(n, isDecimal, session));
+};
+
+// input: An expression
+// output: Either:
+//            * A CanonicalArithmetic.Integer
+//            * A CanonicalArithmetic.Decimal
+//            * null, if the expression cannot be converted to the previous values
+
+CanonicalArithmetic.expr2CanonicalIntegerOrDecimal = expr => {
+	if (!expr.isInternalNumber) return null;
+	
+	let canonicalNumber = expr.get("Value");
+	
+	if (canonicalNumber instanceof CanonicalArithmetic.Rational) return null;
+	
+	return canonicalNumber;
+};
+
+// input: An expression
+// output: Either:
+//            * An always integer number
+//            * undefined, if the expression cannot be converted to a an integer number
+
+CanonicalArithmetic.getInteger = expr => {
+	if (!expr.isInternalNumber()) return undefined;
+	let canonical = expr.get("Value");
+	
+	if (canonical instanceof CanonicalArithmetic.Integer) {
+		let bi = canonical.integer;
+		if (bi < Number.MIN_SAFE_INTEGER || bi > Number.MAX_SAFE_INTEGER) return undefined;
+		return Number(bi);
+	}
+	if (canonical instanceof CanonicalArithmetic.Decimal) {
+		let d = canonical.decimal;
+		if (!d.isInteger()) return undefined;
+		try {
+			return d.toNumber();
+		}
+		catch (error) {
+			return undefined;
+		}
+	}
+	
+	return undefined;
+};

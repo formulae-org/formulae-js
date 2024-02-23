@@ -895,6 +895,10 @@ class Expression extends Scopable {
 	evaluate() {
 		throw new EvaluationError();
 	}
+	
+	isInternalNumber() {
+		return false;
+	}
 }
 
 // static fields
@@ -949,6 +953,7 @@ Expression.Infix = class extends Expression {
 	constructor() {
 		super();
 		this.parentheses = true;
+		this.gap = 5;
 	}
 	
 	canHaveChildren(count) {
@@ -964,7 +969,15 @@ Expression.Infix = class extends Expression {
 	parenthesesWhenSuperSubscripted() { return true; }
 	
 	prepareDisplay(context) {
-		this.operatorWidth = Math.round(context.measureText(this.getOperator()).width);
+		if (this.bold === undefined) {
+			this.operatorWidth = Math.round(context.measureText(this.getOperator()).width);
+		}
+		else {
+			let bkpBold = context.fontInfo.bold;
+			context.fontInfo.setBold(context, true);
+			this.operatorWidth = Math.round(context.measureText(this.getOperator()).width);
+			context.fontInfo.setBold(context, bkpBold);
+		}
 		
 		this.width = 0;
 		this.horzBaseline = 0;
@@ -980,7 +993,7 @@ Expression.Infix = class extends Expression {
 			
 			if (parentheses) this.width += 4;
 			
-			if (i > 0) this.width += 5 + this.operatorWidth + 5; // gap
+			if (i > 0) this.width += this.gap + this.operatorWidth + this.gap; // gap
 			
 			child.x = this.width;
 			this.width += child.width;
@@ -1010,26 +1023,31 @@ Expression.Infix = class extends Expression {
 			parentheses = this.parentheses && child.parenthesesAsOperator();
 			
 			if (i > 0) {
-				if (this.color === undefined) {
-					super.drawText(
-						context,
-						this.getOperator(), x + child.x - 5 - this.operatorWidth - (parentheses ? 4 : 0), // 5 = gap
-						y + this.horzBaseline + Math.round(context.fontInfo.size / 2),
-						this.inverted === undefined ? undefined : this.operatorWidth
-					);
+				let bkpBold, bkpFillStyle;
+				
+				if (this.bold !== undefined) {
+					bkpBold = context.fontInfo.bold;
+					context.fontInfo.setBold(context, true);
 				}
-				else {
-					let bkpFillStyle = context.fillStyle;
+				
+				if (this.color !== undefined) {
+					bkpFillStyle = context.fillStyle;
 					context.fillStyle = this.color;
-					
-					super.drawText(
-						context,
-						this.getOperator(), x + child.x - 5 - this.operatorWidth - (parentheses ? 4 : 0), // 5 = gap
-						y + this.horzBaseline + Math.round(context.fontInfo.size / 2),
-						this.inverted === undefined ? undefined : this.operatorWidth
-					);
-					
+				}
+				
+				super.drawText(
+					context,
+					this.getOperator(), x + child.x - this.gap - this.operatorWidth - (parentheses ? 4 : 0), // 5 = gap
+					y + this.horzBaseline + Math.round(context.fontInfo.size / 2),
+					this.inverted === undefined ? undefined : this.operatorWidth
+				);
+				
+				if (this.color !== undefined) {
 					context.fillStyle = bkpFillStyle;
+				}
+				
+				if (this.bold !== undefined) {
+					context.fontInfo.setBold(context, bkpBold);
 				}
 			}
 			
@@ -1136,10 +1154,23 @@ Expression.PrefixedLiteral = class extends Expression.UnaryExpression {
 	constructor() {
 		super();
 		this.parentheses = true;
+		this.space = 3;
 	}
 	
 	prepareDisplay(context) {
-		this.width = Math.round(context.measureText(this.getLiteral()).width) + 3;
+		let bkpBold;
+		
+		if (this.bold) {
+			bkpBold = context.fontInfo.bold;
+			context.fontInfo.setBold(context, true);
+		}
+		
+		this.width = Math.round(context.measureText(this.getLiteral()).width) + this.space;
+		
+		if (this.bold) {
+			context.fontInfo.setBold(context, bkpBold);
+		}
+		
 		let child = this.children[0];
 		child.prepareDisplay(context);
 		
@@ -1160,13 +1191,25 @@ Expression.PrefixedLiteral = class extends Expression.UnaryExpression {
 	display(context, x, y) {
 		let child = this.children[0];
 		
-		if (this.color === undefined) {
-			super.drawText(context, this.getLiteral(), x, y + child.y + child.horzBaseline + Math.round(context.fontInfo.size / 2));
+		let bkpBold, bkpFillStyle;
+		
+		if (this.bold) {
+			bkpBold = context.fontInfo.bold;
+			context.fontInfo.setBold(context, true);
 		}
-		else {
-			let bkpFillStyle = context.fillStyle;
+		
+		if (this.color !== undefined) {
+			bkpFillStyle = context.fillStyle;
 			context.fillStyle = this.color;
-			super.drawText(context, this.getLiteral(), x, y + child.y + child.horzBaseline + Math.round(context.fontInfo.size / 2));
+		}
+		
+		super.drawText(context, this.getLiteral(), x, y + child.y + child.horzBaseline + Math.round(context.fontInfo.size / 2));
+		
+		if (this.bold) {
+			context.fontInfo.setBold(context, bkpBold);
+		}
+		
+		if (this.color !== undefined) {
 			context.fillStyle = bkpFillStyle;
 		}
 		

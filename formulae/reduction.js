@@ -241,7 +241,7 @@ class ReductionError extends Error {};
 // reducers //
 //////////////
 
-// A(X(expr1, expr2 .., exprN)) -> X(A(expr1), A(expr2), ..., A(exprN))
+// A(X(e1, e2 .., eN)) -> X(A(e1), A(e2), ..., A(eN))
 //
 // i.e. N(x + y + z)   ->   N(x) + N(y) + N(z)
 
