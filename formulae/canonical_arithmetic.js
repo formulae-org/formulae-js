@@ -1590,6 +1590,7 @@ CanonicalArithmetic.internalizeNumbersHandler = handler => {
 
 CanonicalArithmetic.internalizeNumbers = expr => {
 	let canonicalNumber = CanonicalArithmetic.expr2CanonicalNumeric(expr);
+	
 	if (canonicalNumber !== null) {
 		let internalNumberExpr = Formulae.createExpression("Math.InternalNumber");
 		internalNumberExpr.set("Value", canonicalNumber);
@@ -1606,6 +1607,12 @@ CanonicalArithmetic.internalizeNumbers = expr => {
 				0,
 				CanonicalArithmetic.number2InternalNumber(-1)
 			);
+			expr.replaceBy(mult);
+		}
+		else {
+			mult = Formulae.createExpression("Math.Arithmetic.Multiplication");
+			mult.addChild(CanonicalArithmetic.number2InternalNumber(-1));
+			mult.addChild(expr.children[0]);
 			expr.replaceBy(mult);
 		}
 	}
