@@ -115,7 +115,7 @@ Formulae.setExpression = function(moduleName, tag, spec) {
 	if (moduleName != null) Formulae.moduleNameMap.set(tag, moduleName);
 };
 
-Formulae.createExpression = function(tag) {
+Formulae.createExpression = function(tag, ...children) {
 	let spec = Formulae.classesMap.get(tag);
 	if (spec == null) {
 		spec = { clazz: Formulae.UnknownExpression, tag: tag };
@@ -134,6 +134,12 @@ Formulae.createExpression = function(tag) {
 					expr[prop] = spec[prop];
 				}
 			}
+		}
+	}
+	
+	if (children !== null && children.length > 0) {
+		for (let i = 0, n = children.length; i < n; ++i) {
+			expr.addChild(children[i]);
 		}
 	}
 	
