@@ -1627,10 +1627,38 @@ CanonicalArithmetic.externalizeNumbersHandler = handler => {
 };
 
 CanonicalArithmetic.externalizeNumbers = expr => {
-	if (expr.getTag() === "Math.InternalNumber") {
+	if (expr.isInternalNumber()) {
 		let numberExpr = CanonicalArithmetic.canonicalNumeric2Expr(expr.get("Value"));
 		expr.replaceBy(numberExpr);
 		return;
+	}
+	
+	if (expr.getTag() === "Math.Arithmetic.Multiplication") {
+		let first = expr.children[0];
+		
+		if (first.isInternalNumber()) {
+			let canonical = first.get("Value");
+			
+			if (canonical.isNegative()) {
+				// Ok
+				let negative = Formulae.createExpression("Math.Arithmetic.Negative");
+				expr.replaceBy(negative);
+				
+				canonical = canonical.negate();
+				if (canonical.isOne()) {
+					expr.removeChildAt(0);
+				}
+				else {
+					first.set("Value", canonical);
+				}
+				
+				if (expr.children.length == 1) {
+					expr = expr.children[0];
+				}
+				
+				negative.addChild(expr);
+			}
+		}
 	}
 	
 	for (let i = 0, n = expr.children.length; i < n; ++i) {
