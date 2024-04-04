@@ -1196,43 +1196,6 @@ CanonicalArithmetic.expr2CanonicalNumeric = expr => {
 	return null;
 };
 
-// input: An expression
-// output: Either:
-//            * A number
-//            * undefined, if the expression cannot be converted to a an integer number
-
-CanonicalArithmetic.getNumber = expr => {
-	let tag = expr.getTag();
-	let negative = false;
-	
-	if (tag === "Math.Arithmetic.Negative") {
-		negative = true;
-		expr = expr.children[0];
-		tag = expr.getTag();
-	}
-	
-	if (tag !== "Math.Number") return undefined;
-	
-	let n = expr.get("Value");
-	let number;
-	
-	if (typeof n === "bigint") {
-		if (n < Number.MIN_SAFE_INTEGER || n > Number.MAX_SAFE_INTEGER) return undefined;
-		number = Number(n);
-	}
-	else { // Decimal
-		try {
-			number = n.toNumber();
-		}
-		catch (error) {
-			return undefined;
-		}
-	}
-	
-	return negative ? -number : number;
-};
-
-
 /*
 // input: An expression
 // output: Either:
@@ -1722,6 +1685,33 @@ CanonicalArithmetic.getInteger = expr => {
 	if (canonical instanceof CanonicalArithmetic.Decimal) {
 		let d = canonical.decimal;
 		if (!d.isInteger()) return undefined;
+		try {
+			return d.toNumber();
+		}
+		catch (error) {
+			return undefined;
+		}
+	}
+	
+	return undefined;
+};
+
+// input: An expression
+// output: Either:
+//            * A number
+//            * undefined, if the expression cannot be converted to a number
+
+CanonicalArithmetic.getNumber = expr => {
+	if (!expr.isInternalNumber()) return undefined;
+	let canonical = expr.get("Value");
+	
+	if (canonical instanceof CanonicalArithmetic.Integer) {
+		let bi = canonical.integer;
+		if (bi < Number.MIN_SAFE_INTEGER || bi > Number.MAX_SAFE_INTEGER) return undefined;
+		return Number(bi);
+	}
+	if (canonical instanceof CanonicalArithmetic.Decimal) {
+		let d = canonical.decimal;
 		try {
 			return d.toNumber();
 		}
