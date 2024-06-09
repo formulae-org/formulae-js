@@ -29,24 +29,42 @@
 <div id="header">
 
 <table border=0 cellspacing=0 cellpadding=0><tr>
-<td><img src='img/logo.png'>
+<td>
+<img src='img/logo.png'>
 <td>&nbsp;
-<td style='vertical-align: middle;'>
-<button id="button-home" title="Home" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/home.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-home" title="Home" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/home.png'></button>
+<td style="vertical-align: middle;">
 <button id="button-new" title="New" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/new.png'></button>
+<td style="vertical-align: middle;">
 <button id="button-open" title="Open..." style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/open.png'></button>
-<input id="file-input" type="file" accept=".formulae" style="display: none;"/>
-<button id="button-save" title="Save..." style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/save.png'></button>
-<button id="button-cut" title="Cut" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/cut.png'></button>
-<button id="button-copy" title="Copy" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/copy.png'></button>
-<button id="button-paste" title="Paste" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/paste.png'></button>
-<button id="button-ins-after" title="Insert row below" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/ins_row_after.png'></button>
-<button id="button-ins-before" title="Inser row above" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/ins_row_before.png'></button>
-<button id="button-delete" title="Delete row" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/del_row.png'></button>
-<button id="button-change-type" title="Change type" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/pin.png'></button>
-<button id="button-execute_sticky" title="Execute sticky rows" type" style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/pin_run.png'></button>
-<button id="button-tools" title="Tools..." style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/tools.png'></button>
-<button id="button-settings" title="Settings..." style="border: none; background: none; cursor:pointer; outline: none;"><img src='img/settings.png'></button>
+<input  id="file-input" type="file" accept=".formulae" style="display: none;"/>
+<td style="vertical-align: middle;">
+<button id="button-save" title="Save..." style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/save.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-cut" title="Cut" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/cut.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-copy" title="Copy" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/copy.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-paste" title="Paste" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/paste.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-ins-after" title="Insert row below" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/ins_row_after.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-ins-before" title="Inser row above" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/ins_row_before.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-delete" title="Delete row" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/del_row.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-change-type" title="Change type" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/pin.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-execute_sticky" title="Execute sticky rows" type" style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/pin_run.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-tools" title="Tools..." style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/tools.png'></button>
+<td style="vertical-align: middle;">
+<button id="button-settings" title="Settings..." style="border: none; background: none; cursor:pointer; outline: none;" hidden><img src='img/settings.png'></button>
+<td style="width: 100%;">
+<td style="vertical-align: float:right;">
+<button id="button-mode">Edit&nbsp;/&nbsp;run</button>
+<td>&nbsp;
 </table>
 
 </div> <!-- header -->
@@ -59,7 +77,7 @@
 
 <div id="dragbar"></div>
 
-<div id="main">
+<div id="main" tabindex="0">
 
 <div class="container" id="container">
 </div>

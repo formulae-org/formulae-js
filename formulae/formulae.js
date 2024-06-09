@@ -6,6 +6,7 @@ Formulae.scriptAtStart = true;
 Formulae.timeZone = null;
 Formulae.fontSize = null;
 Formulae.ltr = true;
+Formulae.readMode = true;
 Formulae.parameters = new URL(window.location.href).searchParams;
 //Formulae.pathName = new URL(window.location.href).pathname;
 
@@ -315,7 +316,23 @@ Formulae.mouseMove = function(handler, mouseEvent) {
 	if (!Formulae.ltr) x = handler.context.canvas.width - x;
 	let test = handler.fromPoint(x, mouseEvent.offsetY);
 	
-	if (test != Formulae.hExpression) {
+	if (test !== Formulae.hExpression) { // current expression (test) has changed
+		if (Formulae.readMode) {
+			if (test !== null) {
+				if (test.getTag() === "Internet.UniformResourceLocator") {
+					document.body.style.cursor = "pointer";
+				}
+				else {
+					//if (Formulae.hExpression !== null && Formulae.hExpression.getTag() === "Internet.UniformResourceLocator") {
+						document.body.style.cursor = "default";
+					//}
+				}
+			}
+			
+			Formulae.hExpression = test;
+			return;
+		}
+		
 		let context = handler.context;
 		
 		let bkpOperation = context.globalCompositeOperation;
@@ -349,6 +366,12 @@ Formulae.mouseMove = function(handler, mouseEvent) {
 };
 
 Formulae.mouseOut = function(handler) {
+	if (Formulae.readMode) {
+		Formulae.hExpression = null;
+		document.body.style.cursor = "default";
+		return;
+	}
+	
 	if (Formulae.hExpression != null) {
 		let context = handler.context;
 		
@@ -371,10 +394,25 @@ Formulae.mouseOut = function(handler) {
 }
 
 Formulae.mouseWheel = function() {
+	if (Formulae.readMode) {
+		Formulae.hExpression = null;
+		document.body.style.cursor = "default";
+		return;
+	}
+	
 	Formulae.clearHighlightedExpression();
 }
 
 Formulae.mouseClick = function(handler, mouseEvent) {
+	if (Formulae.readMode) {
+		if (Formulae.hExpression !== null && Formulae.hExpression.getTag() === "Internet.UniformResourceLocator") {
+			let win = window.open(Formulae.hExpression.get("Value"), "_blank");
+			win.focus();
+		}
+		
+		return;
+	}
+	
 	if (Formulae.menu.style.visibility == "visible") {
 		Formulae.menu.style.visibility = "hidden";
 		return;
@@ -384,6 +422,25 @@ Formulae.mouseClick = function(handler, mouseEvent) {
 		Formulae.setSelected(handler, Formulae.hExpression, true);
 	}
 }
+
+Formulae.clearSelected = function() {
+	if (Formulae.sExpression === null) return;
+	
+	let context = Formulae.sHandler.context;
+	
+	let bkpOperation = context.globalCompositeOperation;
+	context.globalCompositeOperation = "difference";
+	
+	let bkpFillStyle = context.fillStyle;
+	context.fillStyle = "white";
+	
+	Formulae.sExpression.drawSelecionShape(context);
+	
+	context.fillStyle = bkpFillStyle;
+	context.globalCompositeOperation = bkpOperation;
+	
+	Formulae.sExpression = null;
+};
 
 Formulae.setSelected = function(handler, expression, removePrevious) {
 	Formulae.clearHighlightedExpression();
@@ -490,6 +547,10 @@ Formulae.editionEscape = function() {
 }
 
 Formulae.editionArrow = function(direction) {
+	if (Formulae.readMode) {
+		return;
+	}
+	
 	let test = Formulae.sExpression.moveOut(direction);
 	
 	if (test != null && test != Formulae.sExpression) {
@@ -1795,7 +1856,13 @@ Formulae.newFile = function() {
 	let handler = Formulae.addExpression(expression, Formulae.ROW_INPUT);
 	handler.prepareDisplay();
 	handler.display();
-	Formulae.setSelected(handler, expression, false);
+	
+	if (Formulae.readMode) {
+		Formulae.toggleMode();
+	}
+	else {
+		Formulae.setSelected(handler, expression, false);
+	}
 }
 
 Formulae.openFile = function(e) {
@@ -1820,7 +1887,10 @@ Formulae.openFile = function(e) {
 		//}
 		
 		let newPackagesLoaded = await Formulae.xmlToScript(e.target.result);
-		Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
+		
+		if (!Formulae.readMode) {
+			Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
+		}
 		
 		if (newPackagesLoaded) {
 			Formulae.loadReloadEditions();
@@ -1901,6 +1971,8 @@ Formulae.fillFileInfo = function() {
 	
 	Formulae.fileName = f + '.formulae?' + (new Date()).getTime();
 	Formulae.fileTitle = f.substring(f.indexOf("/") + 1);
+	
+	document.title = Formulae.fileTitle;
 }
 
 Formulae.loadFile = async () => {
@@ -1913,7 +1985,9 @@ Formulae.loadFile = async () => {
 	let xml = await response.text();
 	let newPackagesLoaded = await Formulae.xmlToScript(xml);
 	
-	Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
+	if (!Formulae.readMode) {
+		Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
+	}
 	
 	if (newPackagesLoaded) {
 		Formulae.loadReloadEditions();
@@ -1922,7 +1996,7 @@ Formulae.loadFile = async () => {
 	if (Formulae.fileName != "Main page.formulae") {
 		let description = "Fōrmulæ - " + Formulae.fileTitle;
 		document.title = description;
-		document.head. children.namedItem('description').content = description;
+		document.head.children.namedItem('description').content = description;
 	}
 	
 	/*
@@ -2042,6 +2116,40 @@ Formulae.outputForCrawling = function() {
 	});
 }
 
+Formulae.toggleMode = function() {
+	Formulae.readMode = !Formulae.readMode;
+	let display = Formulae.readMode ? "none" : "block";
+	
+	[
+		"button-home", "button-save", "button-cut", "button-copy", "button-paste", "button-ins-after", "button-ins-before", "button-delete",
+		"button-change-type", "button-execute_sticky", "button-tools", "button-settings"
+	].forEach(element => {
+			document.getElementById(element).style.display = display;
+	});
+	
+	document.getElementById("sidebar").style.width = Formulae.readMode ? "0px" : "300px";
+	document.getElementById("dragbar").style.left = Formulae.readMode ? "0px" : "301px";
+	document.getElementById("main").style.left = Formulae.readMode ? "0px" : "308px";
+	
+	document.getElementById("main").style.bottom = Formulae.readMode ? "0px" : "50px";
+	document.getElementById("footer").style.height = Formulae.readMode ? "0px" : "50px";
+	
+	document.getElementById("sidebar").style.display = display;
+	document.getElementById("dragbar").style.display = display;
+	document.getElementById("footer").style.display = display;
+	
+	document.getElementById("button-mode").innerHTML = Formulae.readMode ? "Edit&nbsp;/&nbsp;run" : "Exit&nbsp;edit&nbsp;/&nbsp;run";
+	
+	if (Formulae.readMode) {
+		Formulae.clearSelected();
+	}
+	else {
+		Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
+	}
+	
+	document.getElementById("main").focus();
+};
+
 Formulae.start = async function() {
 	Formulae.fillFileInfo();
 	
@@ -2080,8 +2188,11 @@ Formulae.start = async function() {
 	// preventing scroll using arrow keys
 	// direction keys
 	
-	//window.addEventListener("keydown", function(e) {
 	document.addEventListener("keydown", function(e) {
+		if (Formulae.readMode) {
+			return;
+		}
+		
 		if([37, 38, 39, 40].indexOf(e.keyCode) > -1) {
 			e.preventDefault();
 		}
@@ -2133,6 +2244,8 @@ Formulae.start = async function() {
 	
 	document.getElementById("button-tools")   .addEventListener("click", () => Formulae.Tools.showTools());
 	document.getElementById("button-settings").addEventListener("click", () => Formulae.Settings.showSettings());
+	
+	document.getElementById("button-mode").addEventListener("click", () => Formulae.toggleMode());
 	
 	//////////////
 	// drag bar //
@@ -2190,6 +2303,10 @@ Formulae.start = async function() {
 		Formulae.main.addEventListener(
 			'contextmenu',
 			function(e) {
+				if (Formulae.readMode) {
+					return;
+				}
+				
 				if (Formulae.menu.style.visibility == "visible") {
 					Formulae.menu.style.visibility = "hidden";
 				}
@@ -2243,6 +2360,10 @@ Formulae.start = async function() {
 	document.addEventListener(
 		'dblclick',
 		function(e) {
+			if (Formulae.readMode) {
+				return;
+			}
+			
 			if (Formulae.menu.style.visibility == "visible") {
 				Formulae.menu.style.visibility = "hidden";
 			}
@@ -2283,7 +2404,6 @@ Formulae.start = async function() {
 	//await Formulae.loadRefreshLocalization(true); // first time
 	
 	Formulae.setOrientation();
-
 	
 	Formulae.messages = await Formulae.loadMessages(null);
 	Formulae.setLocalizationCodes();
@@ -2301,6 +2421,8 @@ Formulae.start = async function() {
 	//if (!Formulae.supportsMouse()) {
 	//	alert("x");
 	//}
+	
+	document.getElementById("main").focus();
 }
 
 /*
@@ -2781,7 +2903,9 @@ Formulae.refreshTypesettingHandlers = function() {
 			Formulae.handlers[i].display();
 			
 			if (Formulae.sHandler == Formulae.handlers[i]) { // restore selected expression
-				Formulae.setSelected(Formulae.sHandler, Formulae.sExpression, false);
+				if (!Formulae.readMode) {
+					Formulae.setSelected(Formulae.sHandler, Formulae.sExpression, false);
+				}
 			}
 		}
 	}

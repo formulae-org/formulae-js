@@ -13,6 +13,7 @@ body, html {
 }
 
 #sidebar {
+	display: none; /* <--- */
 	background-color: #DBD6B6;
 
 	/* float: left; */
@@ -28,6 +29,7 @@ body, html {
 }
 
 #dragbar {
+	display: none; /* <--- */
 	background-color: #DBD6B6;
 
 	position: absolute;
@@ -43,21 +45,25 @@ body, html {
 #main {
 	/* float: right; */
 	position: absolute;
-	left: 308px;
+	/*left: 308px;*/
+	left: 0px; /* <---- */
 	right: 0px;
-
+	outline: none;
 	top: 50px;
-	bottom: 50px;
+	/*bottom: 50px;*/
+	bottom: 0px;
 	overflow: scroll;
 	border-top: 1px solid black;
 	border-bottom: 1px solid black;
 }
 
 #footer {
+	display: none;
 	background-color: #DBD6B6;
 	width: 100%;
-	height: 50px;
-	bottom: 0;
+	/*height: 50px;*/
+	height: 0px;
+	bottom: 0px;
 	position: absolute;
 	/* border-top: 1px solid black; */
 }
