@@ -90,7 +90,7 @@ Formulae.packages.set("org.formulae.chemistry",           new Formulae.PackageIn
 Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming (experimental)", false, false));
 Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem (experimental)",          false, false));
 Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography (experimental)",        false, false));
-//Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data (experimental)",                false));
+Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data (experimental)",                false, false));
 
 ///////////////
 // functions //
@@ -422,6 +422,16 @@ Formulae.mouseClick = function(handler, mouseEvent) {
 		Formulae.setSelected(handler, Formulae.hExpression, true);
 	}
 }
+
+Formulae.tap = function(handler, tapEvent) {
+	/*
+	if (Formulae.readMode) {
+		let touches = tapEvent.touches;
+		if (touches.length !== 1) return;
+		let touchPoint = touches.item(0);
+	}
+	*/
+};
 
 Formulae.clearSelected = function() {
 	if (Formulae.sExpression === null) return;
@@ -1622,6 +1632,10 @@ Formulae.addExpression = function(expression, type) {
 	
 	canvas.addEventListener("click", function(event) {
 		Formulae.mouseClick(handler, event);
+	});
+	
+	canvas.addEventListener("touchstart", function(event) {
+		Formulae.tap(handler, event);
 	});
 	
 	document.getElementById("container").appendChild(div);
