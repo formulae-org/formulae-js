@@ -90,7 +90,7 @@ Formulae.packages.set("org.formulae.chemistry",           new Formulae.PackageIn
 Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming (experimental)", false, false));
 Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem (experimental)",          false, false));
 Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography (experimental)",        false, false));
-Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data (experimental)",                false, false));
+Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data",                               false, false));
 
 ///////////////
 // functions //
