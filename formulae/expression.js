@@ -521,19 +521,20 @@ class Expression extends Scopable {
 	canInsertChildAt(index) { return this.canHaveChildren(this.children.length + 1); }
 	canRemoveChildAt(index) { return this.canHaveChildren(this.children.length - 1); }
 	
-	set(name, value)                           { throw new Error("Invalid attribute [" + name + "]"); }
-	get(name)                                  { throw new Error("Invalid attribute [" + name + "]"); }
-	setSerializationStrings(strings, promises) { throw new Error("Expression has no attributes"); }
-	getSerializationNames()                    { return null; }
-	getSerializationStrings()                  { return null; }
+	set(name, value) { throw new Error("Invalid attribute [" + name + "]"); }
+	get(name)        { throw new Error("Invalid attribute [" + name + "]"); }
 	
-	toXML() {
+	getSerializationNames()                    { return null; }
+	async getSerializationStrings()            { return null; }
+	setSerializationStrings(strings, promises) { throw new Error("Expression has no attributes"); }
+	
+	async toXML() {
 		let doc = document.implementation.createDocument("", "", null);
-		doc.appendChild(this.getXMLElement(doc, null));
+		doc.appendChild(await this.getXMLElement(doc, null));
 		return doc;
 	}
 	
-	getXMLElement(doc, moduleNames) {
+	async getXMLElement(doc, moduleNames) {
 		let element = doc.createElement("expression");
 		let tag = this.getTag();
 		element.setAttribute("tag", tag);
@@ -548,15 +549,25 @@ class Expression extends Scopable {
 		}
 		
 		let names = this.getSerializationNames();
+		
 		if (names != null) {
-			let strings = this.getSerializationStrings();
+			let strings = await this.getSerializationStrings();
 			let i, n = names.length;
 			for (i = 0; i < n; ++i) {
 				element.setAttribute(names[i], strings[i]);
 			}
 		}
 		
-		this.children.forEach(child => element.appendChild(child.getXMLElement(doc, moduleNames)));
+		//this.children.forEach(
+		//	child => {
+		//		let e = await child.getXMLElement(doc, moduleNames);
+		//		element.appendChild(e);
+		//	}
+		//);
+		
+		for (let i = 0, n = this.children.length; i < n; ++i) {
+			element.appendChild(await this.children[i].getXMLElement(doc, moduleNames));
+		}
 		
 		return element;
 	}
@@ -1556,7 +1567,7 @@ Expression.CodeLabelExpression = class extends Expression.LabelExpression {
 		return [ "Value" ];
 	}
 	
-	getSerializationStrings() {
+	async getSerializationStrings() {
 		return [ this.code ];
 	}
 };
@@ -1608,7 +1619,7 @@ Expression.ErrorExpression = class extends Expression.UnaryExpression {
 		return [ "Description" ];
 	}
 	
-	getSerializationStrings() {
+	async getSerializationStrings() {
 		return [ this.description ];
 	}
 	

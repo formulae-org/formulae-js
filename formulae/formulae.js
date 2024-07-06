@@ -147,7 +147,7 @@ Formulae.createExpression = function(tag, ...children) {
 	return expr;
 };
 
-Formulae.scriptToXML = function() {
+Formulae.scriptToXML = async function() {
 	let doc = document.implementation.createDocument("", "", null);
 	let scriptElement = doc.createElement("expression");
 	scriptElement.setAttribute("tag", "Formulae.Script");
@@ -159,7 +159,7 @@ Formulae.scriptToXML = function() {
 		rowElement = doc.createElement("expression");
 		rowElement.setAttribute("tag", "Formulae.Script.Row");
 		rowElement.setAttribute("type", Formulae.handlers[i].type);
-		rowElement.appendChild(Formulae.handlers[i].expression.getXMLElement(doc, moduleNames));
+		rowElement.appendChild(await Formulae.handlers[i].expression.getXMLElement(doc, moduleNames));
 		
 		scriptElement.appendChild(rowElement);
 	}
@@ -641,13 +641,13 @@ Formulae.editionDelete = function() {
 	Formulae.setSelected(Formulae.sHandler, newSelection, false);
 }
 
-Formulae.editionCut = function() {
+Formulae.editionCut = async function() {
 	if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 	Formulae.beforeChanges();
 	
 	let nullExpression = new Expression.Null();
 	Formulae.sExpression.replaceBy(nullExpression);
-	navigator.clipboard.writeText(new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
+	navigator.clipboard.writeText(new XMLSerializer().serializeToString(await Formulae.sExpression.toXML()));
 	
 	Formulae.sHandler.prepareDisplay();
 	Formulae.sHandler.display();
@@ -655,8 +655,8 @@ Formulae.editionCut = function() {
 	Formulae.setSelected(Formulae.sHandler, nullExpression, false);
 }
 
-Formulae.editionCopy = function() {
-	Formulae.writeToClipboard(new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
+Formulae.editionCopy = async function() {
+	Formulae.writeToClipboard(new XMLSerializer().serializeToString(await Formulae.sExpression.toXML()));
 }
 
 Formulae.writeToClipboard = function(text) {
@@ -1035,7 +1035,8 @@ Formulae.f1 = function() {
 	window.open("/?reference=" + Formulae.sExpression.getTag());
 }
 
-Formulae.showSelectionXML = function xml() {
+//Formulae.showSelectionXML = function xml() {
+Formulae.showSelectionXML = async function () {
 	//console.log(Formulae.sExpression.toXML());
 	//console.log(new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
 	
@@ -1048,14 +1049,14 @@ Formulae.showSelectionXML = function xml() {
 	win.focus();
 	*/
 	
-	let blob = new Blob([new XMLSerializer().serializeToString(Formulae.sExpression.toXML())], { type: 'text/xml' });
+	let blob = new Blob([new XMLSerializer().serializeToString(await Formulae.sExpression.toXML())], { type: 'text/xml' });
 	let dataURI = window.URL.createObjectURL(blob);
 	let win = window.open(dataURI);
 	
 	if (!Formulae.ltr) win.document.body.style.direction = "rtl"; // it does not work
 }
 
-Formulae.showScriptXML = function() {
+Formulae.showScriptXML = async function() {
 	//console.log(Formulae.sExpression.toXML());
 	//console.log(new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
 	
@@ -1068,7 +1069,7 @@ Formulae.showScriptXML = function() {
 	win.focus();
 	*/
 	
-	let xmlDocument = Formulae.scriptToXML();
+	let xmlDocument = await Formulae.scriptToXML();
 	let blob = new Blob([new XMLSerializer().serializeToString(xmlDocument)], {type: 'text/xml'});
 	let dataURI = window.URL.createObjectURL(blob);
 	let win = window.open(dataURI);
@@ -1090,7 +1091,7 @@ Formulae.changeType = function() {
 	Formulae.setSelected(Formulae.sHandler, Formulae.sExpression, false);
 }
 
-Formulae.sendSticky = function() {
+Formulae.sendSticky = async function() {
 	switch (Formulae.serverType) {
 		case 0: { // browser
 			}
@@ -1110,7 +1111,7 @@ Formulae.sendSticky = function() {
 									"locale"  : Formulae.locale,
 									"timezone": Formulae.timeZone
 								},
-								body: new XMLSerializer().serializeToString(Formulae.handlers[i].expression.toXML())
+								body: new XMLSerializer().serializeToString(await Formulae.handlers[i].expression.toXML())
 							}
 						)
 						.catch(error => {
@@ -1374,7 +1375,7 @@ Formulae.buildExpressionForRemoteServer = function(index) {
 	}
 }
 
-Formulae.toServer = function(expression, remote, alt, promises) {
+Formulae.toServer = async function(expression, remote, alt, promises) {
 	let url = remote ? Formulae.remoteServers[Math.floor(Math.random() * Formulae.remoteServers.length)] : Formulae.localServer;
 	if (alt) url += "/noanswer";
 	
@@ -1386,7 +1387,7 @@ Formulae.toServer = function(expression, remote, alt, promises) {
 				"locale"  : Formulae.locale,
 				"timezone": Formulae.timeZone
 			},
-			body: new XMLSerializer().serializeToString(expression.toXML())
+			body: new XMLSerializer().serializeToString(await expression.toXML())
 		}
 	)
 	.then(response => {
@@ -1932,8 +1933,8 @@ Formulae.formatXML = function(xml, tab = '\t') {
 	return formatted.substring(1, formatted.length - 3);
 }
 
-Formulae.saveFile = function(e) {
-	let xmlDocument = Formulae.scriptToXML();
+Formulae.saveFile = async function(e) {
+	let xmlDocument = await Formulae.scriptToXML();
 	
 	let blob = new Blob([ Formulae.formatXML(new XMLSerializer().serializeToString(xmlDocument)) ], { type: 'text/xml' });
 	
@@ -3031,7 +3032,7 @@ Formulae.IllegalArgumentsExpression = class extends Expression {
 	get(name)                                  { throw new Error("Invalid attribute [" + name + "]"); }
 	setSerializationStrings(strings, promises) { throw new Error("Expression has no attributes"); }
 	getSerializationNames()                    { return this.names; }
-	getSerializationStrings()                  { return this.values; }
+	async getSerializationStrings()            { return this.values; }
 	
 	prepareDisplay(context) {
 		let offsetX = 10;

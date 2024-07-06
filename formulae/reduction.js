@@ -419,4 +419,111 @@ Utils.isMatrix = expr => {
 	return cols;
 };
 
+///////////////////////////////////////////////////////////////////////////////////////
+// Conversion between Base64 and Uint8Array                                          //
+//                                                                                   //
+// Thanks to https://gist.github.com/enepomnyaschih/72c423f727d395eeaa09697058238727 //
+///////////////////////////////////////////////////////////////////////////////////////
+
+Utils.base64abc = [
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
+];
+
+Utils.base64codes = [
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  62, 255, 255, 255,  63,
+	 52,  53,  54,  55,  56,  57,  58,  59,  60,  61, 255, 255, 255,   0, 255, 255,
+	255,   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,
+	 15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25, 255, 255, 255, 255, 255,
+	255,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,
+	 41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51
+];
+
+Utils.getBase64Code = charCode => {
+	if (charCode >= Utils.base64codes.length) {
+		throw new Error("Unable to parse base64 string.");
+	}
+	const code = Utils.base64codes[charCode];
+	if (code === 255) {
+		throw new Error("Unable to parse base64 string.");
+	}
+	return code;
+};
+
+/**
+	input:  Uint8Array
+	output: String
+ */
+
+Utils.bytesToBase64 = bytes => {
+	let result = '';
+	let i;
+	let l = bytes.length;
+	
+	for (i = 2; i < l; i += 3) {
+		result += Utils.base64abc[  bytes[i - 2]         >> 2];
+		result += Utils.base64abc[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+		result += Utils.base64abc[((bytes[i - 1] & 0x0F) << 2) | (bytes[i    ] >> 6)];
+		result += Utils.base64abc[  bytes[i    ] & 0x3F];
+	}
+	
+	if (i === l + 1) { // 1 octet yet to write
+		result += Utils.base64abc[ bytes[i - 2]         >> 2];
+		result += Utils.base64abc[(bytes[i - 2] & 0x03) << 4];
+		result += "==";
+	}
+	
+	if (i === l) { // 2 octets yet to write
+		result += Utils.base64abc[  bytes[i - 2]         >> 2];
+		result += Utils.base64abc[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+		result += Utils.base64abc[( bytes[i - 1] & 0x0F) << 2];
+		result += "=";
+	}
+	
+	return result;
+};
+
+/**
+	input: String
+	output: Uint8Array
+	throws: Error if input is not a Base64 string
+ */
+
+Utils.base64ToBytes = string => {
+	if (string.length % 4 !== 0) {
+		throw new Error("Unable to parse base64 string.");
+	}
+	
+	const index = string.indexOf("=");
+	
+	if (index !== -1 && index < string.length - 2) {
+		throw new Error("Unable to parse base64 string.");
+	}
+	
+	let missingOctets = string.endsWith("==") ? 2 : string.endsWith("=") ? 1 : 0;
+	let n = string.length;
+	let len = 3 * (n / 4) - missingOctets;
+	let result = new Uint8Array(len);
+	let buffer;
+	
+	for (let i = 0, j = 0; i < n; i += 4, j += 3) {
+		buffer =
+			Utils.getBase64Code(string.charCodeAt(i    )) << 18 |
+			Utils.getBase64Code(string.charCodeAt(i + 1)) << 12 |
+			Utils.getBase64Code(string.charCodeAt(i + 2)) <<  6 |
+			Utils.getBase64Code(string.charCodeAt(i + 3))
+		;
+		
+		result[j] =  buffer >> 16;
+		if (j + 1 < len) result[j + 1] = (buffer >> 8) & 0xFF;
+		if (j + 2 < len) result[j + 2] =  buffer       & 0xFF;
+	}
+	
+	return result;
+};
 
