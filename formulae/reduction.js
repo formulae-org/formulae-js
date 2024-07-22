@@ -355,42 +355,56 @@ CanonicalIndexing.getChildBySpec = (expr, spec) => {
 ///////////////////////
 
 class CanonicalOptions {
-	checkOptions(tag, options) {
-		if (options.getTag() === "List.List") {
-			if (
-				options.children.length == 2 &&
-				options.children[0].getTag() === "String.String"
-			) { // one option
-				if (!this.checkOption(tag, options)) return false;
-			}
-			else { // list of options
-				let option;
-				for (let i = 0, n = options.children.length; i < n; ++i) {
-					option = options.children[i];
-					if (
-						option.getTag() === "List.List" &&
-						option.children.length == 2 &&
-						option.children[0].getTag() === "String.String"
-					) {
-						if (!this.checkOption(tag, option)) return false;
-					}
-					else {
-						ReductionManager.setInError(option, "Invalid format for option");
-						return false;
+	checkOptions(expression, options) {
+		let ok = true;
+		
+		if (options !== undefined) {
+			if (options.getTag() === "List.List") {
+				if (
+					options.children.length === 2 &&
+					options.children[0].getTag() === "String.String"
+				) { // one option
+					ok = this.checkOption(expression, options) && ok;
+				}
+				else { // list of options
+					let option;
+					
+					for (let i = 0, n = options.children.length; i < n; ++i) {
+						option = options.children[i];
+						
+						if (
+							option.getTag() === "List.List" &&
+							option.children.length === 2 &&
+							option.children[0].getTag() === "String.String"
+						) {
+							ok = this.checkOption(expression, option) && ok;
+						}
+						else {
+							ReductionManager.setInError(option, "Invalid format for option");
+							ok = false;
+						}
 					}
 				}
 			}
+			else {
+				ReductionManager.setInError(options, "Invalid format for options");
+				ok = false;
+			}
 		}
-		else {
-			ReductionManager.setInError(options, "Invalid format for options");
-			return false;
-		}
-	
-		return true;
-	}
 		
-	checkOption(tag, option) {
+		ok &&= this.finalCheck(expression);
+		
+		if (!ok) {
+			throw new ReductionError();
+		}
+	}
+	
+	checkOption(expression, option) {
 		return false;
+	}
+	
+	finalCheck(expression) {
+		return true;
 	}
 }
 
