@@ -16,6 +16,8 @@ Formulae.Settings.showSettings = function() {
 <td>
 <input type="number" id="fontSize" min="6" max="999" value="${Formulae.fontSize}"/>
 <button type="button" onClick='Formulae.Settings.onChangeFontSize(parseInt(document.getElementById("fontSize").value));'>${Formulae.messages.labelFontSizeApply}</button>
+<tr>
+<td>GitHub<td><button type='button' onClick='Formulae.Settings.GitHubSettings()'>Settings</button>
 <tr><td>${Formulae.messages.labelServer}
 <td>
 <select id="servers" onchange="Formulae.serverType = this.selectedIndex;">
@@ -69,12 +71,12 @@ Formulae.Settings.showSettings = function() {
 		
 		Formulae.Settings.settingsForm = table;
 	//}
-
+	
 	Formulae.modalContent.removeChild(Formulae.modalContent.childNodes[0]);
 	Formulae.modalContent.appendChild(Formulae.Settings.settingsForm);
-
+	
 	document.getElementById("servers").selectedIndex = Formulae.serverType;
-
+	
 	Formulae.modal.style.display = "block";
 	Formulae.modal.focus();
 };
@@ -156,4 +158,51 @@ Formulae.Tools.showTools = function() {
 Formulae.Tools.close = function() {
 	Formulae.modal.style.display = "none";
 };
+
+Formulae.Settings.GitHubSettings = function() {
+	if (Formulae.gitHubSettingsForm === undefined) {
+		let table;
+		
+		table = document.createElement("table");
+		table.classList.add("bordered");
+		table.innerHTML =
+`
+<tr><th colspan=2>GitHub settings
+<tr><td>Repository<td><input type='text' size=20 name='repository'>
+<tr><td>Branch    <td><input type='text' size=20 name='brach'>
+<tr><td>Path      <td><input type='text' size=20 name='path'>
+<tr><td>Owner     <td><input type='text' size=20 name='owner'>
+<tr><td>Auth      <td><input type='text' size=20 name='auth'>
+<tr><th colspan=2><button>Ok</button>
+`;
+	
+		Formulae.gitHubSettingsForm = table;
+	}
+	
+	let tableRows  = Formulae.gitHubSettingsForm.rows;
+	let repository = tableRows[1].cells[1].firstChild;
+	let branch     = tableRows[2].cells[1].firstChild;
+	let path       = tableRows[3].cells[1].firstChild;
+	let owner      = tableRows[4].cells[1].firstChild;
+	let auth       = tableRows[5].cells[1].firstChild;
+	let ok         = tableRows[6].cells[0].firstChild;
+	
+	repository.value = window.localStorage.getItem("gitHubRepository");
+	branch.value     = window.localStorage.getItem("gitHubBranch");
+	path.value       = window.localStorage.getItem("gitHubPath");
+	owner.value      = window.localStorage.getItem("gitHubOwner");
+	auth.value       = window.localStorage.getItem("gitHubAuth");
+	
+	ok.onclick = () => {
+		Formulae.resetModal();
+		window.localStorage.setItem("gitHubRepository", repository.value);
+		window.localStorage.setItem("gitHubBranch",     branch.value);
+		window.localStorage.setItem("gitHubPath",       path.value);
+		window.localStorage.setItem("gitHubOwner",      owner.value);
+		window.localStorage.setItem("gitHubAuth",       auth.value);
+		alert("GitHub settings saved");
+	};
+	
+	Formulae.setModal(Formulae.gitHubSettingsForm);
+}
 

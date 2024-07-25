@@ -84,13 +84,13 @@ Formulae.packages.set("org.formulae.localization",        new Formulae.PackageIn
 Formulae.packages.set("org.formulae.bitwise",             new Formulae.PackageInfo("Bitwise",               false, false));
 Formulae.packages.set("org.formulae.plot",                new Formulae.PackageInfo("Plots",                 false, false)); // WIP
 Formulae.packages.set("org.formulae.chemistry",           new Formulae.PackageInfo("Chemistry",             false, true ));
+Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography",          false, false));
+Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data",                  false, false));
 
 // Experimental packages
 
 Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming (experimental)", false, false));
 Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem (experimental)",          false, false));
-Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography (experimental)",        false, false));
-Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data",                               false, false));
 
 ///////////////
 // functions //
@@ -1920,6 +1920,80 @@ Formulae.openFile = function(e) {
 	document.getElementById("file-input").value = "";
 }
 
+Formulae.pull = async function() {
+	let repository = window.localStorage.getItem("gitHubRepository");
+	let branch     = window.localStorage.getItem("gitHubBranch");
+	let path       = window.localStorage.getItem("gitHubPath");
+	let owner      = window.localStorage.getItem("gitHubOwner");
+	let auth       = window.localStorage.getItem("gitHubAuth");
+	
+	let json = await (await fetch(
+		`https://api.github.com/repos/${owner}/${repository}/contents/${path}?ref=${branch}`,
+		{
+			method: 'GET',
+			headers: {
+				Accept: 'application/vnd.github+json',
+				Authorization: `Bearer ${auth}`
+			}
+		}
+	)).json();
+	
+	Formulae.lastDigest = json.sha;
+	
+	//let xml = atob(json.content);
+	let xml = decodeURIComponent(
+		atob(json.content).split('').map(
+			c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+		).join('')
+	);
+	
+	Formulae.deleteAllExpressions();
+	
+	let newPackagesLoaded = await Formulae.xmlToScript(xml);
+	
+	if (!Formulae.readMode) {
+		Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
+	}
+	
+	if (newPackagesLoaded) {
+		Formulae.loadReloadEditions();
+	}
+}
+
+Formulae.push = async function() {
+	let repository = window.localStorage.getItem("gitHubRepository");
+	let branch     = window.localStorage.getItem("gitHubBranch");
+	let path       = window.localStorage.getItem("gitHubPath");
+	let owner      = window.localStorage.getItem("gitHubOwner");
+	let auth       = window.localStorage.getItem("gitHubAuth");
+	
+	let xmlDocument = await Formulae.scriptToXML();
+	let xml = Formulae.formatXML(new XMLSerializer().serializeToString(xmlDocument));
+	
+	//console.log(xml);
+	
+	const json = await (await fetch(
+		`https://api.github.com/repos/${owner}/${repository}/contents/${path}`,
+		{
+			method: 'PUT',
+			headers: {
+				Accept: 'application/vnd.github+json',
+				Authorization: `Bearer ${auth}`
+			},
+			body: JSON.stringify({
+				message : "Formulae",
+				content : btoa(xml),
+				sha     : Formulae.lastDigest,
+				branch  : branch
+			}),
+		}
+	)).json();
+	
+	Formulae.lastDigest = json.content.sha;
+	
+	alert("Script saved");
+}
+
 // https://stackoverflow.com/questions/376373/pretty-printing-xml-with-javascript
 
 Formulae.formatXML = function(xml, tab = '\t') {
@@ -2136,10 +2210,13 @@ Formulae.toggleMode = function() {
 	let display = Formulae.readMode ? "none" : "block";
 	
 	[
-		"button-home", "button-save", "button-cut", "button-copy", "button-paste", "button-ins-after", "button-ins-before", "button-delete",
-		"button-change-type", "button-execute_sticky", "button-tools", "button-settings"
+		"button-home", "button-save", "button-pull", "button-push", "button-cut",
+		"button-copy", "button-paste",
+		"button-ins-after", "button-ins-before", "button-delete",
+		"button-change-type", "button-execute_sticky",
+		"button-tools", "button-settings"
 	].forEach(element => {
-			document.getElementById(element).style.display = display;
+		document.getElementById(element).style.display = display;
 	});
 	
 	document.getElementById("sidebar").style.width = Formulae.readMode ? "0px" : "300px";
@@ -2245,6 +2322,9 @@ Formulae.start = async function() {
 	document.getElementById("button-open").addEventListener("click", () => document.getElementById("file-input").click());
 	document.getElementById("file-input") .addEventListener("change", e => Formulae.openFile(e), false);
 	document.getElementById("button-save").addEventListener("click", () => Formulae.saveFile());
+	
+	document.getElementById("button-pull").addEventListener("click", () => Formulae.pull());
+	document.getElementById("button-push").addEventListener("click", () => Formulae.push());
 	
 	document.getElementById("button-cut")  .addEventListener("click", () => Formulae.editionCut());
 	document.getElementById("button-copy") .addEventListener("click", () => Formulae.editionCopy());
