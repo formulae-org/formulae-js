@@ -1920,6 +1920,8 @@ Formulae.openFile = function(e) {
 	document.getElementById("file-input").value = "";
 }
 
+// https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
+
 Formulae.pull = async function() {
 	let repository = window.localStorage.getItem("gitHubRepository");
 	let branch     = window.localStorage.getItem("gitHubBranch");
@@ -1970,6 +1972,14 @@ Formulae.push = async function() {
 	let xmlDocument = await Formulae.scriptToXML();
 	let xml = Formulae.formatXML(new XMLSerializer().serializeToString(xmlDocument));
 	
+	let base64 = btoa(
+		encodeURIComponent(xml).
+		replace(
+			/%([0-9A-F]{2})/g,
+			(match, p1) => String.fromCharCode('0x' + p1)
+		)
+	);
+	
 	//console.log(xml);
 	
 	const json = await (await fetch(
@@ -1981,8 +1991,8 @@ Formulae.push = async function() {
 				Authorization: `Bearer ${auth}`
 			},
 			body: JSON.stringify({
-				message : "Formulae",
-				content : btoa(xml),
+				message : "Updated with Fōrmulæ",
+				content : base64,
 				sha     : Formulae.lastDigest,
 				branch  : branch
 			}),
