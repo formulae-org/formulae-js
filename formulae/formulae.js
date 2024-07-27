@@ -228,18 +228,33 @@ Formulae.xmlToScript = async function(xml) {
 	return newPackagesLoaded;
 }
 
-Formulae.xmlToExpression = function(xmlText, promises) {
+Formulae.xmlToExpression = function(xmlText, promises, permisive = true) {
 	let parser = new DOMParser();
 	let doc = parser.parseFromString(xmlText, "text/xml");
-	return Formulae.xmlElementToExpression(doc.documentElement, promises);
+	return Formulae.xmlElementToExpression(doc.documentElement, promises, permisive);
 }
 
-Formulae.xmlElementToExpression = function(xmlElement, promises) {
+// permisiive:
+//    if set to true: On errors (unknown tag, invalid number of children, serialization strings) it creates appropiate error expressions
+//	if set to false: On errors, throws an exception
+
+Formulae.xmlElementToExpression = function(xmlElement, promises, permisive = true) {
 	let tag = xmlElement.getAttribute("tag");
 	if (xmlElement.tagName != "expression" || tag == null) throw new Error(Formulae.messages.labelNotFormulae);
 	
 	let expression = Formulae.createExpression(tag);
-	if (expression == null) throw new Error("Unknown expression [" + tag + "]");
+	
+	if (expression == null) {
+		if (permisive) {
+			expression = Formulae.createExpression("Error");
+			expression.set("Description", "Unknown expression [" + tag + "]");
+			expression.addChild(Formulae.createExpression("Null"));
+			return expression;
+		}
+		else {
+			throw new Error("Unknown expression [" + tag + "]");
+		}
+	}
 	
 	let n = xmlElement.childElementCount;
 	
@@ -253,10 +268,15 @@ Formulae.xmlElementToExpression = function(xmlElement, promises) {
 				expression.setSerializationStrings(strings, promises);
 			}
 			catch (error) {
-				expression = Formulae.createExpression("Error");
-				expression.set("Description", error);
-				expression.addChild(Formulae.createExpression("Null"));
-				return expression;
+				if (permisive) {
+					expression = Formulae.createExpression("Error");
+					expression.set("Description", error);
+					expression.addChild(Formulae.createExpression("Null"));
+					return expression;
+				}
+				else {
+					throw new Error(error);
+				}
 			}
 		}
 	} else { // invalid number of arguments
@@ -264,10 +284,9 @@ Formulae.xmlElementToExpression = function(xmlElement, promises) {
 		let attribute;
 		
 		expression = new Formulae.IllegalArgumentsExpression(tag);
-		
 		for (let i = 0, n = attributes.length; i < n; ++i) {
 			attribute = attributes[i];
-			if (attribute != "tag") {
+			if (attribute !== "tag") {
 				expression.set(attribute, xmlElement.getAttribute(attribute));
 			}
 		}
