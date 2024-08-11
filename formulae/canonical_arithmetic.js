@@ -1172,6 +1172,10 @@ CanonicalArithmetic.expr2CanonicalNumeric = expr => {
 		if (n.getTag() === "Math.Number" && d.getTag() === "Math.Number") {
 			let N, D;
 			if (typeof (N = n.get("Value")) === "bigint" && typeof (D = d.get("Value")) === "bigint") {
+				if (D === 0n) {
+					throw isNegative === negN;
+				}
+				
 				let result = new CanonicalArithmetic.Rational(N, D);
 				result.normalize();
 				result.minimize();
@@ -1552,7 +1556,26 @@ CanonicalArithmetic.internalizeNumbersHandler = handler => {
 };
 
 CanonicalArithmetic.internalizeNumbers = expr => {
-	let canonicalNumber = CanonicalArithmetic.expr2CanonicalNumeric(expr);
+	let canonicalNumber;
+	try {
+		canonicalNumber = CanonicalArithmetic.expr2CanonicalNumeric(expr);
+	}
+	catch (positiveInfinite) {
+		if (positiveInfinite) {
+			expr.replaceBy(Formulae.createExpression("Math.Infinity"));
+		}
+		else {
+			expr.replaceBy(
+				Formulae.createExpression(
+					"Math.Arithmetic.Multiplication",
+					CanonicalArithmetic.number2InternalNumber(-1),
+					Formulae.createExpression("Math.Infinity")
+				)
+			);
+		}
+		
+		return;
+	}
 	
 	if (canonicalNumber !== null) {
 		let internalNumberExpr = Formulae.createExpression("Math.InternalNumber");
