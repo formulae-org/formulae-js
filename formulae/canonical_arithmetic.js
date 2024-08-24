@@ -536,6 +536,8 @@ CanonicalArithmetic.Integer = class {
 	};
 };
 
+CanonicalArithmetic.INTEGER_ZERO = new CanonicalArithmetic.Integer(0);
+
 /*
 	this.decimal: Decimal (decimal.js)
 */
@@ -762,6 +764,11 @@ CanonicalArithmetic.Decimal = class {
 		}
 	};
 }
+
+
+//CanonicalArithmetic.createRational = (numerator, denominator) => {
+//	
+//};
 
 /*
 	numerator:   BigInt
@@ -1744,4 +1751,61 @@ CanonicalArithmetic.getNumber = expr => {
 	}
 	
 	return undefined;
+};
+
+CanonicalArithmetic.createInternalComplex = (real, imaginary, session) => {
+	console.log(imaginary);
+	
+	let realExpr = null;
+	let imaginaryExpr = null;
+	
+	if (!real.isZero()) {
+		realExpr = CanonicalArithmetic.canonical2InternalNumber(real);
+	}
+	
+	if (!imaginary.isZero()) {
+		if (imaginary.isOne()) {
+			imaginaryExpr = Formulae.createExpression("Math.Complex.Imaginary");
+		}
+		else {
+			imaginaryExpr = Formulae.createExpression(
+				"Math.Arithmetic.Multiplication",
+				CanonicalArithmetic.canonical2InternalNumber(imaginary),
+				Formulae.createExpression("Math.Complex.Imaginary")
+			);
+		}
+	}
+	
+	let expr;
+	
+	if (realExpr === null) {
+		if (imaginaryExpr === null) { // 0 + 0i
+			if (
+				real instanceof CanonicalArithmetic.Decimal ||
+				imaginary instanceof CanonicalArithmetic.Decimal
+			) { // decimal 0.0
+				expr =  CanonicalArithmetic.number2InternalNumber(0.0, true, session);
+			}
+			else { // integer 0
+				expr = CanonicalArithmetic.number2InternalNumber(0);
+			}
+		}
+		else { // 0 + xi
+			expr = imaginaryExpr;
+		}
+	}
+	else {
+		if (imaginaryExpr === null) { // x + 0i
+			expr = realExpression;
+		}
+		else { // x + yi
+			expr = Formulae.createExpression(
+				"Math.Arithmetic.Addition",
+				realExpression,
+				imaginaryExpr
+			);
+		}
+	}
+	
+	return expr;
 };
