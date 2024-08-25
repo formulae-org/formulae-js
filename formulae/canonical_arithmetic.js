@@ -344,6 +344,7 @@ CanonicalArithmetic.Integer = class {
 			);
 		}
 		else if (other instanceof CanonicalArithmetic.Rational) { // int + n / d
+			// it cannot lead to integer or zero
 			return new CanonicalArithmetic.Rational(
 				(this.integer * other.denominator) + other.numerator,
 				other.denominator
@@ -360,19 +361,25 @@ CanonicalArithmetic.Integer = class {
 	}
 	
 	multiplication(other, session) {
-		if (other instanceof CanonicalArithmetic.Integer) { // int x int
+		if (other instanceof CanonicalArithmetic.Integer) { // integer x integer
 			return new CanonicalArithmetic.Integer(
 				this.integer * other.integer
 			);
 		}
-		else if (other instanceof CanonicalArithmetic.Rational) { // int x (n / d)
-			let rational = new CanonicalArithmetic.Rational(
+		else if (other instanceof CanonicalArithmetic.Rational) { // integer x rational
+			// e.g. 6 x (1 / 2) = 3 
+			return CanonicalArithmetic.createRational(
 				this.integer * other.numerator,
 				other.denominator
 			);
-			rational.minimize();
-			if (rational.denominator == 1n) return new CanonicalArithmetic.Integer(rational.numerator);
-			return rational;
+			
+			// let rational = new CanonicalArithmetic.Rational(
+			// 	this.integer * other.numerator,
+			// 	other.denominator
+			// );
+			// rational.minimize();
+			// if (rational.denominator == 1n) return new CanonicalArithmetic.Integer(rational.numerator);
+			// return rational;
 		}
 		else { // int x dec
 			return new CanonicalArithmetic.Decimal(
@@ -382,37 +389,48 @@ CanonicalArithmetic.Integer = class {
 	}
 	
 	division(other, session) {
-		if (other instanceof CanonicalArithmetic.Integer) {
-			// === 0n fails!!!
-			if (this.integer % other.integer == 0) { // denominator exactly divides numerator
-				return new CanonicalArithmetic.Integer(
-					this.integer / other.integer
-				);
-			}
-			else {
-				let rational = new CanonicalArithmetic.Rational(
-					this.integer,
-					other.integer
-				);
-				rational.minimize();
-				rational.normalize();
-				return rational;
-			}
+		if (other instanceof CanonicalArithmetic.Integer) { // integer / integer
+			return CanonicalArithmetic.createRational(
+				this.integer,
+				other.integer
+			);
+			
+			// // === 0n fails!!!
+			// if (this.integer % other.integer == 0) { // denominator exactly divides numerator
+			// 	return new CanonicalArithmetic.Integer(
+			// 		this.integer / other.integer
+			//	);
+			// }
+			// else {
+			//	let rational = new CanonicalArithmetic.Rational(
+			//		this.integer,
+			//		other.integer
+			//	);
+			//	rational.minimize();
+			//	rational.normalize();
+			//	return rational;
+			//}
 		}
-		else if (other instanceof CanonicalArithmetic.Rational) {
-			let numerator = this.integer * other.denominator;
-			if (numerator % other.numerator === 0n) { // denominator exactly divides numerator
-				return new CanonicalArithmetic.Integer(numerator / other.numerator);
-			}
-			else {
-				let rational = new CanonicalArithmetic.Rational(
-					this.integer * other.denominator,
-					other.numerator
-				);
-				rational.minimize();
-				rational.normalize();
-				return rational;
-			}
+		else if (other instanceof CanonicalArithmetic.Rational) { // integer / rational
+			// e.g. 6 / (2 / 3) = 9
+			return CanonicalArithmetic.createRational(
+				this.integer * other.denominator,
+				other.numerator
+			);
+			
+			//let numerator = this.integer * other.denominator;
+			//if (numerator % other.numerator === 0n) { // denominator exactly divides numerator
+			//	return new CanonicalArithmetic.Integer(numerator / other.numerator);
+			//}
+			//else {
+			//	let rational = new CanonicalArithmetic.Rational(
+			//		this.integer * other.denominator,
+			//		other.numerator
+			//	);
+			//	rational.minimize();
+			//	rational.normalize();
+			//	return rational;
+			//}
 		}
 		else { // decimal
 			return new CanonicalArithmetic.Decimal(
@@ -422,17 +440,24 @@ CanonicalArithmetic.Integer = class {
 	}
 	
 	exponentiation(other, session) {
-		if (other instanceof CanonicalArithmetic.Integer) {
+		if (other instanceof CanonicalArithmetic.Integer) { // integer ^ integer
 			if (other.integer > 0n) {
 				return new CanonicalArithmetic.Integer(this.integer ** other.integer);
 			}
 			else { // other is negative
-				let rational = new CanonicalArithmetic.Rational(
+				// e.g. 1 ^ -3 = 1}
+				
+				return CanonicalArithmetic.createRational(
 					1n,
 					this.integer ** -other.integer
 				);
-				rational.normalize();
-				return rational;
+				
+				//let rational = new CanonicalArithmetic.Rational(
+				//	1n,
+				//	this.integer ** -other.integer
+				//);
+				//rational.normalize();
+				//return rational;
 			}
 		}
 		else if (other instanceof CanonicalArithmetic.Decimal) {
@@ -470,7 +495,7 @@ CanonicalArithmetic.Integer = class {
 	}
 	
 	divMod(other, isDiv, isMod, session) {
-		if (other instanceof CanonicalArithmetic.Integer) {
+		if (other instanceof CanonicalArithmetic.Integer) { // integer DivMod integer
 			let q = CanonicalArithmetic.integerDivision(this.integer, other.integer, session);
 			
 			return [
@@ -478,7 +503,7 @@ CanonicalArithmetic.Integer = class {
 				isMod ? new CanonicalArithmetic.Integer(this.integer - other.integer * q) : undefined,
 			];
 		}
-		else if (other instanceof CanonicalArithmetic.Decimal) {
+		else if (other instanceof CanonicalArithmetic.Decimal) { // integer DivMod decimal
 			let divMod = CanonicalArithmetic.divMod(
 				new session.Decimal(this.integer.toString()),
 				other.decimal,
@@ -505,7 +530,7 @@ CanonicalArithmetic.Integer = class {
 			return [ div, mod ];
 			*/
 		}
-		else { // rational
+		else { // integer DivMod rational
 			let q = CanonicalArithmetic.integerDivision(
 				this.integer * other.denominator,
 				other.numerator,
@@ -514,18 +539,23 @@ CanonicalArithmetic.Integer = class {
 			
 			let r;
 			if (isMod) {
-				r = new CanonicalArithmetic.Rational(
+				r = CanonicalArithmetic.createRational(
 					this.integer * other.denominator - other.numerator * q,
 					other.denominator
 				);
-				r.minimize(session);
 				
-				if (r.numerator == 0n) {
-					r = new CanonicalArithmetic.Integer(0n);
-				}
-				else if (r.denominator == 1n) {
-					r = new CanonicalArithmetic.Integer(r.numerator);
-				}
+				//r = new CanonicalArithmetic.Rational(
+				//	this.integer * other.denominator - other.numerator * q,
+				//	other.denominator
+				//);
+				//r.minimize(session);
+				//
+				//if (r.numerator == 0n) {
+				//	r = new CanonicalArithmetic.Integer(0n);
+				//}
+				//else if (r.denominator == 1n) {
+				//	r = new CanonicalArithmetic.Integer(r.numerator);
+				//}
 			}
 			
 			return [
@@ -533,10 +563,10 @@ CanonicalArithmetic.Integer = class {
 				r
 			];
 		}
-	};
+	}
 };
 
-CanonicalArithmetic.INTEGER_ZERO = new CanonicalArithmetic.Integer(0);
+CanonicalArithmetic.INTEGER_ZERO = new CanonicalArithmetic.Integer(0n);
 
 /*
 	this.decimal: Decimal (decimal.js)
@@ -766,9 +796,32 @@ CanonicalArithmetic.Decimal = class {
 }
 
 
-//CanonicalArithmetic.createRational = (numerator, denominator) => {
-//	
-//};
+CanonicalArithmetic.createRational = (numerator, denominator) => {
+	if (denominator === 0n) {
+		throw new RangeError("division by zero");
+	}
+	
+	if (numerator === 0n) {
+		return new CanonicalArithmetic.Integer(0n);
+	}
+	
+	// === 0n fails!!!
+	if (numerator % denominator == 0) { // denominator exactly divides numerator
+		return new CanonicalArithmetic.Integer(
+			numerator / denominator
+		);
+	}
+	
+	let result = new CanonicalArithmetic.Rational(numerator, denominator);
+	result.normalize();
+	result.minimize();
+	
+	//if (result.denominator === 1n) {
+	//	result = new CanonicalArithmetic.Integer(result.numerator);
+	//}
+	
+	return result;
+};
 
 /*
 	numerator:   BigInt
@@ -840,28 +893,37 @@ CanonicalArithmetic.Rational = class {
 	}
 	
 	addition(other, session) {
-		if (other instanceof CanonicalArithmetic.Integer) { // (num / den) + int
+		if (other instanceof CanonicalArithmetic.Integer) { // rational + integer
+			// It always be rational
 			return new CanonicalArithmetic.Rational(
 				this.numerator + (other.integer * this.denominator),
 				this.denominator
 			);
 		}
-		else if (other instanceof CanonicalArithmetic.Rational) { // (n1 / d1) + (n2 / d2)
-			let rational = new CanonicalArithmetic.Rational(
+		else if (other instanceof CanonicalArithmetic.Rational) { // rational + rational
+			return CanonicalArithmetic.createRational(
 				(
 					(this.numerator   * other.denominator) +
 					(this.denominator * other.numerator  )
 				),
 				this.denominator * other.denominator
 			);
-			rational.minimize();
-			if (rational.numerator % rational.denominator == 0n) {
-				return new CanonicalArithmetic.Integer(rational.numerator / rational.denominator);
-			} 
-			rational.normalize();
-			return rational;
+			
+			//let rational = new CanonicalArithmetic.Rational(
+			//	(
+			//		(this.numerator   * other.denominator) +
+			//		(this.denominator * other.numerator  )
+			//	),
+			//	this.denominator * other.denominator
+			//);
+			//rational.minimize();
+			//if (rational.numerator % rational.denominator == 0n) {
+			//	return new CanonicalArithmetic.Integer(rational.numerator / rational.denominator);
+			//} 
+			//rational.normalize();
+			//return rational;
 		}
-		else { // (num / den) + dec
+		else { // rational + decimal
 			let d = new session.Decimal(this.denominator.toString());
 			return new CanonicalArithmetic.Decimal(
 				session.Decimal.div(
@@ -876,30 +938,40 @@ CanonicalArithmetic.Rational = class {
 	}
 	
 	multiplication(other, session) {
-		if (other instanceof CanonicalArithmetic.Integer) { // (num / den) x int
-			let n = this.numerator * other.integer;
-			if (n % this.denominator == 0n) {
-				return new CanonicalArithmetic.Integer(n / this.denominator);
-			}
-			let rational = new CanonicalArithmetic.Rational(
-				n,
+		if (other instanceof CanonicalArithmetic.Integer) { // rational x integer
+			return CanonicalArithmetic.createRational(
+				this.numerator * other.integer,
 				this.denominator
 			);
-			rational.minimize();
-			return rational;
+			
+			//let n = this.numerator * other.integer;
+			//if (n % this.denominator == 0n) {
+			//	return new CanonicalArithmetic.Integer(n / this.denominator);
+			//}
+			//let rational = new CanonicalArithmetic.Rational(
+			//	n,
+			//	this.denominator
+			//);
+			//rational.minimize();
+			//return rational;
 		}
-		else if (other instanceof CanonicalArithmetic.Rational) { // (num1 / den1) x (num2 / den2)
-			let rational = new CanonicalArithmetic.Rational(
+		else if (other instanceof CanonicalArithmetic.Rational) { // rational x rational
+			return CanonicalArithmetic.createRational(
 				this.numerator * other.numerator,
 				this.denominator * other.denominator
 			);
-			rational.minimize();
-			if (rational.denominator == 1n) {
-				return new CanonicalArithmetic.Integer(rational.numerator);
-			} 
-			return rational;
+			
+			//let rational = new CanonicalArithmetic.Rational(
+			//	this.numerator * other.numerator,
+			//	this.denominator * other.denominator
+			//);
+			//rational.minimize();
+			//if (rational.denominator == 1n) {
+			//	return new CanonicalArithmetic.Integer(rational.numerator);
+			//} 
+			//return rational;
 		}
-		else { // (num / den) x dec
+		else { // rational x decimal
 			return new CanonicalArithmetic.Decimal(
 				session.Decimal.div(
 					session.Decimal.mul(
@@ -913,31 +985,41 @@ CanonicalArithmetic.Rational = class {
 	}
 	
 	division(other, session) {
-		if (other instanceof CanonicalArithmetic.Integer) { // (num / den) / int
-			let rational = new CanonicalArithmetic.Rational(
+		if (other instanceof CanonicalArithmetic.Integer) { // rational / integer
+			return CanonicalArithmetic.createRational(
 				this.numerator,
 				this.denominator * other.integer
 			);
-			rational.minimize();
-			rational.normalize();
-			if (rational.denominator == 1n) {
-				return new CanonicalArithmetic.Integer(rational.numerator);
-			}
-			return rational;
+			
+			//let rational = new CanonicalArithmetic.Rational(
+			//	this.numerator,
+			//	this.denominator * other.integer
+			//);
+			//rational.minimize();
+			//rational.normalize();
+			//if (rational.denominator == 1n) {
+			//	return new CanonicalArithmetic.Integer(rational.numerator);
+			//}
+			//return rational;
 		}
-		else if (other instanceof CanonicalArithmetic.Rational) { // (num1 / den1) / (num2 / den2)
-			let rational = new CanonicalArithmetic.Rational(
+		else if (other instanceof CanonicalArithmetic.Rational) { // rational / rational
+			return CanonicalArithmetic.createRational(
 				this.numerator * other.denominator,
 				this.denominator * other.numerator
 			);
-			rational.minimize();
-			rational.normalize();
-			if (rational.denominator == 1n) {
-				return new CanonicalArithmetic.Integer(rational.numerator);
-			} 
-			return rational;
+			
+			//let rational = new CanonicalArithmetic.Rational(
+			//	this.numerator * other.denominator,
+			//	this.denominator * other.numerator
+			//);
+			//rational.minimize();
+			//rational.normalize();
+			//if (rational.denominator == 1n) {
+			//	return new CanonicalArithmetic.Integer(rational.numerator);
+			//} 
+			//return rational;
 		}
-		else { // (num / den) / dec
+		else { // rational / decimal
 			return new CanonicalArithmetic.Decimal(
 				session.Decimal.div(
 					session.Decimal.mul(
@@ -951,26 +1033,37 @@ CanonicalArithmetic.Rational = class {
 	}
 	
 	exponentiation(other, session) {
-		if (other instanceof CanonicalArithmetic.Integer) {
+		if (other instanceof CanonicalArithmetic.Integer) { // rational ^ integer}
 			let rational;
 			
 			if (other.isPositive()) {
-				rational = new CanonicalArithmetic.Rational(
+				rational = CanonicalArithmetic.createRational(
 					this.numerator   ** other.integer,
 					this.denominator ** other.integer
 				);
+				
+				//rational = new CanonicalArithmetic.Rational(
+				//	this.numerator   ** other.integer,
+				//	this.denominator ** other.integer
+				//);
 			}
 			else {
-				rational = new CanonicalArithmetic.Rational(
+				rational = CanonicalArithmetic.createRational(
 					this.denominator ** -other.integer,
 					this.numerator   ** -other.integer
 				);
+				
+				//rational = new CanonicalArithmetic.Rational(
+				//	this.denominator ** -other.integer,
+				//	this.numerator   ** -other.integer
+				//);
 			}
-			rational.normalize();
-			rational.minimize();
+			//rational.normalize();
+			//rational.minimize();
+			
 			return rational;
 		}
-		else if (other instanceof CanonicalArithmetic.Decimal) {
+		else if (other instanceof CanonicalArithmetic.Decimal) { // rational ^ decimal
 			if (this.isPositive()) {
 				return new CanonicalArithmetic.Decimal(
 					session.Decimal.pow(
@@ -1012,7 +1105,7 @@ CanonicalArithmetic.Rational = class {
 	}
 	
 	divMod(other, isDiv, isMod, session) {
-		if (other instanceof CanonicalArithmetic.Integer) {
+		if (other instanceof CanonicalArithmetic.Integer) { // rational DivMod integer
 			let q = CanonicalArithmetic.integerDivision(
 				this.numerator,
 				this.denominator * other.integer,
@@ -1021,18 +1114,23 @@ CanonicalArithmetic.Rational = class {
 			
 			let r;
 			if (isMod) {
-				r = new CanonicalArithmetic.Rational(
+				r = CanonicalArithmetic.createRational(
 					this.numerator - this.denominator * other.integer * q,
 					this.denominator
 				);
-				r.minimize(session);
 				
-				if (r.numerator == 0n) {
-					r = new CanonicalArithmetic.Integer(0n);
-				}
-				else if (r.denominator == 1n) {
-					r = new CanonicalArithmetic.Integer(r.numerator);
-				}
+				//r = new CanonicalArithmetic.Rational(
+				//	this.numerator - this.denominator * other.integer * q,
+				//	this.denominator
+				//);
+				//r.minimize(session);
+				
+				//if (r.numerator == 0n) {
+				//	r = new CanonicalArithmetic.Integer(0n);
+				//}
+				//else if (r.denominator == 1n) {
+				//	r = new CanonicalArithmetic.Integer(r.numerator);
+				//}
 			}
 			
 			return [
@@ -1040,7 +1138,7 @@ CanonicalArithmetic.Rational = class {
 				r
 			];
 		}
-		else if (other instanceof CanonicalArithmetic.Decimal) {
+		else if (other instanceof CanonicalArithmetic.Decimal) { // rational DivMod Decimal
 			let divMod = CanonicalArithmetic.divMod(
 				new session.Decimal(this.numerator.toString()),
 				session.Decimal.mul(this.denominator.toString(), other.decimal),
@@ -1068,7 +1166,7 @@ CanonicalArithmetic.Rational = class {
 			return [ div, mod ];
 			*/
 		}
-		else { // rational
+		else { // rational DivMod Rational
 			let q = CanonicalArithmetic.integerDivision(
 				this.numerator * other.denominator,
 				this.denominator * other.numerator,
@@ -1077,18 +1175,23 @@ CanonicalArithmetic.Rational = class {
 			
 			let r;
 			if (isMod) {
-				r = new CanonicalArithmetic.Rational(
+				r = CanonicalArithmetic.createRational(
 					this.numerator * other.denominator - this.denominator * other.numerator * q,
 					this.denominator * other.denominator
 				);
-				r.minimize(session);
 				
-				if (r.numerator == 0n) {
-					r = new CanonicalArithmetic.Integer(0n);
-				}
-				else if (r.denominator == 1n) {
-					r = new CanonicalArithmetic.Integer(r.numerator);
-				}
+				//r = new CanonicalArithmetic.Rational(
+				//	this.numerator * other.denominator - this.denominator * other.numerator * q,
+				//	this.denominator * other.denominator
+				//);
+				//r.minimize(session);
+				//
+				//if (r.numerator == 0n) {
+				//	r = new CanonicalArithmetic.Integer(0n);
+				//}
+				//else if (r.denominator == 1n) {
+				//	r = new CanonicalArithmetic.Integer(r.numerator);
+				//}
 			}
 			
 			return [
@@ -1183,13 +1286,15 @@ CanonicalArithmetic.expr2CanonicalNumeric = expr => {
 					throw isNegative === negN;
 				}
 				
-				let result = new CanonicalArithmetic.Rational(N, D);
-				result.normalize();
-				result.minimize();
+				let result = CanonicalArithmetic.createRational(N, D);
 				
-				if (result.denominator === 1n) {
-					result = new CanonicalArithmetic.Integer(result.numerator);
-				}
+				//let result = new CanonicalArithmetic.Rational(N, D);
+				//result.normalize();
+				//result.minimize();
+				//
+				//if (result.denominator === 1n) {
+				//	result = new CanonicalArithmetic.Integer(result.numerator);
+				//}
 				
 				if (negN !== negD) {
 					result = result.negate();
