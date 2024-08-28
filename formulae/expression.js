@@ -1081,7 +1081,8 @@ Expression.Exponentiation = class extends Expression.BinaryExpression {
 			base.parenthesesWhenSuperSubscripted() ||
 			base.getTag() == this.getTag()
 		;
-		let parenthesesExponent = exponent.getTag() == this.getTag();
+		//let parenthesesExponent = exponent.getTag() == this.getTag();
+		let parenthesesExponent = false;
 		
 		base.prepareDisplay(context);
 		
@@ -1150,9 +1151,9 @@ Expression.Exponentiation = class extends Expression.BinaryExpression {
 			context.fontInfo.setSizeAbsolute(context, bkp);
 		}
 		
-		if (expr.getTag() == this.getTag()) {
-			expr.drawParenthesesAround(context, x + expr.x, y + expr.y);
-		}
+		//if (expr.getTag() == this.getTag()) {
+		//	expr.drawParenthesesAround(context, x + expr.x, y + expr.y);
+		//}
 	}
 }
 
