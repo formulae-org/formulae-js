@@ -131,6 +131,7 @@ ReductionManager.reduce = async (expression, session) => {
 		}
 	}
 	
+	/*
 	if (session.symbolic) {
 		reducerInfos = ReductionManager.specialSymbolicMap.get(tag);
 		if (reducerInfos !== undefined) {
@@ -143,6 +144,7 @@ ReductionManager.reduce = async (expression, session) => {
 			}
 		}
 	}
+	*/
 	
 	/////////////////////////////////
 	// reduction of subexpressions //
@@ -173,6 +175,7 @@ ReductionManager.reduce = async (expression, session) => {
 		}
 	}
 	
+	/*
 	if (session.symbolic) {
 		reducerInfos = ReductionManager.normalSymbolicMap.get(tag);
 		if (reducerInfos !== undefined) {
@@ -185,6 +188,7 @@ ReductionManager.reduce = async (expression, session) => {
 			}
 		}
 	}
+	*/
 	
 	return false;
 };
@@ -204,8 +208,9 @@ class ReductionSession {
 	constructor(locale, timeZone, precision) {
 		this.locale   = locale;
 		this.timeZone = timeZone;
-		this.Decimal  = Decimal.clone({ precision: precision, rounding: 1 });
-		this.symbolic = false;
+		this.Decimal  = Decimal.clone({ precision: precision, rounding: 6 });
+		//this.symbolic = false;
+		this.numeric = true;
 	}
 	
 	async reduceAndGet(expression, indexOfChild) {

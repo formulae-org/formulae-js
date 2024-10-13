@@ -167,6 +167,17 @@ CanonicalArithmetic.divMod = (D, d, isDiv, isMod, session) => {
 };
 
 /*
+CanonicalArithmetic.divModFloat = (D, d, isDiv, isMod) => {
+	let q, r;
+	
+	if (isDiv) q = Math.floor(D / d);
+	if (isMod) r = D % d;
+	
+	return [ q, r ];
+};
+*/
+
+/*
 CanonicalArithmetic.divMod = (D, d, isDiv, isMod, session) => {
 	let bkpRounding = session.Decimal.rounding;
 	let bkpModulo = session.Decimal.modulo;
@@ -290,6 +301,84 @@ CanonicalArithmetic.integerDivision = (D, d, session) => {
 	
 	return q;
 };
+
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+
+/*
+	this.float: Number (native)
+*/
+
+/*
+CanonicalArithmetic.Float = class {
+	constructor(value) { // number
+		this.float = value;
+	}
+	
+	toString() {
+		return "(float) " + this.float;
+	}
+	
+	isZero() {
+		return this.float === 0;
+	}
+	
+	isOne() {
+		return this.float === 1;
+	}
+	
+	isPositive() {
+		return this.float > 0;
+	}
+	
+	isNegative() {
+		return this.float < 0;
+	}
+	
+	hasIntegerValue() {
+		return Number.isInteger(this.float);
+	}
+	
+	negate() {
+		return new CanonicalArithmetic.Float(-this.float);
+	}
+	
+	toDecimal(session) {
+		return new CanonicalArithmetic.Decimal(new session.Decimal(this.float));
+	}
+	
+	addition(other, session) {
+		return new CanonicalArithmetic.Float(this.float + other.float);
+	}
+	
+	multiplication(other, session) {
+		return new CanonicalArithmetic.Float(this.float * other.float);
+	}
+	
+	division(other, session) {
+		return new CanonicalArithmetic.Float(this.float / other.float);
+	}
+	
+	exponentiation(other, session) {
+		return new CanonicalArithmetic.Float(this.float ** other.float);
+	}
+	
+	comparison(other, session) {
+		return this.float === other.float ?
+			0 :
+			(this.float < other.float ? -1 : 1)
+		;
+	}
+	
+	divMod(other, isDiv, isMod, session) {
+		return [
+			isDiv ? new CanonicalArithmetic.Float(Math.floor(this.float / other.float)) : undefined,
+			isMod ? new CanonicalArithmetic.Float(this.float % other.float) : undefined
+		];
+	}
+};
+*/
 
 /*
 	this.integer: BigInt (native)

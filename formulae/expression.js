@@ -1275,8 +1275,11 @@ Expression.SuperscriptedLiteral = class extends Expression.UnaryExpression {
 Expression.SummationLike = class extends Expression {
 	constructor() {
 		super();
-		this.top = 0;
-		this.bottom = 0;
+		
+		this.widthSymbol = 0;
+		this.heightSymbol = 0;
+		
+		this.vertBaselineSymbol = 0;
 	}
 	
 	canHaveChildren(count) { return count >= 2 && count <= 5; }
@@ -1284,166 +1287,144 @@ Expression.SummationLike = class extends Expression {
 	parenthesesWhenSuperSubscripted() { return true; }
 	
 	prepareDisplay(context) {
-		let baselineTop = 0, maxSemiHeightTop = 0;
-		let baselineBottom = 0, maxSemiHeightBottom = 0;
-		let expr = this;
-		let i, n;
-		
-		do {
-			{
-				let bkp = context.fontInfo.size;
-				context.fontInfo.setSizeRelative(context, -4);
-				
-				for (i = 1, n = expr.children.length; i < n; ++i) expr.children[i].prepareDisplay(context);
-				expr.commaWidth = Math.floor(context.measureText(",").width);
-				expr.equalsWidth = Math.floor(context.measureText("=").width);
-				
-				context.fontInfo.setSizeAbsolute(context, bkp);
-			}
-			
-			// top
-			
-			if ((n = expr.children.length) == 5) {
-				let ch3 = expr.children[3], ch4 = expr.children[4];
-				baselineTop = Math.max(baselineTop, ch3.horzBaseline, ch4.horzBaseline);
-				maxSemiHeightTop = Math.max(maxSemiHeightTop, ch3.height - ch3.horzBaseline, ch4.height - ch4.horzBaseline);
-				ch3.x = 0;
-				ch4.x = ch3.width + 1 + this.commaWidth + 1;
-			}
-			else {
-				let ch = expr.children[n - 1];
-				baselineTop = Math.max(baselineTop, ch.horzBaseline);
-				maxSemiHeightTop = Math.max(maxSemiHeightTop, ch.height - ch.horzBaseline);
-				ch.x = 0;
-			}
-			
-			// bottom
-			
-			if (n >= 4) {
-				let ch1 = expr.children[1], ch2 = expr.children[2];
-				baselineBottom = Math.max(baselineBottom, ch1.horzBaseline, ch2.horzBaseline);
-				maxSemiHeightBottom = Math.max(maxSemiHeightBottom, ch1.height - ch1.horzBaseline, ch2.height - ch2.horzBaseline);
-				ch1.x = 0;
-				ch2.x = ch1.width + 1 + this.equalsWidth + 1;
-			}
-			else if (n == 3) {
-				let ch1 = expr.children[1];
-				baselineBottom = Math.max(baselineBottom, ch1.horzBaseline);
-				maxSemiHeightBottom = Math.max(maxSemiHeightBottom, ch1.height - ch1.horzBaseline);
-				ch1.x = 0;
-			}
-			
-			// widths & x's
-			
-			if (n == 2) {
-				let ch1 = expr.children[1];
-				expr.width = Math.max(Expression.SummationLike.MAX_SYMBOL, ch1.width);
-				ch1.x += Math.floor((expr.width - ch1.width) / 2);
-			}
-			else if (n == 3) {
-				let ch1 = expr.children[1], ch2 = expr.children[2];
-				expr.width = Math.max(Expression.SummationLike.MAX_SYMBOL, ch1.width, ch2.width);
-				ch1.x += Math.floor((expr.width - ch1.width) / 2);
-				ch2.x += Math.floor((expr.width - ch2.width) / 2);
-			}
-			else if (n == 4) {
-				let ch1 = expr.children[1], ch2 = expr.children[2], ch3 = expr.children[3];
-				expr.width = Math.max(Expression.SummationLike.MAX_SYMBOL, ch2.x + ch2.width, ch3.width);
-				ch1.x += Math.floor((expr.width - (ch2.x + ch2.width)) / 2);
-				ch2.x += Math.floor((expr.width - (ch2.x + ch2.width)) / 2);
-				ch3.x += Math.floor((expr.width - ch3.width) / 2);
-			}
-			else { // n == 5
-				let ch1 = expr.children[1], ch2 = expr.children[2], ch3 = expr.children[3], ch4 = expr.children[4];
-				expr.width = Math.max(Expression.SummationLike.MAX_SYMBOL, ch2.x + ch2.width, ch4.x + ch4.width);
-				ch1.x += Math.floor((expr.width - (ch2.x + ch2.width)) / 2);
-				ch2.x += Math.floor((expr.width - (ch2.x + ch2.width)) / 2);
-				ch3.x += Math.floor((expr.width - (ch4.x + ch4.width)) / 2);
-				ch4.x += Math.floor((expr.width - (ch4.x + ch4.width)) / 2);
-			}
-			
-			expr = expr.children[0];
-		} while (expr instanceof Expression.SummationLike);
-		
-		expr.prepareDisplay(context);
-		
-		this.xyz(baselineTop, maxSemiHeightTop, baselineBottom, maxSemiHeightBottom);
-	}
-	
-	xyz(baselineTop, maxSemiHeightTop, baselineBottom, maxSemiHeightBottom) {
-		let child = this.children[0];
-		
-		if (child instanceof Expression.SummationLike) {
-			child.xyz(baselineTop, maxSemiHeightTop, baselineBottom, maxSemiHeightBottom);
-			
-			child.x = (this.width += 5);
-			child.y = 0;
-			this.vertBaseline = Math.floor((this.width += child.width) / 2);
-			
-			this.top = child.top;
-			this.horzBaseline = child.horzBaseline;
-			this.bottom = child.bottom;
-			
-			this.height = child.height;
-		}
-		else {
-			// append expr to width
-			
-			this.top = baselineTop + maxSemiHeightTop + 5;
-			this.horzBaseline = this.top + Math.floor(Math.max(Expression.SummationLike.MAX_SYMBOL / 2, child.horzBaseline));
-			child.x = (this.width += 5);
-			child.y = (this.horzBaseline = this.top + Math.floor(Math.max(Expression.SummationLike.MAX_SYMBOL / 2, child.horzBaseline))) - child.horzBaseline;
-			this.vertBaseline = Math.floor((this.width += child.width) / 2);
-			
-			let msh = Math.floor(Math.max(Expression.SummationLike.MAX_SYMBOL / 2, child.height - child.horzBaseline));
-			this.bottom = this.height = this.horzBaseline + msh;
-			
-			if (baselineBottom > 0) {
-				this.height += 5 + baselineBottom + maxSemiHeightBottom;
-			}
-		}
-		
 		let n = this.children.length;
+		let baselineTop,    maxSemiHeightTop,    widthTop;
+		let baselineBottom, maxSemiHeightBottom, widthBottom;
 		
-		this.children[n - 1].y = baselineTop - this.children[n - 1].horzBaseline;
-		
-		if (n == 5) {
-			this.children[3].y = baselineTop - this.children[3].horzBaseline;
-		}
-		if (n >= 3) {
-			this.children[1].y = this.bottom + 5 + baselineBottom - this.children[1].horzBaseline;
-		}
-		if (n >= 4) {
-			this.children[2].y = this.bottom + 5 + baselineBottom - this.children[2].horzBaseline;
-		}
-	}
-	
-	display(context, x, y) {
-		let n = this.children.length;
-		
-		if (n >= 4) {
-			let ch2 = this.children[2];
-			super.drawText(context, "=", x + ch2.x - 1 - this.equalsWidth, y + ch2.y + ch2.horzBaseline + Math.round(context.fontInfo.size / 2));
-		}
-		
-		if (n == 5) {
-			let ch4 = this.children[4];
-			super.drawText(context, ",", x + ch4.x - 1 - this.commaWidth, y + ch4.y + ch4.horzBaseline + Math.round(context.fontInfo.size / 2));
-		}
-		
-		let child = this.children[0];
-		child.display(context, x + child.x, y + child.y);
+		let ch0 = this.children[0];
+		ch0.prepareDisplay(context);
 		
 		{
 			let bkp = context.fontInfo.size;
 			context.fontInfo.setSizeRelative(context, -4);
 			
 			for (let i = 1; i < n; ++i) {
-				(child = this.children[i]).display(context, x + child.x, y + child.y);
+				this.children[i].prepareDisplay(context);
 			}
+			
+			this.commaWidth = Math.floor(context.measureText(", ").width);
+			this.equalsWidth = Math.floor(context.measureText("=").width);
 			
 			context.fontInfo.setSizeAbsolute(context, bkp);
 		}
+		
+		// top
+		
+		if (n === 5) { // with increment
+			let ch3 = this.children[3];
+			let ch4 = this.children[4];
+			baselineTop = Math.max(ch3.horzBaseline, ch4.horzBaseline);
+			maxSemiHeightTop = Math.max(ch3.height - ch3.horzBaseline, ch4.height - ch4.horzBaseline);
+			widthTop = ch3.width + 2 + this.commaWidth + 2 + ch4.width;
+		}
+		else {
+			let ch = this.children[n - 1];
+			baselineTop = ch.horzBaseline;
+			maxSemiHeightTop = ch.height - ch.horzBaseline;
+			widthTop = ch.width;
+		}
+		
+		// bottom
+		
+		if (n >= 4) {
+			let ch1 = this.children[1];
+			let ch2 = this.children[2];
+			baselineBottom = Math.max(ch1.horzBaseline, ch2.horzBaseline);
+			maxSemiHeightBottom = Math.max(ch1.height - ch1.horzBaseline, ch2.height - ch2.horzBaseline);
+			widthBottom = ch1.width + 1 + this.equalsWidth + ch2.width;
+		}
+		else if (n == 3) {
+			let ch1 = this.children[1];
+			baselineBottom = ch1.horzBaseline;
+			maxSemiHeightBottom = ch1.height - ch1.horzBaseline;
+			widthBottom = ch1.width;
+		}
+		else { // n == 2
+			baselineBottom = 0;
+			maxSemiHeightBottom = 0;
+			widthBottom = 0;
+		}
+		
+		this.width = Math.max(widthTop, this.widthSymbol, widthBottom);
+		let SPACE = 0;
+		this.horzBaseline = Math.max(
+			baselineTop + maxSemiHeightTop + SPACE + Math.floor(this.heightSymbol / 2),
+			ch0.horzBaseline
+		);
+		this.vertBaselineSymbol = Math.floor(this.width / 2);
+		this.height = this.horzBaseline + Math.max(
+			Math.floor(this.heightSymbol / 2) + SPACE + baselineBottom + maxSemiHeightBottom,
+			ch0.height - ch0.horzBaseline
+		);
+		baselineTop = this.horzBaseline - Math.floor(this.heightSymbol / 2) - SPACE - maxSemiHeightTop;
+		baselineBottom += this.horzBaseline + Math.floor(this.heightSymbol / 2) + SPACE;
+		
+		// child position
+		
+		if (n == 2) {
+			let ch1 = this.children[1];
+			ch1.x = Math.floor((this.width - widthTop) / 2);
+			ch1.y = baselineTop - ch1.horzBaseline;
+		}
+		else if (n == 3) {
+			let ch1 = this.children[1];
+			let ch2 = this.children[2];
+			ch1.x = Math.floor((this.width - widthBottom) / 2); ch1.y = baselineBottom - ch1.horzBaseline;
+			ch2.x = Math.floor((this.width - widthTop   ) / 2); ch2.y = baselineTop    - ch2.horzBaseline;
+		}
+		else if (n == 4) {
+			let ch1 = this.children[1];
+			let ch2 = this.children[2];
+			let ch3 = this.children[3];
+			ch1.x = Math.floor((this.width - widthBottom) / 2);   ch1.y = baselineBottom - ch1.horzBaseline;
+			ch2.x = ch1.x + ch1.width + 2 + this.equalsWidth + 2; ch2.y = baselineBottom - ch2.horzBaseline;
+			ch3.x = Math.floor((this.width - widthTop   ) / 2);   ch3.y = baselineTop    - ch3.horzBaseline;
+		}
+		else { // n == 5
+			let ch1 = this.children[1];
+			let ch2 = this.children[2];
+			let ch3 = this.children[3];
+			let ch4 = this.children[4];
+			ch1.x = Math.floor((this.width - widthBottom) / 2);   ch1.y = baselineBottom - ch1.horzBaseline;
+			ch2.x = ch1.x + ch1.width + 2 + this.equalsWidth + 2; ch2.y = baselineBottom - ch2.horzBaseline;
+			ch3.x = Math.floor((this.width - widthTop   ) / 2);   ch3.y = baselineTop    - ch3.horzBaseline;
+			ch4.x = ch3.x + ch3.width + 1 + this.commaWidth;      ch4.y = baselineTop    - ch4.horzBaseline;
+		}
+		
+		this.width += 5;
+		ch0.x = this.width;
+		this.width += ch0.width;
+		ch0.y = this.horzBaseline - ch0.horzBaseline;
+		this.vertBaseline = Math.floor(this.width / 2);
+		
+	}
+	
+	display(context, x, y) {
+		let n = this.children.length;
+		
+		let child = this.children[0];
+		child.display(context, x + child.x, y + child.y);
+		
+		/////////////////////////////////////////////
+		
+		let bkp = context.fontInfo.size;
+		context.fontInfo.setSizeRelative(context, -4);
+		
+		if (n >= 4) {
+			let ch2 = this.children[2];
+			super.drawText(context, "=", x + ch2.x - 2 - this.equalsWidth, y + ch2.y + ch2.horzBaseline + Math.round(context.fontInfo.size / 2));
+		}
+		
+		if (n == 5) {
+			let ch4 = this.children[4];
+			super.drawText(context, ", ", x + ch4.x - this.commaWidth, y + ch4.y + ch4.horzBaseline + Math.round(context.fontInfo.size / 2));
+		}
+		
+		for (let i = 1; i < n; ++i) {
+			(child = this.children[i]).display(context, x + child.x, y + child.y);
+		}
+		
+		context.fontInfo.setSizeAbsolute(context, bkp);
 	}
 	
 	moveAcross(i, direction) {
@@ -1489,7 +1470,43 @@ Expression.SummationLike = class extends Expression {
 	}
 }
 
-Expression.SummationLike.MAX_SYMBOL = 20;
+Expression.SummationLikeSymbol = class extends Expression.SummationLike {
+	constructor() {
+		super();
+		
+		this.symbol = "";
+	}
+	
+	prepareDisplay(context) {
+		this.heightSymbol = 40;
+		
+		let bkp = context.fontInfo.size;
+		context.fontInfo.setSizeAbsolute(context, this.heightSymbol);
+		this.widthSymbol = Math.floor(context.measureText(this.symbol).width);
+		context.fontInfo.setSizeAbsolute(context, bkp);
+		
+		super.prepareDisplay(context);
+	}
+	
+	display(context, x, y) {
+		{
+			let bkp = context.fontInfo.size;
+			context.fontInfo.setSizeAbsolute(context, this.heightSymbol);
+			
+			super.drawText(
+				context,
+				this.symbol,
+				x + this.vertBaselineSymbol - Math.round(this.widthSymbol / 2),
+				y + this.horzBaseline + Math.round(this.heightSymbol / 2)
+			);
+			
+			context.fontInfo.setSizeAbsolute(context, bkp);
+		}
+		
+		super.display(context, x, y);
+	}
+}
+
 Expression.SummationLike.P = [
 	[ 1, -1, -1, -1, -1 ],
 	[ 2, -1, -1, -1, -1 ],
