@@ -208,7 +208,7 @@ class ReductionSession {
 	constructor(locale, timeZone, precision) {
 		this.locale   = locale;
 		this.timeZone = timeZone;
-		this.Decimal  = Decimal.clone({ precision: precision, rounding: 6 });
+		this.Decimal  = Decimal.clone({ precision: precision, rounding: 1 });
 		//this.symbolic = false;
 		this.numeric = true;
 	}

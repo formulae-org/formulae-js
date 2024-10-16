@@ -1483,25 +1483,29 @@ Expression.SummationLikeSymbol = class extends Expression.SummationLike {
 		let bkp = context.fontInfo.size;
 		context.fontInfo.setSizeAbsolute(context, this.heightSymbol);
 		this.widthSymbol = Math.floor(context.measureText(this.symbol).width);
+		console.log(context.measureText(this.symbol));
 		context.fontInfo.setSizeAbsolute(context, bkp);
 		
 		super.prepareDisplay(context);
 	}
 	
 	display(context, x, y) {
-		{
-			let bkp = context.fontInfo.size;
-			context.fontInfo.setSizeAbsolute(context, this.heightSymbol);
-			
-			super.drawText(
-				context,
-				this.symbol,
-				x + this.vertBaselineSymbol - Math.round(this.widthSymbol / 2),
-				y + this.horzBaseline + Math.round(this.heightSymbol / 2)
-			);
-			
-			context.fontInfo.setSizeAbsolute(context, bkp);
-		}
+		let bkpSize = context.fontInfo.size;
+		let bkpTextBaseline = context.textBaseline;
+		
+		context.fontInfo.setSizeAbsolute(context, this.heightSymbol);
+		context.textBaseline = "middle";
+		
+		super.drawText(
+			context,
+			this.symbol,
+			x + this.vertBaselineSymbol - Math.round(this.widthSymbol / 2),
+			//y + this.horzBaseline + Math.round(this.heightSymbol / 2)
+			y + this.horzBaseline
+		);
+		
+		context.fontInfo.setSizeAbsolute(context, bkpSize);
+		context.textBaseline = bkpTextBaseline;
 		
 		super.display(context, x, y);
 	}
