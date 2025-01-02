@@ -1,8 +1,26 @@
+/*
+Fōrmulæ reduction.
+Copyright (C) 2015-2025 Laurence R. Ugalde
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 'use strict';
 
-//////////////////////
-// reductionmanager //
-//////////////////////
+///////////////////////
+// reduction manager //
+///////////////////////
 
 class ReductionManager {}
 
@@ -21,10 +39,6 @@ ReductionManager.normalSymbolicLimits  = new Map(); // from tag to array of two 
 ReductionManager.specialSymbolicLimits = new Map(); // from tag to array of two integers
 
 ReductionManager.addReducer = (tag, reducer, description, options = {}) => {
-	//if (tag === "Math.Arithmetic.Addition" || tag === "Math.Arithmetic.Division" || description === "") {
-	//	console.log("Introducing: " + tag + " - " + description);
-	//}
-	
 	let special = options.special || false;
 	let symbolic = options.symbolic || false;
 	let precedence = options.precedence || ReductionManager.PRECEDENCE_NORMAL;
@@ -206,11 +220,12 @@ ReductionManager.setInError = (expression, description) => {
 
 class ReductionSession {
 	constructor(locale, timeZone, precision) {
-		this.locale   = locale;
-		this.timeZone = timeZone;
-		this.Decimal  = Decimal.clone({ precision: precision, rounding: 1 });
-		//this.symbolic = false;
-		this.numeric = true;
+		this.locale     = locale;
+		this.timeZone   = timeZone;
+		this.Decimal    = Decimal.clone({ precision: precision, rounding: 1 });
+		this.arbitrary  = true;
+		this.numeric    = false;
+		this.noSymbolic = false;
 	}
 	
 	async reduceAndGet(expression, indexOfChild) {
@@ -311,6 +326,263 @@ ReductionManager.itselfReducer = async (expr, session) => {
 	}
 	
 	return false; // Ok, forward to other patterns
+};
+
+////////////////////////////
+// Number internalization //
+////////////////////////////
+
+ReductionManager.internalizeNumbersHandler = (handler, session) => {
+	internalizeNumbers(handler.expression, session);
+};
+
+// input: An expression
+// output: Either:
+// 		* An integer number
+//		* A decimal number
+//		* A rational number
+//		* A (purely imaginary) complex number
+//		* null, if the expression cannot be converted to the previous values
+// throws:
+//		* CanonicalArithmetic.ConversionError
+//		* CanonicalArithmetic.DivisionByZeroError
+
+const expr2Number = (expr, session) => {
+	let tag = expr.getTag();
+	let isNegative;
+	
+	if (isNegative = (tag === "Math.Arithmetic.Negative")) {
+		expr = expr.children[0];
+		tag = expr.getTag();
+	}
+	
+	if (tag === "Math.Number") {
+		let value = expr.get("Value");
+		if (typeof value === "bigint") {
+			return CanonicalArithmetic.createInteger(isNegative ? -value : value, session);
+		}
+		else { // Decimal
+			return CanonicalArithmetic.createDecimal(isNegative ? value.neg() : value, session);
+		}
+	}
+	
+	// /* DO NOT UNCOMMENT
+	if (tag === "Math.Arithmetic.Division") {
+		let n = expr.children[0];
+		let d = expr.children[1];
+		
+		let tagN = n.getTag();
+		let tagD = d.getTag();
+		
+		let negN, negD;
+		
+		if (negN = (tagN === "Math.Arithmetic.Negative")) {
+			n = n.children[0];
+			tagN = n.getTag();
+		}
+		
+		if (negD = (tagD === "Math.Arithmetic.Negative")) {
+			d = d.children[0];
+			tagD = d.getTag();
+		}
+		
+		if (n.getTag() === "Math.Number" && d.getTag() === "Math.Number") {
+			let N, D;
+			if (typeof (N = n.get("Value")) === "bigint" && typeof (D = d.get("Value")) === "bigint") {
+				if (isNegative) {
+					return CanonicalArithmetic.createRational(
+						CanonicalArithmetic.createInteger(negN ? N : -N, session),
+						CanonicalArithmetic.createInteger(negD ? -D : D, session)
+					);
+				}
+				else {
+					return CanonicalArithmetic.createRational(
+						CanonicalArithmetic.createInteger(negN ? -N : N, session),
+						CanonicalArithmetic.createInteger(negD ? -D : D, session)
+					);
+				}
+			}
+		}
+	}
+	// */
+	
+	if (tag === "Math.Complex.Imaginary") {
+		return CanonicalArithmetic.createComplex(
+			CanonicalArithmetic.getIntegerZero(session),
+			CanonicalArithmetic.createInteger(isNegative ? -1 : 1, session)
+		);
+	}
+	
+	return null;
+};
+
+const internalizeNumbers = (expr, session) => {
+	////////////////////////////////////////////////////
+	// integer, decimal, rational or imaginary number //
+	////////////////////////////////////////////////////
+	
+	let number;
+	
+	try {
+		number = expr2Number(expr, session);
+	}
+	catch (error) {
+		if (error instanceof CanonicalArithmetic.DivisionByZeroError) {
+			expr.replaceBy(Formulae.createExpression("Math.Infinity"));
+		}
+		else {
+			expr.replaceBy(
+				Formulae.createExpression(
+					"Math.Arithmetic.Multiplication",
+					CanonicalArithmetic.createInternalNumber(
+						CanonicalArithmetic.createInteger(-1, session)
+					),
+					Formulae.createExpression("Math.Infinity")
+				)
+			);
+		}
+		
+		return;
+	}
+	
+	if (number !== null) {
+		expr.replaceBy(CanonicalArithmetic.createInternalNumber(number));
+		return;
+	}
+	
+	////////////////////
+	// -x -> (-1) * x //
+	////////////////////
+	
+	if (expr.getTag() === "Math.Arithmetic.Negative") {
+		let mult = expr.children[0];
+		
+		if (mult.getTag() === "Math.Arithmetic.Multiplication") {
+			mult.addChildAt(
+				0,
+				CanonicalArithmetic.createInternalNumber(
+					CanonicalArithmetic.createInteger(-1, session)
+				)
+			);
+			expr.replaceBy(mult);
+		}
+		else {
+			mult = Formulae.createExpression(
+				"Math.Arithmetic.Multiplication",
+				CanonicalArithmetic.createInternalNumber(
+					CanonicalArithmetic.createInteger(-1, session)
+				),
+				expr.children[0]
+			);
+			
+			//mult.addChild(CanonicalArithmetic.number2InternalNumber(-1));
+			//mult.addChild(expr.children[0]);
+			
+			expr.replaceBy(mult);
+		}
+	}
+	
+	for (let i = 0, n = expr.children.length; i < n; ++i) {
+		internalizeNumbers(expr.children[i], session);
+	}
+};
+
+ReductionManager.externalizeNumbersHandler = (handler, session) => {
+	externalizeNumbers(handler.expression, session);
+};
+
+const externalizeNumber = (number, session) => {
+	switch (number.type) {
+		case 0:
+		case 1: {
+			let negative = number.isNegative();
+			let external = (negative ? number.negation() : number).toExternal(session);
+			let expression = Formulae.createExpression("Math.Number");
+			expression.set("Value", external);
+			if (negative) expression = Formulae.createExpression("Math.Arithmetic.Negative", expression);
+			return expression;
+		}
+		
+		case 2: { // rational
+			let negative = number.numerator.isNegative();
+			let externalNumerator = externalizeNumber(negative ? number.numerator.negation() : number.numerator, session);
+			let externalDenominator = externalizeNumber(number.denominator, session);
+			let expression = Formulae.createExpression("Math.Arithmetic.Division", externalNumerator, externalDenominator);
+			if (negative) expression = Formulae.createExpression("Math.Arithmetic.Negative", expression);
+			return expression;
+		}
+		
+		case 3: { // complex
+			let externalReal = number.real.isZero() ? null : externalizeNumber(number.real, session);
+			let negativeImaginary = number.imaginary.isNegative();
+			let imaginary = negativeImaginary ? number.imaginary.negation() : number.imaginary;
+			let externalImaginary;
+			if (imaginary.isOne()) {
+				externalImaginary = Formulae.createExpression("Math.Complex.Imaginary");
+			}
+			else {
+				externalImaginary = Formulae.createExpression(
+					"Math.Arithmetic.Multiplication",
+					externalizeNumber(imaginary, session),
+					Formulae.createExpression("Math.Complex.Imaginary")
+				);
+			}
+			if (negativeImaginary) externalImaginary = Formulae.createExpression("Math.Arithmetic.Negative", externalImaginary);
+			return (
+				externalReal === null ?
+				externalImaginary :
+				Formulae.createExpression(
+					"Math.Arithmetic.Addition",
+					externalReal,
+					externalImaginary
+				)
+			);
+		}
+	}
+};
+
+const externalizeNumbers = (expr, session) => {
+	if (expr.isInternalNumber()) {
+		expr.replaceBy(
+			externalizeNumber(
+				expr.get("Value"),
+				session
+			)
+		);
+		return;
+	}
+	
+	if (expr.getTag() === "Math.Arithmetic.Multiplication") {
+		let first = expr.children[0];
+		
+		if (first.isInternalNumber()) {
+			let canonical = first.get("Value");
+			
+			if (canonical.isNegative()) {
+				// Ok
+				let negative = Formulae.createExpression("Math.Arithmetic.Negative");
+				expr.replaceBy(negative);
+				
+				canonical = canonical.negation();
+				if (canonical.isOne()) {
+					expr.removeChildAt(0);
+				}
+				else {
+					first.set("Value", canonical);
+				}
+				
+				if (expr.children.length == 1) {
+					expr = expr.children[0];
+				}
+				
+				negative.addChild(expr);
+			}
+		}
+	}
+	
+	for (let i = 0, n = expr.children.length; i < n; ++i) {
+		externalizeNumbers(expr.children[i], session);
+	}
 };
 
 ////////////////////////

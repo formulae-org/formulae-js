@@ -1,8 +1,26 @@
+/*
+Fōrmulæ main library.
+Copyright (C) 2015-2025 Laurence R. Ugalde
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 'use strict';
 
 class Formulae {}
 
-Formulae.scriptAtStart = true;
+Formulae.scriptAtStart = false;
 Formulae.timeZone = null;
 Formulae.fontSize = null;
 Formulae.ltr = true;
@@ -91,6 +109,7 @@ Formulae.packages.set("org.formulae.data",                new Formulae.PackageIn
 
 Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming (experimental)", false, false));
 Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem (experimental)",          false, false));
+
 
 ///////////////
 // functions //
@@ -1318,9 +1337,9 @@ Formulae.onEnter = alt => {
 	let hReduction = hResult.clone();
 	hReduction.setExpression(Formulae.handlers[index].expression.clone());
 	
-	CanonicalArithmetic.internalizeNumbersHandler(hReduction); /////
-	
 	let session = new ReductionSession(null, null, 20);
+	
+	ReductionManager.internalizeNumbersHandler(hReduction, session); // Internalization
 	
 	let start = new Date().valueOf();
 	
@@ -1335,7 +1354,7 @@ Formulae.onEnter = alt => {
 		
 		hResult.setExpression(hReduction.expression);
 		
-		CanonicalArithmetic.externalizeNumbersHandler(hResult); /////
+		ReductionManager.externalizeNumbersHandler(hResult, session); // Externalization
 		
 		hResult.prepareDisplay();
 		hResult.display();
@@ -2299,6 +2318,7 @@ Formulae.start = async function() {
 	
 	Formulae.setExpression(null, "Null",                           Expression.Null);
 	Formulae.setExpression(null, "Error",                          Expression.ErrorExpression);
+	Formulae.setExpression(null, "Undefined",                      Expression.Undefined);
 	Formulae.setExpression(null, "Formulae.WaitingExpression",     Formulae.WaitingExpressionClass);
 	Formulae.setExpression(null, "Formulae.LocalConnectionError",  Formulae.LocalConnectionErrorClass);
 	Formulae.setExpression(null, "Formulae.RemoteConnectionError", Formulae.RemoteConnectionErrorClass);
