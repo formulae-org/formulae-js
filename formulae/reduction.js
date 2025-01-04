@@ -125,6 +125,8 @@ ReductionManager.reduceHandler = async (handler, session) => {
 };
 */
 
+const FLAG = true;
+
 ReductionManager.reduce = async (expression, session) => {
 	let tag = expression.getTag();
 	let reducerInfo;
@@ -136,42 +138,31 @@ ReductionManager.reduce = async (expression, session) => {
 	
 	let reducerInfos = ReductionManager.specialMap.get(tag);
 	if (reducerInfos !== undefined) {
-		//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
-		for (let i = 0, n = reducerInfos.length; i < n; ++i) {
+		for (let i = 0, n = reducerInfos.length; i < n; ++i) { // do not change for reducers.forEach
 			reducerInfo = reducerInfos[i];
 			result = await reducerInfo.reducer(expression, session);
-			//console.log("SPECIAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
+			if (FLAG) console.log("SPECIAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
 			if (result) return true;
 		}
 	}
-	
-	/*
-	if (session.symbolic) {
-		reducerInfos = ReductionManager.specialSymbolicMap.get(tag);
-		if (reducerInfos !== undefined) {
-			//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
-			for (let i = 0, n = reducerInfos.length; i < n; ++i) {
-				reducerInfo = reducerInfos[i];
-				result = await reducerInfo.reducer(expression, session);
-				//console.log("SPECIAL SYMBOLIC: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
-				if (result) return true;
-			}
-		}
-	}
-	*/
 	
 	/////////////////////////////////
 	// reduction of subexpressions //
 	/////////////////////////////////
 	
 	let child;
-	//expression.children.forEach((child, i) => {
-	for (let i = 0, n = expression.children.length; i < n; ++i) {
+	for (let i = 0, n = expression.children.length; i < n; ++i) { // do not change for expression.children.forEach
 		child = expression.children[i];
-		if (!child.isReduced()) {
-			await ReductionManager.reduce(child, session);
-			expression.children[i].setReduced();
-		}
+		//console.log("child.iReduced(): " + child.isReduced());
+		if (child.isReduced()) break;
+		
+		//await ReductionManager.reduce(child, session);
+		while(true) {
+			if (await ReductionManager.reduce(child, session)) break;
+			child = expression.children[i];
+		};
+		
+		expression.children[i].setReduced();
 	};
 	
 	/////////////////////
@@ -180,29 +171,13 @@ ReductionManager.reduce = async (expression, session) => {
 	
 	reducerInfos = ReductionManager.normalMap.get(tag);
 	if (reducerInfos !== undefined) {
-		//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
-		for (let i = 0, n = reducerInfos.length; i < n; ++i) {
+		for (let i = 0, n = reducerInfos.length; i < n; ++i) { // do not change for reducers.forEach
 			reducerInfo = reducerInfos[i];
 			result = await reducerInfo.reducer(expression, session);
-			//console.log("NORMAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
+			if (FLAG) console.log("NORMAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
 			if (result) return true;
 		}
 	}
-	
-	/*
-	if (session.symbolic) {
-		reducerInfos = ReductionManager.normalSymbolicMap.get(tag);
-		if (reducerInfos !== undefined) {
-			//reducers.forEach(reducer => { if (reducer(expression, session)) return true; });
-			for (let i = 0, n = reducerInfos.length; i < n; ++i) {
-				reducerInfo = reducerInfos[i];
-				result = await reducerInfo.reducer(expression, session);
-				//console.log("NORMAL SYMBOLIC: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
-				if (result) return true;
-			}
-		}
-	}
-	*/
 	
 	return false;
 };
