@@ -128,9 +128,28 @@ ReductionManager.reduceHandler = async (handler, session) => {
 const FLAG = true;
 
 ReductionManager.reduce = async (expression, session) => {
+	let parent = expression.parent;
+	let isHandler = parent instanceof ExpressionHandler;
+	let index;
+	let reduced;
+	
+	if (!isHandler) index = expression.index;
+	
+	for (let i = 0; i < 5; ++i) {
+		reduced = await ReductionManager.reduceOld(expression, session);
+		if (!reduced) break;
+		expression = isHandler ? parent.expression : parent.children[index];
+	};
+	
+	(isHandler ? parent.expression : parent.children[index]).setReduced();
+};
+
+ReductionManager.reduceOld = async (expression, session) => {
 	let tag = expression.getTag();
 	let reducerInfo;
-	let result;
+	let reduced;
+	
+	console.log(tag + " ENTRANDO");
 	
 	//////////////////////
 	// special reducers //
@@ -140,9 +159,15 @@ ReductionManager.reduce = async (expression, session) => {
 	if (reducerInfos !== undefined) {
 		for (let i = 0, n = reducerInfos.length; i < n; ++i) { // do not change for reducers.forEach
 			reducerInfo = reducerInfos[i];
-			result = await reducerInfo.reducer(expression, session);
-			if (FLAG) console.log("SPECIAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
-			if (result) return true;
+			reduced = await reducerInfo.reducer(expression, session); // Numeric -> Rationalize
+			//if (FLAG) console.log("SPECIAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
+			if (reduced) {
+				console.log(tag + " reducer " + reducerInfo.description + " reducido, saliendo");
+				return true;
+			}
+			else {
+				console.log(tag + " reducer " + reducerInfo.description + " NO reducido");
+			}
 		}
 	}
 	
@@ -154,15 +179,17 @@ ReductionManager.reduce = async (expression, session) => {
 	for (let i = 0, n = expression.children.length; i < n; ++i) { // do not change for expression.children.forEach
 		child = expression.children[i];
 		//console.log("child.iReduced(): " + child.isReduced());
-		if (child.isReduced()) break;
+		if (child.isReduced()) continue;
+		await ReductionManager.reduce(child, session);
 		
-		//await ReductionManager.reduce(child, session);
-		while(true) {
-			if (await ReductionManager.reduce(child, session)) break;
-			child = expression.children[i];
-		};
+		// //await ReductionManager.reduce(child, session);
+		// while (true) {
+		//	reduced = await ReductionManager.reduce(child, session);
+		//	if (!reduced) break;
+		//	child = expression.children[i];
+		//};
 		
-		expression.children[i].setReduced();
+		//expression.children[i].setReduced();
 	};
 	
 	/////////////////////
@@ -173,12 +200,19 @@ ReductionManager.reduce = async (expression, session) => {
 	if (reducerInfos !== undefined) {
 		for (let i = 0, n = reducerInfos.length; i < n; ++i) { // do not change for reducers.forEach
 			reducerInfo = reducerInfos[i];
-			result = await reducerInfo.reducer(expression, session);
-			if (FLAG) console.log("NORMAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
-			if (result) return true;
+			reduced = await reducerInfo.reducer(expression, session);
+			//if (FLAG) console.log("NORMAL: TAG: " + tag + ", REDUCER: " + reducerInfo.description + ", RESULT: " + result);
+			if (reduced) {
+				console.log(tag + " reducer " + reducerInfo.description + " reducido, saliendo");
+				return true;
+			}
+			else {
+				console.log(tag + " reducer " + reducerInfo.description + " NO reducido");
+			}
 		}
 	}
 	
+	console.log(tag + " Llegó al final, no reducido");
 	return false;
 };
 
