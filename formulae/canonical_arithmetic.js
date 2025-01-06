@@ -1726,8 +1726,23 @@ CanonicalArithmetic.getRandom = session => session.arbitrary ? Decimal.getRandom
 // internal numbers //
 //////////////////////
 
-CanonicalArithmetic.createInternalNumber = n => {
+CanonicalArithmetic.createInternalNumber = (n, session) => {
 	let internalNumber = Formulae.createExpression("Math.InternalNumber");
+	
+	/////////////////
+	conversion: {
+		if (session.numeric && n.type !== 1) { // integer, rational or complex
+			n = n.toDecimal(session);
+			break conversion;
+		}
+		
+		if (session.noSymbolic && n.type === 2) { // rational
+			n = n.toDecimal(session);
+			break conversion;
+		}
+	}
+	/////////////////
+	
 	internalNumber.set("Value", n);
 	return internalNumber;
 };

@@ -125,6 +125,7 @@ ReductionManager.reduceHandler = async (handler, session) => {
 };
 */
 
+/*
 const FLAG = true;
 
 ReductionManager.reduce = async (expression, session) => {
@@ -213,6 +214,54 @@ ReductionManager.reduceOld = async (expression, session) => {
 	}
 	
 	console.log(tag + " Llegó al final, no reducido");
+	return false;
+};
+*/
+
+ReductionManager.reduce = async (expression, session) => {
+	let tag = expression.getTag();
+	let reducerInfo;
+	let result;
+	
+	//////////////////////
+	// special reducers //
+	//////////////////////
+	
+	let reducerInfos = ReductionManager.specialMap.get(tag);
+	if (reducerInfos !== undefined) {
+		for (let i = 0, n = reducerInfos.length; i < n; ++i) {
+			reducerInfo = reducerInfos[i];
+			result = await reducerInfo.reducer(expression, session);
+			if (result) return true;
+		}
+	}
+	
+	/////////////////////////////////
+	// reduction of subexpressions //
+	/////////////////////////////////
+	
+	let child;
+	for (let i = 0, n = expression.children.length; i < n; ++i) {
+		child = expression.children[i];
+		if (!child.isReduced()) {
+			await ReductionManager.reduce(child, session);
+			expression.children[i].setReduced();
+		}
+	};
+	
+	/////////////////////
+	// normal reducers //
+	//////////////////////
+	
+	reducerInfos = ReductionManager.normalMap.get(tag);
+	if (reducerInfos !== undefined) {
+		for (let i = 0, n = reducerInfos.length; i < n; ++i) {
+			reducerInfo = reducerInfos[i];
+			result = await reducerInfo.reducer(expression, session);
+			if (result) return true;
+		}
+	}
+	
 	return false;
 };
 
@@ -444,7 +493,8 @@ const internalizeNumbers = (expr, session) => {
 				Formulae.createExpression(
 					"Math.Arithmetic.Multiplication",
 					CanonicalArithmetic.createInternalNumber(
-						CanonicalArithmetic.createInteger(-1, session)
+						CanonicalArithmetic.createInteger(-1, session),
+						session
 					),
 					Formulae.createExpression("Math.Infinity")
 				)
@@ -455,7 +505,10 @@ const internalizeNumbers = (expr, session) => {
 	}
 	
 	if (number !== null) {
-		expr.replaceBy(CanonicalArithmetic.createInternalNumber(number));
+		expr.replaceBy(
+			CanonicalArithmetic.createInternalNumber(number, session),
+			session
+		);
 		return;
 	}
 	
@@ -470,7 +523,8 @@ const internalizeNumbers = (expr, session) => {
 			mult.addChildAt(
 				0,
 				CanonicalArithmetic.createInternalNumber(
-					CanonicalArithmetic.createInteger(-1, session)
+					CanonicalArithmetic.createInteger(-1, session),
+					session
 				)
 			);
 			expr.replaceBy(mult);
@@ -479,7 +533,8 @@ const internalizeNumbers = (expr, session) => {
 			mult = Formulae.createExpression(
 				"Math.Arithmetic.Multiplication",
 				CanonicalArithmetic.createInternalNumber(
-					CanonicalArithmetic.createInteger(-1, session)
+					CanonicalArithmetic.createInteger(-1, session),
+					session
 				),
 				expr.children[0]
 			);
