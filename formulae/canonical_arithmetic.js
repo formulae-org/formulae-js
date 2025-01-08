@@ -512,7 +512,7 @@ Decimal.prototype.integerDivision = function(d, session) {
 };
 
 Decimal.fromString = function(s, session) { let x; try { x = new session.Decimal(s); } catch (e) { throw new CanonicalArithmetic.ConversionError(); } return x; };
-Decimal.getRandom = function(session) { return session.Decimal.random(); };
+Decimal.getRandom = function(precision, session) { return precision > 0 ? session.Decimal.random(precision) : session.Decimal.random(); };
 
 Decimal.ZERO = new Decimal(0);
 Decimal.ONE = new Decimal(1);
@@ -1720,7 +1720,7 @@ CanonicalArithmetic.inverseHyperbolicCosecant = (n, session) => inverseHyperboli
 
 // random
 
-CanonicalArithmetic.getRandom = session => session.arbitrary ? Decimal.getRandom(session) : NumberD.getRandom();
+CanonicalArithmetic.getRandom = (precision, session) => session.arbitrary ? Decimal.getRandom(precision, session) : NumberD.getRandom();
 
 //////////////////////
 // internal numbers //
