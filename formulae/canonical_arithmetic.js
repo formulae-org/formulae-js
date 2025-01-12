@@ -275,7 +275,7 @@ BigInt.prototype.toInternalText = function() { return this.toText() + "I"; };
 BigInt.prototype.hasIntegerValue = function() { return true; };
 // BigInt.prototype.toInteger -> It is already integer, it must never be called
 BigInt.prototype.toDecimal = function(session) { return new session.Decimal(this.toString()) }; // expensive
-BigInt.prototype.significantDigits = function() { return this.absoluteValue().toString().length; };
+BigInt.prototype.significantDigits = function() { return this.absoluteValue().toString().replace(/0+$/, "").length; };
 BigInt.prototype.decimalPlaces = function() { return 0; };
 BigInt.prototype.toDP = function(n) { let m = 10n ** n; return (this / m) * m; };
 BigInt.prototype.isZero = function() { return this == 0n; };
