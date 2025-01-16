@@ -656,7 +656,7 @@ const externalizeNumbers = (expr, session) => {
 class CanonicalIndexing {}
 
 CanonicalIndexing.getChildByIndex = (expr, index) => {
-	let i = CanonicalArithmetic.getInteger(index);
+	let i = CanonicalArithmetic.getNativeInteger(index);
 	if (i !== undefined) {
 		let n = expr.children.length;
 		
