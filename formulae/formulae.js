@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 class Formulae {}
 
-Formulae.scriptAtStart = false;
+Formulae.scriptAtStart = true;
 Formulae.timeZone = null;
 Formulae.fontSize = null;
 Formulae.ltr = true;
@@ -2655,7 +2655,7 @@ Formulae.loadPreferences = function() {
 	if (Formulae.fontSize == null || isNaN(Formulae.fontSize) || Formulae.fontSize < 6) {
 		Formulae.fontSize = parseInt(window.localStorage.getItem("fontSize"));
 		if (Formulae.fontSize == null || isNaN(Formulae.fontSize) || Formulae.fontSize < 6) {
-			Formulae.fontSize = 14;
+			Formulae.fontSize = 16;
 		}
 	}
 };
