@@ -779,16 +779,16 @@ class Expression extends Scopable {
 		context.beginPath();
 		
 		if (opening) {
-			context.moveTo (x + 2, y             ); //   . // preventing obfuscation
-			context.lineTo (x    , y + 2         ); //  /  // preventing obfuscation
-			context.lineTo (x    , y + height - 2); //  |  // preventing obfuscation
-			context.lineTo (x + 2, y + height    ); //  \  // preventing obfuscation
+			context.moveTo(x + 2, y             ); //   .
+			context.lineTo(x    , y + 2         ); //  /
+			context.lineTo(x    , y + height - 2); //  |
+			context.lineTo(x + 2, y + height    ); //  \
 		}
 		else {
-			context.moveTo (x - 2, y             ); // .  // preventing obfuscation
-			context.lineTo (x    , y + 2         ); //  \ // preventing obfuscation
-			context.lineTo (x    , y + height - 2); //  | // preventing obfuscation
-			context.lineTo (x - 2, y + height    ); //  / // preventing obfuscation
+			context.moveTo(x - 2, y             ); // .
+			context.lineTo(x    , y + 2         ); //  \
+			context.lineTo(x    , y + height - 2); //  |
+			context.lineTo(x - 2, y + height    ); //  /
 		}
 		
 		context.stroke();
