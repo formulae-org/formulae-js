@@ -464,7 +464,7 @@ const expr2Number = (expr, session) => {
 	}
 	// */
 	
-	if (tag === "Math.Complex.Imaginary") {
+	if (tag === "Math.Complex.ImaginaryUnit") {
 		return CanonicalArithmetic.createComplex(
 			CanonicalArithmetic.getIntegerZero(session),
 			CanonicalArithmetic.createInteger(isNegative ? -1 : 1, session)
@@ -582,13 +582,13 @@ const externalizeNumber = (number, session) => {
 			let imaginary = negativeImaginary ? number.imaginary.negation() : number.imaginary;
 			let externalImaginary;
 			if (imaginary.isOne()) {
-				externalImaginary = Formulae.createExpression("Math.Complex.Imaginary");
+				externalImaginary = Formulae.createExpression("Math.Complex.ImaginaryUnit");
 			}
 			else {
 				externalImaginary = Formulae.createExpression(
 					"Math.Arithmetic.Multiplication",
 					externalizeNumber(imaginary, session),
-					Formulae.createExpression("Math.Complex.Imaginary")
+					Formulae.createExpression("Math.Complex.ImaginaryUnit")
 				);
 			}
 			if (negativeImaginary) externalImaginary = Formulae.createExpression("Math.Arithmetic.Negative", externalImaginary);
