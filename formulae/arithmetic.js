@@ -1,5 +1,5 @@
 /*
-Fōrmulæ canonical arithmetic.
+Fōrmulæ arithmetic library.
 Copyright (C) 2015-2025 Laurence R. Ugalde
 
 This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 'use strict';
 
-class CanonicalArithmetic {}
+class Arithmetic {}
 
 ///////////////////////////////
 // Number classes uniformity //
@@ -26,42 +26,42 @@ class CanonicalArithmetic {}
 
 // errors
 
-CanonicalArithmetic.ConversionError = class extends Error {};
-CanonicalArithmetic.OverflowError = class extends Error {};
-CanonicalArithmetic.UnderflowError = class extends Error {};
-CanonicalArithmetic.DivisionByZeroError = class extends Error {};
-CanonicalArithmetic.DomainError = class extends Error {};
-CanonicalArithmetic.TypeError = class extends Error {};
-CanonicalArithmetic.NonNumericError = class extends Error {};
-CanonicalArithmetic.UnimplementedError = class extends Error {};
-CanonicalArithmetic.RoundingModeError = class extends Error {};
+Arithmetic.ConversionError = class extends Error {};
+Arithmetic.OverflowError = class extends Error {};
+Arithmetic.UnderflowError = class extends Error {};
+Arithmetic.DivisionByZeroError = class extends Error {};
+Arithmetic.DomainError = class extends Error {};
+Arithmetic.TypeError = class extends Error {};
+Arithmetic.NonNumericError = class extends Error {};
+Arithmetic.UnimplementedError = class extends Error {};
+Arithmetic.RoundingModeError = class extends Error {};
 
 // creation of numeric objects
 
-CanonicalArithmetic.createRational = (n, d) => {
-	if (n.type != 0 || d.type != 0) throw new CanonicalArithmetic.ConversionError(); // only integers
-	if (d.isZero()) throw new CanonicalArithmetic.DivisionByZeroError();             // denominator cannot be zero
+Arithmetic.createRational = (n, d) => {
+	if (n.type != 0 || d.type != 0) throw new Arithmetic.ConversionError(); // only integers
+	if (d.isZero()) throw new Arithmetic.DivisionByZeroError();             // denominator cannot be zero
 	return new Rational(n, d).normalize();
 };
 
-CanonicalArithmetic.createComplex = (r, i) => {
-	if (r.type == 3 || i.type == 3) throw new CanonicalArithmetic.ConversionError(); // integer, decimal or rationals
+Arithmetic.createComplex = (r, i) => {
+	if (r.type == 3 || i.type == 3) throw new Arithmetic.ConversionError(); // integer, decimal or rationals
 	return new Complex(r, i).normalize();
 };
 
-CanonicalArithmetic.createIntegerFromString = (s, session) => session.arbitrary ? BigInt.fromString(s) : NumberI.fromString(s);
-CanonicalArithmetic.createDecimalFromString = (s, session) => session.arbitrary ? Decimal.fromString(s, session) : NumberD.fromString(s);
+Arithmetic.createIntegerFromString = (s, session) => session.arbitrary ? BigInt.fromString(s) : NumberI.fromString(s);
+Arithmetic.createDecimalFromString = (s, session) => session.arbitrary ? Decimal.fromString(s, session) : NumberD.fromString(s);
 
 // Constants
 
-CanonicalArithmetic.getIntegerZero = session => session.arbitrary ? BigInt.ZERO : NumberI.ZERO;
-CanonicalArithmetic.getIntegerOne = session => session.arbitrary ? BigInt.ONE : NumberI.ONE;
-CanonicalArithmetic.getDecimalZero = session => session.arbitrary ? Decimal.ZERO : NumberD.ZERO;
-CanonicalArithmetic.getDecimalOne = session => session.arbitrary ? Decimal.ONE : NumberD.ONE;
-CanonicalArithmetic.getPi = session => session.arbitrary ? session.Decimal.acos(-1) : NumberD.PI;
-CanonicalArithmetic.getE = session => session.arbitrary ? session.Decimal.exp(1) : NumberD.E;
-CanonicalArithmetic.getLN10 = session => session.arbitrary ? session.Decimal.ln(10) : NumberD.LN10;
-CanonicalArithmetic.getLN2 = session => session.arbitrary ? session.Decimal.ln(2) : NumberD.LN2;
+Arithmetic.getIntegerZero = session => session.arbitrary ? BigInt.ZERO : NumberI.ZERO;
+Arithmetic.getIntegerOne = session => session.arbitrary ? BigInt.ONE : NumberI.ONE;
+Arithmetic.getDecimalZero = session => session.arbitrary ? Decimal.ZERO : NumberD.ZERO;
+Arithmetic.getDecimalOne = session => session.arbitrary ? Decimal.ONE : NumberD.ONE;
+Arithmetic.getPi = session => session.arbitrary ? session.Decimal.acos(-1) : NumberD.PI;
+Arithmetic.getE = session => session.arbitrary ? session.Decimal.exp(1) : NumberD.E;
+Arithmetic.getLN10 = session => session.arbitrary ? session.Decimal.ln(10) : NumberD.LN10;
+Arithmetic.getLN2 = session => session.arbitrary ? session.Decimal.ln(2) : NumberD.LN2;
 
 // Uniform interfaces
 
@@ -94,7 +94,7 @@ Number.prototype.integerDivision = function(d, session) {
 			q = Math.trunc(D / d) - ((D % d) >= 0 ? 0 : (d > 0 ? 1 : -1));
 			break;
 		default:
-			throw new CanonicalArithmetic.RoundingModeError();
+			throw new Arithmetic.RoundingModeError();
 	}
 	return new NumberI(q);
 };
@@ -158,11 +158,11 @@ NumberI.prototype.toDecimal = function(session) { return new NumberD(this.valueO
 // NumberI.prototype.isNegative -> By inherithance
 // NumberI.prototype.comparedTo -> By inherithance
 NumberI.prototype.negation = function() { return new NumberI(-this.valueOf()); };
-// NumberI.prototype.inverse = function(session) { let x = 1 / this; if (!Number.isFinite(x)) throw new CanonicalArithmetic.UnderflowError(); return new NumberD(x); };
-NumberI.prototype.addition = function(other, session) { let x = this + other; if (!Number.isFinite(x)) throw new CanonicalArithmetic.OverflowError(); return new NumberI(x); };
-NumberI.prototype.multiplication = function(other, session) { let x = this * other; if (!Number.isFinite(x)) throw new CanonicalArithmetic.OverflowError(); return new NumberI(x); };
-NumberI.prototype.exponentiation = function(other, session) { let x = this ** other; if (!Number.isFinite(x)) throw new CanonicalArithmetic.OverflowError(); return new NumberI(x); };
-NumberI.prototype.division = function(other, session) { let x = this / other; if (!Number.isFinite(x)) throw new CanonicalArithmetic.UnderflowError(); return new NumberD(x); };
+// NumberI.prototype.inverse = function(session) { let x = 1 / this; if (!Number.isFinite(x)) throw new Arithmetic.UnderflowError(); return new NumberD(x); };
+NumberI.prototype.addition = function(other, session) { let x = this + other; if (!Number.isFinite(x)) throw new Arithmetic.OverflowError(); return new NumberI(x); };
+NumberI.prototype.multiplication = function(other, session) { let x = this * other; if (!Number.isFinite(x)) throw new Arithmetic.OverflowError(); return new NumberI(x); };
+NumberI.prototype.exponentiation = function(other, session) { let x = this ** other; if (!Number.isFinite(x)) throw new Arithmetic.OverflowError(); return new NumberI(x); };
+NumberI.prototype.division = function(other, session) { let x = this / other; if (!Number.isFinite(x)) throw new Arithmetic.UnderflowError(); return new NumberD(x); };
 NumberI.prototype.remainder = function(other) { return new NumberI(this % other); };
 NumberI.prototype.gcd = function(other) { let [a, b] = [this, other]; while (b != 0) [a, b] = [b, a % b]; return new NumberI(Math.abs(a)); };
 NumberI.prototype.integerDivisionForGCD = function(gcd) { return new NumberI(Math.trunc(this.valueOf() / gcd.valueOf())); };
@@ -177,7 +177,7 @@ NumberI.prototype.randomInRange = function(end) { return new NumberI(this.valueO
 NumberI.ZERO = new NumberI(0);
 NumberI.ONE = new NumberI(1);
 
-NumberI.fromString = function(s) { let x = Number.parseInt(s); if (!Number.isFinite(x)) throw new CanonicalArithmetic.ConversionError(); return new NumberI(x); };
+NumberI.fromString = function(s) { let x = Number.parseInt(s); if (!Number.isFinite(x)) throw new Arithmetic.ConversionError(); return new NumberI(x); };
 
 // NumberI.prototype.toNative -> By inheritance
 NumberI.prototype.toExternal = function() { return BigInt(this.valueOf()); };
@@ -214,11 +214,11 @@ NumberD.prototype.toDecimal = function(session) { return this; };
 // NumberD.prototype.isNegative -> By inherithance
 // NumberD.prototype.comparedTo -> By inherithance
 NumberD.prototype.negation = function() { return new NumberD(-this.valueOf()); };
-NumberD.prototype.inverse = function(session) { let x = 1 / this.valueOf(); if (!Number.isFinite(x)) throw new CanonicalArithmetic.UnderflowError(); return new NumberD(x); };
-NumberD.prototype.addition = function(other, session) { let x = this + other; if (!Number.isFinite(x)) throw new CanonicalArithmetic.OverflowError(); return new NumberD(x); };
-NumberD.prototype.multiplication = function(other, session) { let x = this * other; if (!Number.isFinite(x)) throw new CanonicalArithmetic.OverflowError(); return new NumberD(x); };
-NumberD.prototype.exponentiation = function(other, session) { let x = this ** other; if (!Number.isFinite(x)) new CanonicalArithmetic.OverflowError(); return new NumberD(x); };
-NumberD.prototype.division = function(other, session) { let x = this / other; if (!Number.isFinite(x)) throw new CanonicalArithmetic.UnderflowError(); return new NumberD(x); };
+NumberD.prototype.inverse = function(session) { let x = 1 / this.valueOf(); if (!Number.isFinite(x)) throw new Arithmetic.UnderflowError(); return new NumberD(x); };
+NumberD.prototype.addition = function(other, session) { let x = this + other; if (!Number.isFinite(x)) throw new Arithmetic.OverflowError(); return new NumberD(x); };
+NumberD.prototype.multiplication = function(other, session) { let x = this * other; if (!Number.isFinite(x)) throw new Arithmetic.OverflowError(); return new NumberD(x); };
+NumberD.prototype.exponentiation = function(other, session) { let x = this ** other; if (!Number.isFinite(x)) new Arithmetic.OverflowError(); return new NumberD(x); };
+NumberD.prototype.division = function(other, session) { let x = this / other; if (!Number.isFinite(x)) throw new Arithmetic.UnderflowError(); return new NumberD(x); };
 // NumberD.prototype.remainder -> It must never be called
 // NumberD.prototype.gcd -> It must never be called
 NumberD.prototype.absoluteValue = function() { return this < 0 ? new NumberD(-this) : this; };
@@ -229,7 +229,7 @@ NumberD.prototype.naturalLogarithm = function() { let x = Math.log(this); if (!N
 // NumberD.prototype.decimalLogarithm = function() { let x = Math.log10(this); if (!Number.isFinite(x)) throw "Domain"; return new NumberD(x); };
 // NumberD.prototype.binaryLogarithm = function() { let x = Math.log2(this); if (!Number.isFinite(x)) throw "Domain"; return new NumberD(x); };
 // NumberD.prototype.logarithm = function(base) { let x = Math.log(this) / Math.log(base); if (!Number.isFinite(x)) throw "Domain"; return new NumberD(x); };
-NumberD.prototype.aTan2 = function(x) { if (this.valueOf() === 0 && x.valueOf() === 0) throw new CanonicalArithmetic.DivisionByZeroError(); return new NumberD(Math.atan2(this, x)); };
+NumberD.prototype.aTan2 = function(x) { if (this.valueOf() === 0 && x.valueOf() === 0) throw new Arithmetic.DivisionByZeroError(); return new NumberD(Math.atan2(this, x)); };
 NumberD.prototype.sine = function() { return new NumberD(Math.sin(this)); };
 NumberD.prototype.cosine = function() { return new NumberD(Math.cos(this)); };
 NumberD.prototype.tangent = function() { let x = Math.tan(this); if (!Number.isFinite(x)) throw "Overfloaw"; return new NumberD(x); };
@@ -251,7 +251,7 @@ NumberD.prototype.roundToInteger = function(session) { return this.integerDivisi
 NumberD.prototype.roundToDecimalPlaces = function(places, session) { let m = 10 ** -(places); let r = this.integerDivision(m, session).valueOf() * m; return places > 0 ? new NumberD(r) : new NumberI(r); };
 NumberD.prototype.randomInRange = function(end) { return this.valueOf() + (Math.random() * (end.valueOf() - this.valueOf())); };
 
-NumberD.fromString = function(s) { let x = Number.parseFloat(s); if (!Number.isFinite(x)) throw new CanonicalArithmetic.ConversionError(); return new NumberD(x); };
+NumberD.fromString = function(s) { let x = Number.parseFloat(s); if (!Number.isFinite(x)) throw new Arithmetic.ConversionError(); return new NumberD(x); };
 NumberD.getRandom = function() { return new NumberD(Math.random()); };
 
 NumberD.ZERO = new NumberD(0);
@@ -285,7 +285,7 @@ BigInt.prototype.isNegative = function() { return this < 0n; };
 BigInt.prototype.comparedTo = function(other) { return this < other ? -1 : (this > other ? 1 : 0); };
 BigInt.prototype.negation = function() { return -this; };
 //BigInt.prototype.inverse = function(session) { return session.Decimal.div(Decimal.ONE, new session.Decimal(this.toString())); }; // expensive
-//BigInt.prototype.inverse = function(session) { let x = 1 / this; if (!Number.isFinite(x)) throw new CanonicalArithmetic.UnderflowError(); return new NumberD(x); };
+//BigInt.prototype.inverse = function(session) { let x = 1 / this; if (!Number.isFinite(x)) throw new Arithmetic.UnderflowError(); return new NumberD(x); };
 BigInt.prototype.addition = function(other, session) { return this + other; };
 BigInt.prototype.multiplication = function(other, session) { return this * other; };
 BigInt.prototype.exponentiation = function(other, session) { return this ** other; };
@@ -298,7 +298,7 @@ BigInt.prototype.roundToPrecision = function(precision) {}; // TODO
 BigInt.prototype.roundToInteger = function() { return this; }
 BigInt.prototype.roundToDecimalPlaces = function(places, session) { if (places >= 0) return this; let m = 10n ** (-places); return this.integerDivision(m, session).multiplication(m); };
 
-BigInt.fromString = function(s) { let x; try { x = new BigInt(s); } catch (e) { throw new CanonicalArithmetic.ConversionError(); } return x; };
+BigInt.fromString = function(s) { let x; try { x = new BigInt(s); } catch (e) { throw new Arithmetic.ConversionError(); } return x; };
 
 BigInt.ZERO = 0n;
 BigInt.ONE = 1n;
@@ -446,33 +446,33 @@ Decimal.prototype.isOne = function() { return this.comparedTo(1) == 0; };
 // Decimal.prototype.isPositive = function() { return this.isPositive(); }; // there already is
 // Decimal.prototype.isNegative = function() { return this.isNegative(); }; // there already is
 // Decimal.prototype.comparedTo = // there already is
-Decimal.prototype.inverse = function(session) { let x = session.Decimal.div(1, this); if (!x.isFinite()) throw new CanonicalArithmetic.OverflowError(); return x; };
+Decimal.prototype.inverse = function(session) { let x = session.Decimal.div(1, this); if (!x.isFinite()) throw new Arithmetic.OverflowError(); return x; };
 Decimal.prototype.negation = function() { return this.negated(); };
 Decimal.prototype.addition = function(other, session) { return session.Decimal.add(this, other); };
 Decimal.prototype.multiplication = function(other, session) { return session.Decimal.mul(this, other); };
-Decimal.prototype.exponentiation = function(other, session) { let x = session.Decimal.pow(this, other); if (!x.isFinite()) throw new CanonicalArithmetic.OverflowError(); return x; };
-Decimal.prototype.division = function(other, session) { if (other.isZero()) throw new CanonicalArithmetic.DivisionByZeroError(); return session.Decimal.div(this, other); };
+Decimal.prototype.exponentiation = function(other, session) { let x = session.Decimal.pow(this, other); if (!x.isFinite()) throw new Arithmetic.OverflowError(); return x; };
+Decimal.prototype.division = function(other, session) { if (other.isZero()) throw new Arithmetic.DivisionByZeroError(); return session.Decimal.div(this, other); };
 // Decimal.prototype.remainder -> It must never be called
 // Decimal.prototype.gcd -> It must never be called
 Decimal.prototype.absoluteValue = function() { return this.abs(); };
 Decimal.prototype.squareRoot = function(session) { return session.Decimal.sqrt(this); };
 Decimal.prototype.exponential = function(session) { return session.Decimal.exp(this); };
-Decimal.prototype.naturalLogarithm = function(session) { let x = session.Decimal.ln(this); if (!x.isFinite()) throw new CanonicalArithmetic.DomainError(); return x; };
-// Decimal.prototype.decimalLogarithm = function(session) { let x = session.Decimal.log10(this); if (!x.isFinite()) throw new CanonicalArithmetic.DomainError(); return x; };
-// Decimal.prototype.binaryLogarithm = function(session) { let x = session.Decimal.log2(this); if (!x.isFinite()) throw new CanonicalArithmetic.DomainError(); return x; };
-// Decimal.prototype.logarithm = function(base, session) { let x = session.Decimal.log(this, base); if (!x.isFinite()) throw new CanonicalArithmetic.DomainError(); return x; };
-Decimal.prototype.aTan2 = function(x, session) { let r = session.Decimal.atan2(this, x); if (!r.isFinite()) throw CanonicalArithmetic.DivisionByZeroError(); return r; };
+Decimal.prototype.naturalLogarithm = function(session) { let x = session.Decimal.ln(this); if (!x.isFinite()) throw new Arithmetic.DomainError(); return x; };
+// Decimal.prototype.decimalLogarithm = function(session) { let x = session.Decimal.log10(this); if (!x.isFinite()) throw new Arithmetic.DomainError(); return x; };
+// Decimal.prototype.binaryLogarithm = function(session) { let x = session.Decimal.log2(this); if (!x.isFinite()) throw new Arithmetic.DomainError(); return x; };
+// Decimal.prototype.logarithm = function(base, session) { let x = session.Decimal.log(this, base); if (!x.isFinite()) throw new Arithmetic.DomainError(); return x; };
+Decimal.prototype.aTan2 = function(x, session) { let r = session.Decimal.atan2(this, x); if (!r.isFinite()) throw Arithmetic.DivisionByZeroError(); return r; };
 Decimal.prototype.sine = function(session) { return session.Decimal.sin(this); };
 Decimal.prototype.cosine = function(session) { return session.Decimal.cos(this); };
-Decimal.prototype.tangent = function(session) { let x = session.Decimal.tan(this); if (!x.isFinite()) throw new CanonicalArithmetic.DomainError(); return x; };
-Decimal.prototype.inverseSine = function(session) { let x = session.Decimal.asin(this); if (!x.isFinite()) throw new CanonicalArithmetic.DomainError(); return x; };
-Decimal.prototype.inverseCosine = function(session) { let x = session.Decimal.acos(this); if (!x.isFinite()) throw new CanonicalArithmetic.DomainError(); return x; };
+Decimal.prototype.tangent = function(session) { let x = session.Decimal.tan(this); if (!x.isFinite()) throw new Arithmetic.DomainError(); return x; };
+Decimal.prototype.inverseSine = function(session) { let x = session.Decimal.asin(this); if (!x.isFinite()) throw new Arithmetic.DomainError(); return x; };
+Decimal.prototype.inverseCosine = function(session) { let x = session.Decimal.acos(this); if (!x.isFinite()) throw new Arithmetic.DomainError(); return x; };
 Decimal.prototype.inverseTangent = function(session) { return session.Decimal.atan(this); };
 Decimal.prototype.hyperbolicSine = function(session) { return session.Decimal.sinh(this); };
 Decimal.prototype.hyperbolicCosine = function(session) { return session.Decimal.cosh(this); };
 Decimal.prototype.hyperbolicTangent = function(session) { return session.Decimal.tanh(this); };
 Decimal.prototype.inverseHyperbolicSine = function(session) { return session.Decimal.asinh(this); };
-Decimal.prototype.inverseHyperbolicCosine = function(session) { let x = session.Decimal.acosh(this); if (!x.isFinite()) throw new CanonicalArithmetic.DomainError(); return x; };
+Decimal.prototype.inverseHyperbolicCosine = function(session) { let x = session.Decimal.acosh(this); if (!x.isFinite()) throw new Arithmetic.DomainError(); return x; };
 Decimal.prototype.inverseHyperbolicTangent = function(session) { return session.Decimal.atanh(this); };
 Decimal.prototype.randomInRange = function(end, session) { return session.Decimal.add(this, session.Decimal.mul(session.Decimal.random(), session.Decimal.sub(end, this))); };
 
@@ -511,7 +511,7 @@ Decimal.prototype.integerDivision = function(d, session) {
 	return q;
 };
 
-Decimal.fromString = function(s, session) { let x; try { x = new session.Decimal(s); } catch (e) { throw new CanonicalArithmetic.ConversionError(); } return x; };
+Decimal.fromString = function(s, session) { let x; try { x = new session.Decimal(s); } catch (e) { throw new Arithmetic.ConversionError(); } return x; };
 Decimal.getRandom = function(precision, session) { return precision > 0 ? session.Decimal.random(precision) : session.Decimal.random(); };
 
 Decimal.ZERO = new Decimal(0);
@@ -536,7 +536,7 @@ Rational.prototype.toInternalText = function() { return this.numerator.toInterna
 // Rational.prototype.hasIntegerValue -> It must never be called
 // Rational.prototype.toInteger -> It must never be called
 Rational.prototype.toDecimal = function(session) { return this.numerator.toDecimal(session).division(this.denominator.toDecimal(session), session); };
-Rational.prototype.significantDigits = function() { throw new CanonicalArithmetic.TypeError(); };
+Rational.prototype.significantDigits = function() { throw new Arithmetic.TypeError(); };
 Rational.prototype.isZero = function() { return false; }
 Rational.prototype.isOne = function() { return false; }
 Rational.prototype.isPositive = function() { return this.numerator.isPositive(); };
@@ -602,7 +602,7 @@ Complex.prototype.toDecimal = function(session) {
 Complex.prototype.roundToPrecision = function(precision, session) { return new Complex(this.real.roundToPrecision(precision, session), this.imaginary.roundToPrecision(precision, session)); };
 Complex.prototype.roundToInteger = function(session) { return new Complex(this.real.roundToInteger(session), this.imaginary.roundToInteger(session)); };
 Complex.prototype.roundToDecimalPlaces = function(places, session) { return new Complex(this.real.roundToDecimalPlaces(places, session), this.imaginary.roundToDecimalPlaces(places, session)); };
-Complex.prototype.significantDigits = function() { throw new CanonicalArithmetic.TypeError(); };
+Complex.prototype.significantDigits = function() { throw new Arithmetic.TypeError(); };
 Complex.prototype.isZero = function() { return false; }
 Complex.prototype.isOne = function() { return false; }
 // Complex.prototype.isPositive -> It must never be called
@@ -616,7 +616,7 @@ Complex.prototype.negation = function() { return new Complex(this.real.negation(
 // Complex.prototype.gcd -> It must never be called
 // Complex.prototype.absoluteValue -> It must never be called
 
-Complex.getI = (session) => new Complex(CanonicalArithmetic.getIntegerZero(session), CanonicalArithmetic.getIntegerOne(session));
+Complex.getI = (session) => new Complex(Arithmetic.getIntegerZero(session), Arithmetic.getIntegerOne(session));
 
 Complex.prototype.conjugate = function() { return new Complex(this.real, this.imaginary.negation()); };
 
@@ -628,24 +628,24 @@ Complex.prototype.normalize = function() {
 	return this;
 };
 
-Complex.prototype.toNative = function() { throw new CanonicalArithmetic.TypeError(); };
+Complex.prototype.toNative = function() { throw new Arithmetic.TypeError(); };
 
 //////////////////////////
 
-CanonicalArithmetic.toDecimal = (n, session) => n.type === 1 ? n : n.toDecimal(session);
+Arithmetic.toDecimal = (n, session) => n.type === 1 ? n : n.toDecimal(session);
 
 //////////////////////////
 
-CanonicalArithmetic.isInteger  = number => number.type === 0;
-CanonicalArithmetic.isDecimal  = number => number.type === 1;
-CanonicalArithmetic.isRational = number => number.type === 2;
-CanonicalArithmetic.isComplex  = number => number.type === 3;
+Arithmetic.isInteger  = number => number.type === 0;
+Arithmetic.isDecimal  = number => number.type === 1;
+Arithmetic.isRational = number => number.type === 2;
+Arithmetic.isComplex  = number => number.type === 3;
 
 
 // shorthands
 
-CanonicalArithmetic.subtraction = (n1, n2, s) => CanonicalArithmetic.addition(n1, n2.negation(), s);
-CanonicalArithmetic.square = (n, s) => n.multiplication(n, s);
+Arithmetic.subtraction = (n1, n2, s) => Arithmetic.addition(n1, n2.negation(), s);
+Arithmetic.square = (n, s) => n.multiplication(n, s);
 
 // comparison
 
@@ -661,7 +661,7 @@ const comparisonMap = [
 		(i, r, s) => i.multiplication(r.denominator).comparedTo(r.numerator)
 		,
 		// integer comparedTo complex
-		(i, c, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(i, c, s) => { throw new Arithmetic.TypeError(); }
 	],
 	[
 		// decimal comparedTo integer
@@ -674,7 +674,7 @@ const comparisonMap = [
 		(d, r, s) => d.comparedTo(r.toDecimal(s))
 		,
 		// decimal comparedTo complex
-		(d, c, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(d, c, s) => { throw new Arithmetic.TypeError(); }
 	],
 	[
 		// rational comparedTo integer
@@ -687,24 +687,24 @@ const comparisonMap = [
 		(r1, r2, s) => r1.numerator.multiplication(r2.denominator).comparedTo(r2.numerator.multiplication(r1.denominator))
 		,
 		// rational comparedTo complex
-		(r, c, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(r, c, s) => { throw new Arithmetic.TypeError(); }
 	],
 	[
 		// complex comparedTo integer
-		(c, i, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(c, i, s) => { throw new Arithmetic.TypeError(); }
 		,
 		// complex comparedTo decimal
-		(c, d, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(c, d, s) => { throw new Arithmetic.TypeError(); }
 		,
 		// complex comparedTo rational
-		(c, r, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(c, r, s) => { throw new Arithmetic.TypeError(); }
 		,
 		// complex comparedTo complex, returns 0 (equals) or undefined (different)
-		(c1, c2, s) => CanonicalArithmetic.comparison(c1.real, c2.real) == 0 && CanonicalArithmetic.comparison(c1.imaginary, c2.imaginary) == 0 ? 0 : undefined
+		(c1, c2, s) => Arithmetic.comparison(c1.real, c2.real) == 0 && Arithmetic.comparison(c1.imaginary, c2.imaginary) == 0 ? 0 : undefined
 	]
 ];
 
-CanonicalArithmetic.comparison = (n1, n2, session) => comparisonMap[n1.type][n2.type](n1, n2, session);
+Arithmetic.comparison = (n1, n2, session) => comparisonMap[n1.type][n2.type](n1, n2, session);
 
 // addition
 
@@ -717,14 +717,14 @@ const additionMap = [
 		(i, d, s) => i.toDecimal(s).addition(d, s)
 		,
 		// integer + rational
-		(i, r, s) => CanonicalArithmetic.createRational(
+		(i, r, s) => Arithmetic.createRational(
 			i.multiplication(r.denominator, s).addition(r.numerator, s),
 			r.denominator
 		)
 		,
 		// integer + complex
-		(i, c, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.addition(i, c.real, s),
+		(i, c, s) => Arithmetic.createComplex(
+			Arithmetic.addition(i, c.real, s),
 			c.imaginary
 		)
 	],
@@ -742,14 +742,14 @@ const additionMap = [
 		)
 		,
 		// decimal + complex
-		(d, c, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.addition(d, c.real, s),
+		(d, c, s) => Arithmetic.createComplex(
+			Arithmetic.addition(d, c.real, s),
 			c.imaginary
 		)
 	],
 	[
 		// rational + integer
-		(r, i, s) => CanonicalArithmetic.createRational(
+		(r, i, s) => Arithmetic.createRational(
 			r.numerator.addition(i.multiplication(r.denominator)),
 			r.denominator
 		)
@@ -758,44 +758,44 @@ const additionMap = [
 		(r, d, s) => r.numerator.division(r.denominator, s).addition(d, s)
 		,
 		// rational + rational
-		(r1, r2, s) => CanonicalArithmetic.createRational(
+		(r1, r2, s) => Arithmetic.createRational(
 			r1.numerator.multiplication(r2.denominator).addition(r1.denominator.multiplication(r2.numerator)),
 			r1.denominator.multiplication(r2.denominator)
 		)
 		,
 		// rational + complex
-		(r, c, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.addition(r, c.real, s),
+		(r, c, s) => Arithmetic.createComplex(
+			Arithmetic.addition(r, c.real, s),
 			c.imaginary
 		)
 	],
 	[
 		// complex + integer
-		(c, i, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.addition(c.real, i, s),
+		(c, i, s) => Arithmetic.createComplex(
+			Arithmetic.addition(c.real, i, s),
 			c.imaginary
 		)
 		,
 		// complex + decimal
-		(c, d, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.addition(c.real, d, s),
+		(c, d, s) => Arithmetic.createComplex(
+			Arithmetic.addition(c.real, d, s),
 			c.imaginary
 		)
 		,
 		// complex + rational
-		(c, r, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.addition(c.real, r, s),
+		(c, r, s) => Arithmetic.createComplex(
+			Arithmetic.addition(c.real, r, s),
 			c.imaginary
 		),
 		// complex + complex
-		(c1, c2, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.addition(c1.real, c2.real, s),
-			CanonicalArithmetic.addition(c1.imaginary, c2.imaginary, s)
+		(c1, c2, s) => Arithmetic.createComplex(
+			Arithmetic.addition(c1.real, c2.real, s),
+			Arithmetic.addition(c1.imaginary, c2.imaginary, s)
 		)
 	]
 ];
 
-CanonicalArithmetic.addition = (n1, n2, session) => additionMap[n1.type][n2.type](n1, n2, session);
+Arithmetic.addition = (n1, n2, session) => additionMap[n1.type][n2.type](n1, n2, session);
 
 // multiplication
 
@@ -808,15 +808,15 @@ const multiplicationMap = [
 		(i, d, s) => i.toDecimal(s).multiplication(d, s)
 		,
 		// integer × rational
-		(i, r, s) => CanonicalArithmetic.createRational(
+		(i, r, s) => Arithmetic.createRational(
 			i.multiplication(r.numerator, s),
 			r.denominator
 		)
 		,
 		// integer × complex
-		(i, c, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.multiplication(i, c.real, s),
-			CanonicalArithmetic.multiplication(i, c.imaginary, s)
+		(i, c, s) => Arithmetic.createComplex(
+			Arithmetic.multiplication(i, c.real, s),
+			Arithmetic.multiplication(i, c.imaginary, s)
 		)
 	],
 	[
@@ -833,14 +833,14 @@ const multiplicationMap = [
 		)
 		,
 		// decimal × complex
-		(d, c, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.multiplication(d, c.real, s),
-			CanonicalArithmetic.multiplication(d, c.imaginary, s),
+		(d, c, s) => Arithmetic.createComplex(
+			Arithmetic.multiplication(d, c.real, s),
+			Arithmetic.multiplication(d, c.imaginary, s),
 		)
 	],
 	[
 		// rational × integer
-		(r, i, s) => CanonicalArithmetic.createRational(
+		(r, i, s) => Arithmetic.createRational(
 			r.numerator.multiplication(i),
 			r.denominator
 		)
@@ -849,87 +849,87 @@ const multiplicationMap = [
 		(r, d, s) => r.numerator.division(r.denominator, s).multiplication(d, s)
 		,
 		// rational × rational
-		(r1, r2, s) => CanonicalArithmetic.createRational(
+		(r1, r2, s) => Arithmetic.createRational(
 			r1.numerator.multiplication(r2.numerator),
 			r1.denominator.multiplication(r2.denominator)
 		)
 		,
 		// rational × complex
-		(r, c, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.multiplication(r, c.real, s),
-			CanonicalArithmetic.multiplication(r, c.imaginary, s),
+		(r, c, s) => Arithmetic.createComplex(
+			Arithmetic.multiplication(r, c.real, s),
+			Arithmetic.multiplication(r, c.imaginary, s),
 		)
 	]
 	,
 	[
 		// complex × integer
-		(c, i, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.multiplication(c.real, i, s),
-			CanonicalArithmetic.multiplication(c.imaginary, i, s)
+		(c, i, s) => Arithmetic.createComplex(
+			Arithmetic.multiplication(c.real, i, s),
+			Arithmetic.multiplication(c.imaginary, i, s)
 		)
 		,
 		// complex × decimal
-		(c, d, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.multiplication(c.real, d, s),
-			CanonicalArithmetic.multiplication(c.imaginary, d, s)
+		(c, d, s) => Arithmetic.createComplex(
+			Arithmetic.multiplication(c.real, d, s),
+			Arithmetic.multiplication(c.imaginary, d, s)
 		)
 		,
 		// complex × rational
-		(c, r, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.multiplication(c.real, r, s),
-			CanonicalArithmetic.multiplication(c.imaginary, r, s)
+		(c, r, s) => Arithmetic.createComplex(
+			Arithmetic.multiplication(c.real, r, s),
+			Arithmetic.multiplication(c.imaginary, r, s)
 		)
 		,
 		// complex × complex
-		(c1, c2, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.addition(
-				CanonicalArithmetic.multiplication(c1.real, c2.real, s),
-				CanonicalArithmetic.multiplication(c1.imaginary, c2.imaginary, s).negation(),
+		(c1, c2, s) => Arithmetic.createComplex(
+			Arithmetic.addition(
+				Arithmetic.multiplication(c1.real, c2.real, s),
+				Arithmetic.multiplication(c1.imaginary, c2.imaginary, s).negation(),
 				s
 			),
-			CanonicalArithmetic.addition(
-				CanonicalArithmetic.multiplication(c1.real, c2.imaginary, s),
-				CanonicalArithmetic.multiplication(c1.imaginary, c2.real, s),
+			Arithmetic.addition(
+				Arithmetic.multiplication(c1.real, c2.imaginary, s),
+				Arithmetic.multiplication(c1.imaginary, c2.real, s),
 				s
 			)
 		)
 	]
 ];
 
-CanonicalArithmetic.multiplication = (n1, n2, session) => multiplicationMap[n1.type][n2.type](n1, n2, session);
+Arithmetic.multiplication = (n1, n2, session) => multiplicationMap[n1.type][n2.type](n1, n2, session);
 
 // division
 
 const divisionMap = [
 	[
 		// integer ÷ integer
-		(i1, i2, s) => s.numeric ? i1.toDecimal(s).division(i2.toDecimal(s)) : CanonicalArithmetic.createRational(i1, i2)
+		(i1, i2, s) => s.numeric ? i1.toDecimal(s).division(i2.toDecimal(s)) : Arithmetic.createRational(i1, i2)
 		,
 		// integer ÷ decimal
 		(i, d, s) => i.toDecimal(s).division(d, s)
 		,
 		// integer ÷ rational
-		(i, r, s) => CanonicalArithmetic.createRational(
+		(i, r, s) => Arithmetic.createRational(
 			i.multiplication(r.denominator),
 			r.numerator
 		)
 		,
 		// integer ÷ complex
 		(i, c, s) => {
-			let hyp = CanonicalArithmetic.addition(
-				CanonicalArithmetic.multiplication(c.real, c.real, s),
-				CanonicalArithmetic.multiplication(c.imaginary, c.imaginary, s),
+			let hyp = Arithmetic.addition(
+				Arithmetic.multiplication(c.real, c.real, s),
+				Arithmetic.multiplication(c.imaginary, c.imaginary, s),
 				s
 			);
 			
-			return CanonicalArithmetic.createComplex(
-				CanonicalArithmetic.division(
-					CanonicalArithmetic.multiplication(i, c.real, s),
+			return Arithmetic.createComplex(
+				Arithmetic.division(
+					Arithmetic.multiplication(i, c.real, s),
 					hyp,
 					s
 				),
-				CanonicalArithmetic.division(
-					CanonicalArithmetic.multiplication(i, c.imaginary, s),
+				Arithmetic.division(
+					Arithmetic.multiplication(i, c.imaginary, s),
 					hyp,
 					s
 				).negation(),
@@ -948,20 +948,20 @@ const divisionMap = [
 		,
 		// decimal ÷ complex
 		(d, c, s) => {
-			let hyp = CanonicalArithmetic.addition(
-				CanonicalArithmetic.multiplication(c.real, c.real, s),
-				CanonicalArithmetic.multiplication(c.imaginary, c.imaginary, s),
+			let hyp = Arithmetic.addition(
+				Arithmetic.multiplication(c.real, c.real, s),
+				Arithmetic.multiplication(c.imaginary, c.imaginary, s),
 				s
 			);
 			
-			return CanonicalArithmetic.createComplex(
-				CanonicalArithmetic.division(
-					CanonicalArithmetic.multiplication(d, c.real, s),
+			return Arithmetic.createComplex(
+				Arithmetic.division(
+					Arithmetic.multiplication(d, c.real, s),
 					hyp,
 					s
 				),
-				CanonicalArithmetic.division(
-					CanonicalArithmetic.multiplication(d, c.imaginary, s),
+				Arithmetic.division(
+					Arithmetic.multiplication(d, c.imaginary, s),
 					hyp,
 					s
 				).negation(),
@@ -970,7 +970,7 @@ const divisionMap = [
 	],
 	[
 		// rational ÷ integer
-		(r, i, s) => CanonicalArithmetic.createRational(
+		(r, i, s) => Arithmetic.createRational(
 			r.numerator,
 			r.denominator.multiplication(i)
 		)
@@ -979,27 +979,27 @@ const divisionMap = [
 		(r, d, s) => r.toDecimal(s).division(d, s)
 		,
 		// rational ÷ rational
-		(r1, r2, s) => CanonicalArithmetic.createRational(
+		(r1, r2, s) => Arithmetic.createRational(
 			r1.numerator.multiplication(r2.denominator),
 			r1.denominator.multiplication(r2.numerator)
 		)
 		,
 		// rational ÷ complex
 		(r, c, s) => {
-			let hyp = CanonicalArithmetic.addition(
-				CanonicalArithmetic.multiplication(c.real, c.real, s),
-				CanonicalArithmetic.multiplication(c.imaginary, c.imaginary, s),
+			let hyp = Arithmetic.addition(
+				Arithmetic.multiplication(c.real, c.real, s),
+				Arithmetic.multiplication(c.imaginary, c.imaginary, s),
 				s
 			);
 			
-			return CanonicalArithmetic.createComplex(
-				CanonicalArithmetic.division(
-					CanonicalArithmetic.multiplication(r, c.real, s),
+			return Arithmetic.createComplex(
+				Arithmetic.division(
+					Arithmetic.multiplication(r, c.real, s),
 					hyp,
 					s
 				),
-				CanonicalArithmetic.division(
-					CanonicalArithmetic.multiplication(r, c.imaginary, s),
+				Arithmetic.division(
+					Arithmetic.multiplication(r, c.imaginary, s),
 					hyp,
 					s
 				).negation(),
@@ -1008,45 +1008,45 @@ const divisionMap = [
 	],
 	[
 		// complex ÷ integer
-		(c, i, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.division(c.real, i, s),
-			CanonicalArithmetic.division(c.imaginary, i, s)
+		(c, i, s) => Arithmetic.createComplex(
+			Arithmetic.division(c.real, i, s),
+			Arithmetic.division(c.imaginary, i, s)
 		)
 		,
 		// complex ÷ decimal
-		(c, d, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.division(c.real, d, s),
-			CanonicalArithmetic.division(c.imaginary, d, s)
+		(c, d, s) => Arithmetic.createComplex(
+			Arithmetic.division(c.real, d, s),
+			Arithmetic.division(c.imaginary, d, s)
 		)
 		,
 		// complex ÷ rational
-		(c, r, s) => CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.division(c.real, r, s),
-			CanonicalArithmetic.division(c.imaginary, r, s)
+		(c, r, s) => Arithmetic.createComplex(
+			Arithmetic.division(c.real, r, s),
+			Arithmetic.division(c.imaginary, r, s)
 		)
 		,
 		// complex ÷ complex
 		(c1, c2, s) => {
-			let hyp = CanonicalArithmetic.addition(
-				CanonicalArithmetic.multiplication(c2.real, c2.real, s),
-				CanonicalArithmetic.multiplication(c2.imaginary, c2.imaginary, s),
+			let hyp = Arithmetic.addition(
+				Arithmetic.multiplication(c2.real, c2.real, s),
+				Arithmetic.multiplication(c2.imaginary, c2.imaginary, s),
 				s
 			);
 			
-			return CanonicalArithmetic.createComplex(
-				CanonicalArithmetic.division(
-					CanonicalArithmetic.addition(
-						CanonicalArithmetic.multiplication(c1.real, c2.real, s),
-						CanonicalArithmetic.multiplication(c1.imaginary, c2.imaginary, s),
+			return Arithmetic.createComplex(
+				Arithmetic.division(
+					Arithmetic.addition(
+						Arithmetic.multiplication(c1.real, c2.real, s),
+						Arithmetic.multiplication(c1.imaginary, c2.imaginary, s),
 						s
 					),
 					hyp,
 					s
 				),
-				CanonicalArithmetic.division(
-					CanonicalArithmetic.addition(
-						CanonicalArithmetic.multiplication(c1.imaginary, c2.real, s),
-						CanonicalArithmetic.multiplication(c1.real, c2.imaginary, s).negation(),
+				Arithmetic.division(
+					Arithmetic.addition(
+						Arithmetic.multiplication(c1.imaginary, c2.real, s),
+						Arithmetic.multiplication(c1.real, c2.imaginary, s).negation(),
 						s
 					),
 					hyp,
@@ -1057,12 +1057,12 @@ const divisionMap = [
 	]
 ];
 
-CanonicalArithmetic.division = (n1, n2, session) => divisionMap[n1.type][n2.type](n1, n2, session);
+Arithmetic.division = (n1, n2, session) => divisionMap[n1.type][n2.type](n1, n2, session);
 
 // exponentiation
 
 const complexExponentiation = (a, b, s) => {
-	let zero = CanonicalArithmetic.getDecimalZero(s);
+	let zero = Arithmetic.getDecimalZero(s);
 	return complexComplexExponentiation(a, zero, b, zero, s);
 };
 
@@ -1074,7 +1074,7 @@ const complexComplexExponentiation = (a, b, c, d, s) => {
 		s
 	);
 	let arg = d.multiplication(r.naturalLogarithm(s), s).addition(c.multiplication(theta, s), s);
-	return CanonicalArithmetic.createComplex(
+	return Arithmetic.createComplex(
 		f.multiplication(arg.cosine(s), s),
 		f.multiplication(arg.sine(s), s),
 	);
@@ -1086,9 +1086,9 @@ const powerOfI = (number, n, s) => {
 	
 	switch (i) {
 		case 0: return number;
-		case 1: return CanonicalArithmetic.multiplication(number, Complex.getI(s), s);
+		case 1: return Arithmetic.multiplication(number, Complex.getI(s), s);
 		case 2: return number.negation();
-		case 3: return CanonicalArithmetic.multiplication(number, Complex.getI(s).negation(), s);
+		case 3: return Arithmetic.multiplication(number, Complex.getI(s).negation(), s);
 	}
 };
 
@@ -1098,8 +1098,8 @@ const exponentiationMap = [
 		(i1, i2, s) => (
 			!i2.isNegative() ?
 			i1.exponentiation(i2) :
-			CanonicalArithmetic.createRational(
-				CanonicalArithmetic.getIntegerOne(s),
+			Arithmetic.createRational(
+				Arithmetic.getIntegerOne(s),
 				i1.exponentiation(i2.negation())
 			)
 		)
@@ -1113,7 +1113,7 @@ const exponentiationMap = [
 		,
 		// integer ^ rational
 		(i, r, s) => {
-			if (!s.numeric) throw new CanonicalArithmetic.NonNumericError();
+			if (!s.numeric) throw new Arithmetic.NonNumericError();
 			let div = r.numerator.toDecimal(s).division(r.denominator.toDecimal(s), s);
 			return (
 				i.isNegative() ?
@@ -1124,10 +1124,10 @@ const exponentiationMap = [
 		,
 		// integer ^ complex
 		(i, c, s) => {
-			if (!s.numeric) throw new CanonicalArithmetic.NonNumericError();
+			if (!s.numeric) throw new Arithmetic.NonNumericError();
 			return complexComplexExponentiation(
 				i.toDecimal(s),
-				CanonicalArithmetic.getDecimalZero(s),
+				Arithmetic.getDecimalZero(s),
 				c.real.toDecimal(s),
 				c.imaginary.toDecimal(s),
 				s
@@ -1154,7 +1154,7 @@ const exponentiationMap = [
 		// decimal ^ complex
 		(d, c, s) => complexComplexExponentiation(
 			d,
-			CanonicalArithmetic.getDecimalZero(s),
+			Arithmetic.getDecimalZero(s),
 			c.real.toDecimal(s),
 			c.imaginary.toDecimal(s),
 			s
@@ -1164,14 +1164,14 @@ const exponentiationMap = [
 		// rational ^ integer
 		(r, i, s) => {
 			if (!i.isNegative()) {
-				return CanonicalArithmetic.createRational(
+				return Arithmetic.createRational(
 					r.numerator.exponentiation(i),
 					r.denominator.exponentiation(i)
 				);
 			}
 			else {
 				i = i.negation();
-				return CanonicalArithmetic.createRational(
+				return Arithmetic.createRational(
 					r.denominator.exponentiation(i),
 					r.numerator.exponentiation(i)
 				);
@@ -1190,7 +1190,7 @@ const exponentiationMap = [
 		,
 		// rational ^ rational
 		(r1, r2, s) => {
-			if (!s.numeric) throw new CanonicalArithmetic.NonNumericError();
+			if (!s.numeric) throw new Arithmetic.NonNumericError();
 			let div1 = r1.numerator.toDecimal(s).division(r1.denominator.toDecimal(s), s);
 			let div2 = r2.numerator.toDecimal(s).division(r2.denominator.toDecimal(s), s);
 			return (
@@ -1202,10 +1202,10 @@ const exponentiationMap = [
 		,
 		// rational ^ complex
 		(r, c, s) => {
-			if (!s.numeric) throw new CanonicalArithmetic.NonNumericError();
+			if (!s.numeric) throw new Arithmetic.NonNumericError();
 			return complexComplexExponentiation(
 				r.toDecimal(s),
-				CanonicalArithmetic.getDecimalZero(s),
+				Arithmetic.getDecimalZero(s),
 				c.real.toDecimal(s),
 				c.imaginary.toDecimal(s),
 				s
@@ -1216,15 +1216,15 @@ const exponentiationMap = [
 		// complex ^ integer
 		(c, i, s) => {
 			if (c.real.isZero()) {
-				return powerOfI(CanonicalArithmetic.exponentiation(c.imaginary, i, s), i, s);
+				return powerOfI(Arithmetic.exponentiation(c.imaginary, i, s), i, s);
 			}
 			else {
-				if (!s.numeric) throw new CanonicalArithmetic.NonNumericError();
+				if (!s.numeric) throw new Arithmetic.NonNumericError();
 				return complexComplexExponentiation(
 					c.real.toDecimal(s),
 					c.imaginary.toDecimal(s),
 					i.toDecimal(s),
-					CanonicalArithmetic.getDecimalZero(s),
+					Arithmetic.getDecimalZero(s),
 					s
 				);
 			}
@@ -1235,14 +1235,14 @@ const exponentiationMap = [
 			if (c.real.isZero()) {
 				if (d.hasIntegerValue()) {
 					let int = d.toInteger(s);
-					return powerOfI(CanonicalArithmetic.exponentiation(c.imaginary, int, s), int, s);
+					return powerOfI(Arithmetic.exponentiation(c.imaginary, int, s), int, s);
 				}
 				else {
 					return complexComplexExponentiation(
-						CanonicalArithmetic.getDecimalZero(s),
+						Arithmetic.getDecimalZero(s),
 						c.imaginary.toDecimal(s),
 						d,
-						CanonicalArithmetic.getDecimalZero(s),
+						Arithmetic.getDecimalZero(s),
 						s
 					);
 				}
@@ -1252,7 +1252,7 @@ const exponentiationMap = [
 					c.real.toDecimal(s),
 					c.imaginary.toDecimal(s),
 					d,
-					CanonicalArithmetic.getDecimalZero(s),
+					Arithmetic.getDecimalZero(s),
 					s
 				);
 			}
@@ -1260,19 +1260,19 @@ const exponentiationMap = [
 		,
 		// complex ^ rational
 		(c, r, s) => {
-			if (!s.numeric) throw new CanonicalArithmetic.NonNumericError();
+			if (!s.numeric) throw new Arithmetic.NonNumericError();
 			complexComplexExponentiation(
 				c.real.toDecimal(s),
 				c.imaginary.toDecimal(s),
 				r.toDecimal(s),
-				CanonicalArithmetic.getDecimalZero(s),
+				Arithmetic.getDecimalZero(s),
 				s
 			);
 		}
 		,
 		// complex ^ complex
 		(c1, c2, s) => {
-			if (!s.numeric) throw new CanonicalArithmetic.NonNumericError();
+			if (!s.numeric) throw new Arithmetic.NonNumericError();
 			complexComplexExponentiation(
 				c1.real.toDecimal(s),
 				c1.imaginary.toDecimal(s),
@@ -1284,13 +1284,13 @@ const exponentiationMap = [
 	]
 ];
 
-CanonicalArithmetic.exponentiation = (n1, n2, session) => exponentiationMap[n1.type][n2.type](n1, n2, session);
+Arithmetic.exponentiation = (n1, n2, session) => exponentiationMap[n1.type][n2.type](n1, n2, session);
 
 // Div/Mod
 
-const getRemainder = (dividend, divisor, quotient, session) => CanonicalArithmetic.addition(
+const getRemainder = (dividend, divisor, quotient, session) => Arithmetic.addition(
 	dividend,
-	CanonicalArithmetic.multiplication(divisor, quotient, session).negation(),
+	Arithmetic.multiplication(divisor, quotient, session).negation(),
 	session
 );
 
@@ -1318,7 +1318,7 @@ const divModMap = [
 		}
 		,
 		// integer DivMod complex
-		(i, c, div, mod, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(i, c, div, mod, s) => { throw new Arithmetic.TypeError(); }
 	],
 	[
 		// decimal DivMod integer
@@ -1342,7 +1342,7 @@ const divModMap = [
 			return div && mod ? [ quo,  rem ] : (div ? quo : rem);
 		},
 		// decimal DivMod complex
-		(d, c, div, mod, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(d, c, div, mod, s) => { throw new Arithmetic.TypeError(); }
 	],
 	[
 		// rational DivMod integer
@@ -1367,24 +1367,24 @@ const divModMap = [
 		}
 		,
 		// rational DivMod complex
-		(r, c, div, mod, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(r, c, div, mod, s) => { throw new Arithmetic.TypeError(); }
 	],
 	[
 		// complex DivMod integer
-		(c, i, div, mod, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(c, i, div, mod, s) => { throw new Arithmetic.TypeError(); }
 		,
 		// complex DivMod decimal
-		(c, d, div, mod, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(c, d, div, mod, s) => { throw new Arithmetic.TypeError(); }
 		,
 		// complex DivMod rational
-		(c, r, div, mod, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(c, r, div, mod, s) => { throw new Arithmetic.TypeError(); }
 		,
 		// complex DivMod complex
-		(c1, c2, div, mod, s) => { throw new CanonicalArithmetic.TypeError(); }
+		(c1, c2, div, mod, s) => { throw new Arithmetic.TypeError(); }
 	]
 ];
 
-CanonicalArithmetic.divMod = (n1, n2, div, mod, session) => divModMap[n1.type][n2.type](n1, n2, div, mod, session);
+Arithmetic.divMod = (n1, n2, div, mod, session) => divModMap[n1.type][n2.type](n1, n2, div, mod, session);
 
 // Complex trigonometric and hyperbolic functions
 
@@ -1402,7 +1402,7 @@ const sineMap = [
 	}
 ];
 
-CanonicalArithmetic.sine = (n, session) => sineMap[n.type](n, session);
+Arithmetic.sine = (n, session) => sineMap[n.type](n, session);
 
 const cosineMap = [
 	(i, s) => i.toDecimal(s).cosine(s), // cosine integer
@@ -1418,7 +1418,7 @@ const cosineMap = [
 	}
 ];
 
-CanonicalArithmetic.cosine = (n, session) => cosineMap[n.type](n, session);
+Arithmetic.cosine = (n, session) => cosineMap[n.type](n, session);
 
 const tangentMap = [
 	(i, s) => i.toDecimal(s).tangent(s), // tangent integer
@@ -1431,7 +1431,7 @@ const tangentMap = [
 		let cosa = a.cosine(s);
 		let sinhb = b.hyperbolicSine(s);
 		let coshb = b.hyperbolicCosine(s);
-		return CanonicalArithmetic.division(
+		return Arithmetic.division(
 			new Complex(
 				sina.multiplication(coshb, s),
 				cosa.multiplication(sinhb, s)
@@ -1445,7 +1445,7 @@ const tangentMap = [
 	}
 ];
 
-CanonicalArithmetic.tangent = (n, session) => tangentMap[n.type](n, session);
+Arithmetic.tangent = (n, session) => tangentMap[n.type](n, session);
 
 const cotangentMap = [
 	(i, s) => i.toDecimal(s).tangent(s).inverse(s), // cotangent integer
@@ -1458,7 +1458,7 @@ const cotangentMap = [
 		let cosa = a.cosine(s);
 		let sinhb = b.hyperbolicSine(s);
 		let coshb = b.hyperbolicCosine(s);
-		return CanonicalArithmetic.division(
+		return Arithmetic.division(
 			new Complex(
 				cosa.multiplication(coshb, s),
 				sina.multiplication(sinhb, s).negation()
@@ -1472,7 +1472,7 @@ const cotangentMap = [
 	}
 ];
 
-CanonicalArithmetic.cotangent = (n, session) => cotangentMap[n.type](n, session);
+Arithmetic.cotangent = (n, session) => cotangentMap[n.type](n, session);
 
 const secantMap = [
 	(i, s) => i.toDecimal(s).cosine(s).inverse(s), // secant integer
@@ -1485,8 +1485,8 @@ const secantMap = [
 		let cosa = a.cosine(s);
 		let sinhb = b.hyperbolicSine(s);
 		let coshb = b.hyperbolicCosine(s);
-		let d = CanonicalArithmetic.square(cosa, s).multiplication(CanonicalArithmetic.square(coshb, s), s).addition(
-			CanonicalArithmetic.square(sina, s).multiplication(CanonicalArithmetic.square(sinhb, s), s)
+		let d = Arithmetic.square(cosa, s).multiplication(Arithmetic.square(coshb, s), s).addition(
+			Arithmetic.square(sina, s).multiplication(Arithmetic.square(sinhb, s), s)
 		);
 		return new Complex(
 			cosa.multiplication(coshb, s).division(d, s),
@@ -1495,7 +1495,7 @@ const secantMap = [
 	}
 ];
 
-CanonicalArithmetic.secant = (n, session) => secantMap[n.type](n, session);
+Arithmetic.secant = (n, session) => secantMap[n.type](n, session);
 
 const cosecantMap = [
 	(i, s) => i.toDecimal(s).sine(s).inverse(s), // cosecant integer
@@ -1508,8 +1508,8 @@ const cosecantMap = [
 		let cosa = a.cosine(s);
 		let sinhb = b.hyperbolicSine(s);
 		let coshb = b.hyperbolicCosine(s);
-		let d = CanonicalArithmetic.square(sina, s).multiplication(CanonicalArithmetic.square(coshb, s), s).addition(
-			CanonicalArithmetic.square(cosa, s).multiplication(CanonicalArithmetic.square(sinhb, s), s)
+		let d = Arithmetic.square(sina, s).multiplication(Arithmetic.square(coshb, s), s).addition(
+			Arithmetic.square(cosa, s).multiplication(Arithmetic.square(sinhb, s), s)
 		);
 		return new Complex(
 			sina.multiplication(coshb, s).division(d, s),
@@ -1518,215 +1518,215 @@ const cosecantMap = [
 	}
 ];
 
-CanonicalArithmetic.cosecant = (n, session) => cosecantMap[n.type](n, session);
+Arithmetic.cosecant = (n, session) => cosecantMap[n.type](n, session);
 
 const inverseSineMap = [
 	(i, s) => i.toDecimal(s).inverseSine(s), // inverse sine integer
 	(d, s) => d.inverseSine(s),              // inverse sine decimal
 	(r, s) => r.toDecimal(s).inverseSine(s), // inverse sine rational
 	(c, s) => {                              // inverse sine complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseSine = (n, session) => inverseSineMap[n.type](n, session);
+Arithmetic.inverseSine = (n, session) => inverseSineMap[n.type](n, session);
 
 const inverseCosineMap = [
 	(i, s) => i.toDecimal(s).inverseCosine(s), // inverse cosine integer
 	(d, s) => d.inverseCosine(s),              // inverse cosine decimal
 	(r, s) => r.toDecimal(s).inverseCosine(s), // inverse cosine rational
 	(c, s) => {                                // inverse cosine complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseCosine = (n, session) => inverseCosineMap[n.type](n, session);
+Arithmetic.inverseCosine = (n, session) => inverseCosineMap[n.type](n, session);
 
 const inverseTangentMap = [
 	(i, s) => i.toDecimal(s).inverseTangent(s), // inverse tangent integer
 	(d, s) => d.inverseTangent(s),              // inverse tangent decimal
 	(r, s) => r.toDecimal(s).inverseTangent(s), // inverse tangent rational
 	(c, s) => {                                 // inverse tangent complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseTangent = (n, session) => inverseTangentMap[n.type](n, session);
+Arithmetic.inverseTangent = (n, session) => inverseTangentMap[n.type](n, session);
 
 const inverseCotangentMap = [
 	(i, s) => i.toDecimal(s).inverse(s).inverseTangent(s), // inverse cotangent integer
 	(d, s) => d.inverse(s).inverseTangent(s),              // inverse cotangent decimal
 	(r, s) => r.toDecimal(s).inverse(s).inverseTangent(s), // inverse cotangent rational
 	(c, s) => {                                            // inverse cotangent complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseCotangent = (n, session) => inverseCotangentMap[n.type](n, session);
+Arithmetic.inverseCotangent = (n, session) => inverseCotangentMap[n.type](n, session);
 
 const inverseSecantMap = [
 	(i, s) => i.toDecimal(s).inverse(s).inverseCosine(s), // inverse secant integer
 	(d, s) => d.inverse(s).inverseCosine(s),              // inverse secant decimal
 	(r, s) => r.toDecimal(s).inverse(s).inverseCosine(s), // inverse secant rational
 	(c, s) => {                                           // inverse secant complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseSecant = (n, session) => inverseSecantMap[n.type](n, session);
+Arithmetic.inverseSecant = (n, session) => inverseSecantMap[n.type](n, session);
 
 const inverseCosecantMap = [
 	(i, s) => i.toDecimal(s).inverse(s).inverseSine(s), // inverse cosecant integer
 	(d, s) => d.inverse(s).inverseSine(s),              // inverse cosecant decimal
 	(r, s) => r.toDecimal(s).inverse(s).inverseSine(s), // inverse cosecant rational
 	(c, s) => {                                         // inverse cosecant complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseCosecant = (n, session) => inverseCosecantMap[n.type](n, session);
+Arithmetic.inverseCosecant = (n, session) => inverseCosecantMap[n.type](n, session);
 
 const hyperbolicSineMap = [
 	(i, s) => i.toDecimal(s).hyperbolicSine(s), // hyperbolic sine integer
 	(d, s) => d.hyperbolicSine(s),              // hyperbolic sine decimal
 	(r, s) => r.toDecimal(s).hyperbolicSine(s), // hyperbolic sine rational
 	(c, s) => {                                 // hyperbolic sine complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.hyperbolicSine = (n, session) => hyperbolicSineMap[n.type](n, session);
+Arithmetic.hyperbolicSine = (n, session) => hyperbolicSineMap[n.type](n, session);
 
 const hyperbolicCosineMap = [
 	(i, s) => i.toDecimal(s).hyperbolicCosine(s), // hyperbolic cosine integer
 	(d, s) => d.hyperbolicCosine(s),              // hyperbolic cosine decimal
 	(r, s) => r.toDecimal(s).hyperbolicCosine(s), // hyperbolic cosine rational
 	(c, s) => {                                   // hyperbolic cosine complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.hyperbolicCosine = (n, session) => hyperbolicCosineMap[n.type](n, session);
+Arithmetic.hyperbolicCosine = (n, session) => hyperbolicCosineMap[n.type](n, session);
 
 const hyperbolicTangentMap = [
 	(i, s) => i.toDecimal(s).hyperbolicTangent(s), // hyperbolic tangent integer
 	(d, s) => d.hyperbolicTangent(s),              // hyperbolic tangent decimal
 	(r, s) => r.toDecimal(s).hyperbolicTangent(s), // hyperbolic tangent rational
 	(c, s) => {                                    // hyperbolic tangent complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.hyperbolicTangent = (n, session) => hyperbolicTangentMap[n.type](n, session);
+Arithmetic.hyperbolicTangent = (n, session) => hyperbolicTangentMap[n.type](n, session);
 
 const hyperbolicCotangentMap = [
 	(i, s) => i.toDecimal(s).hyperbolicTangent(s).inverse(s), // hyperbolic cotangent integer
 	(d, s) => d.hyperbolicTangent(s).inverse(s),              // hyperbolic cotangent decimal
 	(r, s) => r.toDecimal(s).hyperbolicTangent(s).inverse(s), // hyperbolic cotangent rational
 	(c, s) => {                                               // hyperbolic cotangent complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.hyperbolicCotangent = (n, session) => hyperbolicCotangentMap[n.type](n, session);
+Arithmetic.hyperbolicCotangent = (n, session) => hyperbolicCotangentMap[n.type](n, session);
 
 const hyperbolicSecantMap = [
 	(i, s) => i.toDecimal(s).hyperbolicCosine(s).inverse(s), // hyperbolic secant integer
 	(d, s) => d.hyperbolicCosine(s).inverse(s),              // hyperbolic secant decimal
 	(r, s) => r.toDecimal(s).hyperbolicCosine(s).inverse(s), // hyperbolic secant rational
 	(c, s) => {                                              // hyperbolic secant complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.hyperbolicSecant = (n, session) => hyperbolicSecantMap[n.type](n, session);
+Arithmetic.hyperbolicSecant = (n, session) => hyperbolicSecantMap[n.type](n, session);
 
 const hyperbolicCosecantMap = [
 	(i, s) => i.toDecimal(s).hyperbolicSine(s).inverse(s), // hyperbolic cosecant integer
 	(d, s) => d.hyperbolicSine(s).inverse(s),              // hyperbolic cosecant decimal
 	(r, s) => r.toDecimal(s).hyperbolicSine(s).inverse(s), // hyperbolic cosecant rational
 	(c, s) => {                                            // hyperbolic cosecant complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.hyperbolicCosecant = (n, session) => hyperbolicCosecantMap[n.type](n, session);
+Arithmetic.hyperbolicCosecant = (n, session) => hyperbolicCosecantMap[n.type](n, session);
 
 const inverseHyperbolicSineMap = [
 	(i, s) => i.toDecimal(s).inverseHyperbolicSine(s), // inverse hyperbolic sine integer
 	(d, s) => d.inverseHyperbolicSine(s),              // inverse hyperbolic sine decimal
 	(r, s) => r.toDecimal(s).inverseHyperbolicSine(s), // inverse hyperbolic sine rational
 	(c, s) => {                                        // inverse hyperbolic sine complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseHyperbolicSine = (n, session) => inverseHyperbolicSineMap[n.type](n, session);
+Arithmetic.inverseHyperbolicSine = (n, session) => inverseHyperbolicSineMap[n.type](n, session);
 
 const inverseHyperbolicCosineMap = [
 	(i, s) => i.toDecimal(s).inverseHyperbolicCosine(s), // inverse hyperbolic cosine integer
 	(d, s) => d.inverseHyperbolicCosine(s),              // inverse hyperbolic cosine decimal
 	(r, s) => r.toDecimal(s).inverseHyperbolicCosine(s), // inverse hyperbolic cosine rational
 	(c, s) => {                                          // inverse hyperbolic cosine complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseHyperbolicCosine = (n, session) => inverseHyperbolicCosineMap[n.type](n, session);
+Arithmetic.inverseHyperbolicCosine = (n, session) => inverseHyperbolicCosineMap[n.type](n, session);
 
 const inverseHyperbolicTangentMap = [
 	(i, s) => i.toDecimal(s).inverseHyperbolicTangent(s), // inverse hyperbolic tangent integer
 	(d, s) => d.inverseHyperbolicTangent(s),              // inverse hyperbolic tangent decimal
 	(r, s) => r.toDecimal(s).inverseHyperbolicTangent(s), // inverse hyperbolic tangent rational
 	(c, s) => {                                           // inverse hyperbolic tangent complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseHyperbolicTangent = (n, session) => inverseHyperbolicTangentMap[n.type](n, session);
+Arithmetic.inverseHyperbolicTangent = (n, session) => inverseHyperbolicTangentMap[n.type](n, session);
 
 const inverseHyperbolicCotangentMap = [
 	(i, s) => i.toDecimal(s).inverse(s).inverseHyperbolicTangent(s), // inverse hyperbolic cotangent integer
 	(d, s) => d.inverse(s).inverseHyperbolicTangent(s),              // inverse hyperbolic cotangent decimal
 	(r, s) => r.toDecimal(s).inverse(s).inverseHyperbolicTangent(s), // inverse hyperbolic cotangent rational
 	(c, s) => {                                                      // inverse hyperbolic cotangent complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseHyperbolicCotangent = (n, session) => inverseHyperbolicCotangentMap[n.type](n, session);
+Arithmetic.inverseHyperbolicCotangent = (n, session) => inverseHyperbolicCotangentMap[n.type](n, session);
 
 const inverseHyperbolicSecantMap = [
 	(i, s) => i.toDecimal(s).inverse(s).inverseHyperbolicCosine(s), // inverse hyperbolic secant integer
 	(d, s) => d.inverse(s).inverseHyperbolicCosine(s),              // inverse hyperbolic secant decimal
 	(r, s) => r.toDecimal(s).inverse(s).inverseHyperbolicCosine(s), // inverse hyperbolic secant rational
 	(c, s) => {                                                     // inverse hyperbolic secant complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseHyperbolicSecant = (n, session) => inverseHyperbolicSecantMap[n.type](n, session);
+Arithmetic.inverseHyperbolicSecant = (n, session) => inverseHyperbolicSecantMap[n.type](n, session);
 
 const inverseHyperbolicCosecantMap = [
 	(i, s) => i.toDecimal(s).inverse(s).inverseHyperbolicSine(s), // inverse hyperbolic cosecant integer
 	(d, s) => d.inverse(s).inverseHyperbolicSine(s),              // inverse hyperbolic cosecant decimal
 	(r, s) => r.toDecimal(s).inverse(s).inverseHyperbolicSine(s), // inverse hyperbolic cosecant rational
 	(c, s) => {                                                   // inverse hyperbolic cosecant complex
-		throw new CanonicalArithmetic.UnimplementedError();
+		throw new Arithmetic.UnimplementedError();
 	}
 ];
 
-CanonicalArithmetic.inverseHyperbolicCosecant = (n, session) => inverseHyperbolicCosecantMap[n.type](n, session);
+Arithmetic.inverseHyperbolicCosecant = (n, session) => inverseHyperbolicCosecantMap[n.type](n, session);
 
 // random
 
-CanonicalArithmetic.getRandom = (precision, session) => session.arbitrary ? Decimal.getRandom(precision, session) : NumberD.getRandom();
+Arithmetic.getRandom = (precision, session) => session.arbitrary ? Decimal.getRandom(precision, session) : NumberD.getRandom();
 
 //////////////////////
 // internal numbers //
 //////////////////////
 
-CanonicalArithmetic.createInternalNumber = (n, session) => {
+Arithmetic.createInternalNumber = (n, session) => {
 	let internalNumber = Formulae.createExpression("Math.InternalNumber");
 	
 	/////////////////
@@ -1751,7 +1751,7 @@ CanonicalArithmetic.createInternalNumber = (n, session) => {
 // Retrieving native numbers from internal expression //
 ////////////////////////////////////////////////////////
 
-CanonicalArithmetic.getNativeInteger = expr => {
+Arithmetic.getNativeInteger = expr => {
 	if (!expr.isInternalNumber()) return undefined;
 	
 	let number = expr.get("Value");
@@ -1772,7 +1772,7 @@ CanonicalArithmetic.getNativeInteger = expr => {
 
 
 
-CanonicalArithmetic.getNativeNumber = expr => {
+Arithmetic.getNativeNumber = expr => {
 	if (!expr.isInternalNumber()) return undefined;
 	let number = expr.get("Value");
 	
@@ -1784,7 +1784,7 @@ CanonicalArithmetic.getNativeNumber = expr => {
 	return undefined;
 };
 
-CanonicalArithmetic.getNativeBigInteger = expr => {
+Arithmetic.getNativeBigInteger = expr => {
 	if (!expr.isInternalNumber()) return undefined;
 	let number = expr.get("Value");
 	
@@ -1799,28 +1799,28 @@ CanonicalArithmetic.getNativeBigInteger = expr => {
 
 
 
-CanonicalArithmetic.getInteger = expr => {
+Arithmetic.getInteger = expr => {
 	if (!expr.isInternalNumber()) return undefined;
 	let value = expr.get("Value");
-	if (!CanonicalArithmetic.isInteger(value)) return undefined;
+	if (!Arithmetic.isInteger(value)) return undefined;
 	return value;
 };
 
-CanonicalArithmetic.getDecimal = expr => {
+Arithmetic.getDecimal = expr => {
 	if (!expr.isInternalNumber()) return undefined;
 	expr = expr.get("Value");
-	if (!CanonicalArithmetic.isDecimal(expr)) return undefined;
+	if (!Arithmetic.isDecimal(expr)) return undefined;
 	return expr;
 };
 
 /*
-CanonicalArithmetic.getNativeDecimal = expr => {
+Arithmetic.getNativeDecimal = expr => {
 };
 
-CanonicalArithmetic.getNativeBigInteger = expr => {
+Arithmetic.getNativeBigInteger = expr => {
 };
 
-CanonicalArithmetic.getNativeBigDecimal = expr => {
+Arithmetic.getNativeBigDecimal = expr => {
 };
 */
 
@@ -1828,21 +1828,21 @@ CanonicalArithmetic.getNativeBigDecimal = expr => {
 // Retrieving internal numbers from native numbers //
 /////////////////////////////////////////////////////
 
-CanonicalArithmetic.createInteger = (n, session) => {
+Arithmetic.createInteger = (n, session) => {
 	switch (typeof n) {
 		case "number":
-			if (!Number.isInteger(n)) throw new CanonicalArithmetic.ConversionError();
+			if (!Number.isInteger(n)) throw new Arithmetic.ConversionError();
 			break;
 		
 		case "bigint":
-			if (!session.arbitrary && (n < Number.MIN_SAFE_INTEGER || n > Number.MAX_SAFE_INTEGER)) throw new CanonicalArithmetic.ConversionError();;
+			if (!session.arbitrary && (n < Number.MIN_SAFE_INTEGER || n > Number.MAX_SAFE_INTEGER)) throw new Arithmetic.ConversionError();;
 			break
 	}
 	
 	return session.arbitrary ? BigInt(n) : new NumberI(n);
 };
 
-CanonicalArithmetic.createDecimal = (n, session) => {
+Arithmetic.createDecimal = (n, session) => {
 	return session.arbitrary ? new session.Decimal(n) : new NumberD(n);
 };
 

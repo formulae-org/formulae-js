@@ -402,8 +402,8 @@ ReductionManager.internalizeNumbersHandler = (handler, session) => {
 //		* A (purely imaginary) complex number
 //		* null, if the expression cannot be converted to the previous values
 // throws:
-//		* CanonicalArithmetic.ConversionError
-//		* CanonicalArithmetic.DivisionByZeroError
+//		* Arithmetic.ConversionError
+//		* Arithmetic.DivisionByZeroError
 
 const expr2Number = (expr, session) => {
 	let tag = expr.getTag();
@@ -417,10 +417,10 @@ const expr2Number = (expr, session) => {
 	if (tag === "Math.Number") {
 		let value = expr.get("Value");
 		if (typeof value === "bigint") {
-			return CanonicalArithmetic.createInteger(isNegative ? -value : value, session);
+			return Arithmetic.createInteger(isNegative ? -value : value, session);
 		}
 		else { // Decimal
-			return CanonicalArithmetic.createDecimal(isNegative ? value.neg() : value, session);
+			return Arithmetic.createDecimal(isNegative ? value.neg() : value, session);
 		}
 	}
 	
@@ -448,15 +448,15 @@ const expr2Number = (expr, session) => {
 			let N, D;
 			if (typeof (N = n.get("Value")) === "bigint" && typeof (D = d.get("Value")) === "bigint") {
 				if (isNegative) {
-					return CanonicalArithmetic.createRational(
-						CanonicalArithmetic.createInteger(negN ? N : -N, session),
-						CanonicalArithmetic.createInteger(negD ? -D : D, session)
+					return Arithmetic.createRational(
+						Arithmetic.createInteger(negN ? N : -N, session),
+						Arithmetic.createInteger(negD ? -D : D, session)
 					);
 				}
 				else {
-					return CanonicalArithmetic.createRational(
-						CanonicalArithmetic.createInteger(negN ? -N : N, session),
-						CanonicalArithmetic.createInteger(negD ? -D : D, session)
+					return Arithmetic.createRational(
+						Arithmetic.createInteger(negN ? -N : N, session),
+						Arithmetic.createInteger(negD ? -D : D, session)
 					);
 				}
 			}
@@ -465,9 +465,9 @@ const expr2Number = (expr, session) => {
 	// */
 	
 	if (tag === "Math.Complex.ImaginaryUnit") {
-		return CanonicalArithmetic.createComplex(
-			CanonicalArithmetic.getIntegerZero(session),
-			CanonicalArithmetic.createInteger(isNegative ? -1 : 1, session)
+		return Arithmetic.createComplex(
+			Arithmetic.getIntegerZero(session),
+			Arithmetic.createInteger(isNegative ? -1 : 1, session)
 		);
 	}
 	
@@ -485,15 +485,15 @@ const internalizeNumbers = (expr, session) => {
 		number = expr2Number(expr, session);
 	}
 	catch (error) {
-		if (error instanceof CanonicalArithmetic.DivisionByZeroError) {
+		if (error instanceof Arithmetic.DivisionByZeroError) {
 			expr.replaceBy(Formulae.createExpression("Math.Infinity"));
 		}
 		else {
 			expr.replaceBy(
 				Formulae.createExpression(
 					"Math.Arithmetic.Multiplication",
-					CanonicalArithmetic.createInternalNumber(
-						CanonicalArithmetic.createInteger(-1, session),
+					Arithmetic.createInternalNumber(
+						Arithmetic.createInteger(-1, session),
 						session
 					),
 					Formulae.createExpression("Math.Infinity")
@@ -506,7 +506,7 @@ const internalizeNumbers = (expr, session) => {
 	
 	if (number !== null) {
 		expr.replaceBy(
-			CanonicalArithmetic.createInternalNumber(number, session),
+			Arithmetic.createInternalNumber(number, session),
 			session
 		);
 		return;
@@ -522,8 +522,8 @@ const internalizeNumbers = (expr, session) => {
 		if (mult.getTag() === "Math.Arithmetic.Multiplication") {
 			mult.addChildAt(
 				0,
-				CanonicalArithmetic.createInternalNumber(
-					CanonicalArithmetic.createInteger(-1, session),
+				Arithmetic.createInternalNumber(
+					Arithmetic.createInteger(-1, session),
 					session
 				)
 			);
@@ -532,14 +532,14 @@ const internalizeNumbers = (expr, session) => {
 		else {
 			mult = Formulae.createExpression(
 				"Math.Arithmetic.Multiplication",
-				CanonicalArithmetic.createInternalNumber(
-					CanonicalArithmetic.createInteger(-1, session),
+				Arithmetic.createInternalNumber(
+					Arithmetic.createInteger(-1, session),
 					session
 				),
 				expr.children[0]
 			);
 			
-			//mult.addChild(CanonicalArithmetic.number2InternalNumber(-1));
+			//mult.addChild(Arithmetic.number2InternalNumber(-1));
 			//mult.addChild(expr.children[0]);
 			
 			expr.replaceBy(mult);
@@ -656,7 +656,7 @@ const externalizeNumbers = (expr, session) => {
 class CanonicalIndexing {}
 
 CanonicalIndexing.getChildByIndex = (expr, index) => {
-	let i = CanonicalArithmetic.getNativeInteger(index);
+	let i = Arithmetic.getNativeInteger(index);
 	if (i !== undefined) {
 		let n = expr.children.length;
 		
