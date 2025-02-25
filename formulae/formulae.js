@@ -1876,7 +1876,7 @@ Formulae.loadMessages = async function(packageName) {
 	let path;
 	
 	if (packageName === null) {
-		path = "i18n/";
+		path = "formulae/i18n/";
 	}
 	else {
 		path = "packages/" + packageName + "/i18n/";
