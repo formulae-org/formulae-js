@@ -44,6 +44,7 @@ Formulae.modalContent = null;
 Formulae.s_info = null
 Formulae.h_info = null
 
+Formulae.lastResult   = null;
 Formulae.hExpression  = null;
 Formulae.hHandler     = null;
 Formulae.sExpression  = null;
@@ -1358,6 +1359,8 @@ Formulae.onEnter = alt => {
 		
 		hResult.prepareDisplay();
 		hResult.display();
+		
+		Formulae.lastResult = hResult.expression;
 	}, 0);
 	
 	/*

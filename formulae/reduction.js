@@ -416,7 +416,8 @@ const expr2Number = (expr, session) => {
 	
 	if (tag === "Math.Number") {
 		let value = expr.get("Value");
-		if (typeof value === "bigint") {
+		//if (typeof value === "bigint") {
+		if (value.constructor === BigInt) {
 			return Arithmetic.createInteger(isNegative ? -value : value, session);
 		}
 		else { // Decimal
@@ -446,7 +447,8 @@ const expr2Number = (expr, session) => {
 		
 		if (n.getTag() === "Math.Number" && d.getTag() === "Math.Number") {
 			let N, D;
-			if (typeof (N = n.get("Value")) === "bigint" && typeof (D = d.get("Value")) === "bigint") {
+			//if (typeof (N = n.get("Value")) === "bigint" && typeof (D = d.get("Value")) === "bigint") {
+			if ((N = n.get("Value")).constructor === BigInt && (D = d.get("Value")).constructor === BigInt) {
 				if (isNegative) {
 					return Arithmetic.createRational(
 						Arithmetic.createInteger(negN ? N : -N, session),

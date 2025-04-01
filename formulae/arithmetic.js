@@ -1758,7 +1758,8 @@ Arithmetic.getNativeInteger = expr => {
 	
 	if (number instanceof NumberI) return number.valueOf();
 	if (number instanceof NumberD && Number.isInteger(number)) return number.valueOf();
-	if ((typeof number) === "bigint" && number >= Number.MIN_SAFE_INTEGER && number <= Number.MAX_SAFE_INTEGER) return Number(number);
+	//if ((typeof number) === "bigint" && number >= Number.MIN_SAFE_INTEGER && number <= Number.MAX_SAFE_INTEGER) return Number(number);
+	if (number.constructor === BigInt && number >= Number.MIN_SAFE_INTEGER && number <= Number.MAX_SAFE_INTEGER) return Number(number);
 	if (
 		number instanceof Decimal &&
 		number.isInteger() &&
@@ -1829,14 +1830,22 @@ Arithmetic.getNativeBigDecimal = expr => {
 /////////////////////////////////////////////////////
 
 Arithmetic.createInteger = (n, session) => {
-	switch (typeof n) {
-		case "number":
-			if (!Number.isInteger(n)) throw new Arithmetic.ConversionError();
-			break;
-		
-		case "bigint":
-			if (!session.arbitrary && (n < Number.MIN_SAFE_INTEGER || n > Number.MAX_SAFE_INTEGER)) throw new Arithmetic.ConversionError();;
-			break
+	//switch (typeof n) {
+	//	case "number":
+	//		if (!Number.isInteger(n)) throw new Arithmetic.ConversionError();
+	//		break;
+	//	
+	//	case "bigint":
+	//		if (!session.arbitrary && (n < Number.MIN_SAFE_INTEGER || n > Number.MAX_SAFE_INTEGER)) throw new Arithmetic.ConversionError();;
+	//		break
+	//}
+	
+	if (n.constructor === Number) {
+		if (!Number.isInteger(n)) throw new Arithmetic.ConversionError();
+	}
+	
+	if (n.constructor === BigInt) {
+		if (!session.arbitrary && (n < Number.MIN_SAFE_INTEGER || n > Number.MAX_SAFE_INTEGER)) throw new Arithmetic.ConversionError();;
 	}
 	
 	return session.arbitrary ? BigInt(n) : new NumberI(n);
