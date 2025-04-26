@@ -903,7 +903,10 @@ Arithmetic.multiplication = (n1, n2, session) => multiplicationMap[n1.type][n2.t
 const divisionMap = [
 	[
 		// integer ÷ integer
-		(i1, i2, s) => s.numeric ? i1.toDecimal(s).division(i2.toDecimal(s)) : Arithmetic.createRational(i1, i2)
+		(i1, i2, s) =>
+			s.numeric ?
+			(i1.remainder(i2).isZero() ? i1.integerDivisionForGCD(i2, s) : i1.division(i2, s)) :
+			Arithmetic.createRational(i1, i2)
 		,
 		// integer ÷ decimal
 		(i, d, s) => i.toDecimal(s).division(d, s)
@@ -1729,19 +1732,16 @@ Arithmetic.getRandom = (precision, session) => session.arbitrary ? Decimal.getRa
 Arithmetic.createInternalNumber = (n, session) => {
 	let internalNumber = Formulae.createExpression("Math.InternalNumber");
 	
+	/*
 	/////////////////
 	conversion: {
 		if (session.numeric && n.type !== 1) { // integer, rational or complex
 			n = n.toDecimal(session);
 			break conversion;
 		}
-		
-		if (session.noSymbolic && n.type === 2) { // rational
-			n = n.toDecimal(session);
-			break conversion;
-		}
 	}
 	/////////////////
+	*/
 	
 	internalNumber.set("Value", n);
 	return internalNumber;

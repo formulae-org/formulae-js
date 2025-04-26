@@ -283,7 +283,6 @@ class ReductionSession {
 		this.Decimal    = Decimal.clone({ precision: precision, rounding: 1 });
 		this.arbitrary  = true;
 		this.numeric    = false;
-		this.noSymbolic = false;
 	}
 	
 	async reduceAndGet(expression, indexOfChild) {
@@ -425,7 +424,13 @@ const expr2Number = (expr, session) => {
 		}
 	}
 	
-	// /* DO NOT UNCOMMENT
+	// it translates a division (of integer numbers) to a rational
+	// it should be commented, because it creates a internal rational
+	// preventing the actual division if the numeric flag is activated
+	//
+	// i.e. Numeric(3/2)   <-  This should reduce to 1.5
+	
+	/*
 	if (tag === "Math.Arithmetic.Division") {
 		let n = expr.children[0];
 		let d = expr.children[1];
@@ -464,7 +469,7 @@ const expr2Number = (expr, session) => {
 			}
 		}
 	}
-	// */
+	*/
 	
 	if (tag === "Math.Complex.ImaginaryUnit") {
 		return Arithmetic.createComplex(
