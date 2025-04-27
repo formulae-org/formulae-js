@@ -396,7 +396,7 @@ BigInt.prototype.sqrtInteger = function() {
 	}
 	let sqrt = a - 1n;
 	
-	return sqrt * sqrt === this ? sqrt : undefined;
+	return ((sqrt * sqrt) == this) ? sqrt : undefined;
 };
 
 BigInt.prototype.randomInRange = function(end, session) {
