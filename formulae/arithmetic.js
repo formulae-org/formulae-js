@@ -1779,7 +1779,7 @@ Arithmetic.getNativeNumber = expr => {
 	
 	if (number instanceof NumberI) return number.valueOf();
 	if (number instanceof NumberD) return number.valueOf();
-	if (number instanceof BigInt) return Number(number);
+	if (number.constructor === BigInt) return Number(number);
 	if (number instanceof Decimal) return number.toNumber();
 	
 	return undefined;
@@ -1791,7 +1791,8 @@ Arithmetic.getNativeBigInteger = expr => {
 	
 	if (number instanceof NumberI) return BigInt(number.valueOf());
 	if (number instanceof NumberD && Number.isInteger(number)) return BigInt(number.valueOf());
-	if (number instanceof BigInt) return number;
+	//if (number instanceof BigInt) return number;
+	if (number.constructor === BigInt) return number;
 	if (number instanceof Decimal && number.isInteger()) return BigInt(number.toFixed());
 	
 	return undefined;
