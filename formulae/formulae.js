@@ -223,7 +223,7 @@ Formulae.xmlToScript = async function(xml) {
 		rowElement = scriptElement. children[i]; // preventing obfuscation
 		if (rowElement.tagName != "expression" || rowElement.getAttribute("tag") != "Formulae.Script.Row") throw new Error(Formulae.messages.labelFileNotScript);
 		promises = [];
-		expression = Formulae.xmlElementToExpression(rowElement. children[0], promises); // preventing obfuscation
+		expression = Formulae.xmlElementToExpression(rowElement.children[0], promises);
 		handler = Formulae.addExpression(expression, rowElement.getAttribute("type"));
 		
 		if (promises.length == 0) {
@@ -255,8 +255,8 @@ Formulae.xmlToExpression = function(xmlText, promises, permisive = true) {
 }
 
 // permisiive:
-//    if set to true: On errors (unknown tag, invalid number of children, serialization strings) it creates appropiate error expressions
-//	if set to false: On errors, throws an exception
+//    * if set to true: On errors (unknown tag, invalid number of children, serialization strings) it creates appropiate error expressions
+//    * if set to false: On errors, throws an exception
 
 Formulae.xmlElementToExpression = function(xmlElement, promises, permisive = true) {
 	let tag = xmlElement.getAttribute("tag");
@@ -316,7 +316,7 @@ Formulae.xmlElementToExpression = function(xmlElement, promises, permisive = tru
 	
 	let i, child;
 	for (i = 0; i < n; ++i) {
-		child = Formulae.xmlElementToExpression(xmlElement. children[i], promises); // preventing obfuscation
+		child = Formulae.xmlElementToExpression(xmlElement.children[i], promises);
 		//expression.children[i] = child;
 		expression.children.push(child);
 		child.parent = expression;
@@ -2231,7 +2231,7 @@ Formulae.xmlToCrawling = function(element, container) {
 	}
 	
 	for (let i = 0, n = element.childElementCount; i < n; ++i) {
-		Formulae.xmlToCrawling(element .children[i], container); // preventing obfuscation
+		Formulae.xmlToCrawling(element.children[i], container);
 	}
 }
 
@@ -2250,6 +2250,23 @@ Formulae.outputForCrawling = function() {
 		let body = document.createElement("body");
 		Formulae.xmlToCrawling(doc.documentElement, body);
 		document.body = body;
+	})
+	.catch (error => {
+		window.location.href = "/404";
+	});
+}
+
+Formulae.outputForText = function() {
+	fetch(Formulae.fileName)
+	.then(result => {
+		if (!result.ok) {
+			throw new Error;
+		}
+		
+		return result.text();
+	})
+	.then(xmlText => {
+		document.body.innerHTML = '<pre>' + xmlText.replaceAll("<", "&lt;").replaceAll(">", "&gt;") + "</pre>";
 	})
 	.catch (error => {
 		window.location.href = "/404";
@@ -2296,6 +2313,8 @@ Formulae.toggleMode = function() {
 Formulae.start = async function() {
 	Formulae.fillFileInfo();
 	
+	// special output for crawling
+	
 	if (
 		new RegExp(
 			"bot|spider|crawl|" + // generic
@@ -2309,6 +2328,15 @@ Formulae.start = async function() {
 		Formulae.outputForCrawling();
 		return;
 	}
+	
+	// special output for textual format
+	
+	if (Formulae.parameters.get("format") === "text") {
+		Formulae.outputForText();
+		return;
+	}
+	
+	// Normal flow
 	
 	Formulae.loadPreferences();
 	
