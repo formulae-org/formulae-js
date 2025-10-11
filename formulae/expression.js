@@ -928,6 +928,8 @@ class Expression extends Scopable {
 	isInternalNumber() {
 		return false;
 	}
+	
+	isLineIterable() { return false; };
 }
 
 // static fields

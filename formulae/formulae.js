@@ -108,9 +108,10 @@ Formulae.packages.set("org.formulae.data",                new Formulae.PackageIn
 
 // Experimental packages
 
-Formulae.packages.set("org.formulae.programming.quantum", new Formulae.PackageInfo("Quantum programming (experimental)", false, false));
-Formulae.packages.set("org.formulae.filesystem",          new Formulae.PackageInfo("Filesystem (experimental)",          false, false));
-
+Formulae.packages.set("org.formulae.programming.quantum",     new Formulae.PackageInfo("Quantum programming (experimental)", false, false));
+Formulae.packages.set("org.formulae.filesystem",              new Formulae.PackageInfo("Filesystem (experimental)",          false, false));
+Formulae.packages.set("org.formulae.library.book",            new Formulae.PackageInfo("Library book (experimental)",        false, false));
+Formulae.packages.set("org.formulae.programming.prototyping", new Formulae.PackageInfo("Prototyping (experimental)",         false, false));
 
 ///////////////
 // functions //
