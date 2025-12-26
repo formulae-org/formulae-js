@@ -599,6 +599,15 @@ Complex.prototype.toDecimal = function(session) {
 		this.imaginary.type === 1 ? this.imaginary : this.imaginary.toDecimal(session)
 	);
 };
+Complex.prototype.toNumeric = function(session) {
+	if (this.real.type === 2 || this.imaginary.type === 2) {
+		return new Complex(
+			this.real.type === 2 ? this.real.toDecimal(session) : this.real,
+			this.imaginary.type === 2 ? this.imaginary.toDecimal(session) : this.imaginary
+		);
+	}
+	return this;
+};
 Complex.prototype.roundToPrecision = function(precision, session) { return new Complex(this.real.roundToPrecision(precision, session), this.imaginary.roundToPrecision(precision, session)); };
 Complex.prototype.roundToInteger = function(session) { return new Complex(this.real.roundToInteger(session), this.imaginary.roundToInteger(session)); };
 Complex.prototype.roundToDecimalPlaces = function(places, session) { return new Complex(this.real.roundToDecimalPlaces(places, session), this.imaginary.roundToDecimalPlaces(places, session)); };
