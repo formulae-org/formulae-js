@@ -1091,7 +1091,7 @@ Expression.Infix = class extends Expression {
 	}
 }
 
-Expression.Exponentiation = class extends Expression.BinaryExpression {
+Expression.Superscript = class extends Expression.BinaryExpression {
 	prepareDisplay(context) {
 		let base = this.children[0];
 		let exponent = this.children[1];
@@ -1174,6 +1174,51 @@ Expression.Exponentiation = class extends Expression.BinaryExpression {
 		//if (expr.getTag() == this.getTag()) {
 		//	expr.drawParenthesesAround(context, x + expr.x, y + expr.y);
 		//}
+	}
+}
+
+Expression.Subscript = class extends Expression.BinaryExpression {
+	prepareDisplay(context) {
+		let left = this.children[0], right = this.children[1];
+		
+		left.prepareDisplay(context);
+		
+		{
+			let bkp = context.fontInfo.size;
+			context.fontInfo.setSizeRelative(context, -4);
+			
+			right.prepareDisplay(context);
+			
+			context.fontInfo.setSizeAbsolute(context, bkp);
+		}
+		
+		left.x = left.y = 0;
+		
+		if (left.height >= right.horzBaseline) {
+			right.y = left.height - right.horzBaseline;
+		}
+		else {
+			right.y =left.horzBaseline;
+		}
+		
+		this.width = (right.x  = left.width + 2) + right.width;
+		this.height = right.y + right.height;
+		
+		this.horzBaseline = left.horzBaseline;
+		this.vertBaseline = left.vertBaseline;
+	}
+	
+	display(context, x, y) {
+		let left = this.children[0], right = this.children[1];
+		
+		left.display(context, x + left.x, y + left.y);
+		
+		let bkp = context.fontInfo.size;
+		context.fontInfo.setSizeRelative(context, -4);
+		
+		right.display(context, x + right.x, y + right.y);
+		
+		context.fontInfo.setSizeAbsolute(context, bkp);
 	}
 }
 
