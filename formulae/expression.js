@@ -380,6 +380,8 @@ class ExpressionHandler extends Scopable {
 	}
 }
 
+ExpressionHandler.clearGlobalScope = () => globalScope.clear();
+
 let abcxyz = 1;
 
 class EvaluationError extends Error {};

@@ -90,6 +90,7 @@ Formulae.packages.set("org.formulae.logic",               new Formulae.PackageIn
 Formulae.packages.set("org.formulae.expression",          new Formulae.PackageInfo("Expression management", true,  false));
 Formulae.packages.set("org.formulae.list",                new Formulae.PackageInfo("Lists",                 true,  false));
 Formulae.packages.set("org.formulae.symbolic",            new Formulae.PackageInfo("Symbolic",              true,  false));
+Formulae.packages.set("org.formulae.lambda",              new Formulae.PackageInfo("LambdaCalculus",        true,  false));
 Formulae.packages.set("org.formulae.text.string",         new Formulae.PackageInfo("Strings",               true,  false));
 Formulae.packages.set("org.formulae.color",               new Formulae.PackageInfo("Color",                 true,  false));
 Formulae.packages.set("org.formulae.programming",         new Formulae.PackageInfo("Programming",           true,  false));
@@ -1920,6 +1921,8 @@ Formulae.newFile = function() {
 	else {
 		Formulae.setSelected(handler, expression, false);
 	}
+	
+	ExpressionHandler.clearGlobalScope();
 }
 
 Formulae.openFile = function(e) {
@@ -1960,6 +1963,8 @@ Formulae.openFile = function(e) {
 	
 	// in order to the change event can be fired with the same file
 	document.getElementById("file-input").value = "";
+	
+	ExpressionHandler.clearGlobalScope();
 }
 
 // https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
