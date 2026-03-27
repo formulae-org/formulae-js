@@ -623,7 +623,9 @@ const externalizeNumbers = (expr, session) => {
 		return;
 	}
 	
-	if (expr.getTag() === "Math.Arithmetic.Multiplication") {
+	let tag = expr.getTag();
+	
+	if (tag === "Math.Arithmetic.Multiplication") {
 		let first = expr.children[0];
 		
 		if (first.isInternalNumber()) {
@@ -649,6 +651,20 @@ const externalizeNumbers = (expr, session) => {
 				negative.addChild(expr);
 			}
 		}
+		
+		//return;
+	}
+	
+	if (tag === "Symbolic.Symbol") {
+		let scopeEntry = expr.get("ScopeEntry");
+		
+		if (scopeEntry !== null) {
+			let replacement = scopeEntry.getValue().clone();
+			expr.replaceBy(replacement);
+			externalizeNumbers(replacement, session);
+		}
+		
+		return;
 	}
 	
 	for (let i = 0, n = expr.children.length; i < n; ++i) {
