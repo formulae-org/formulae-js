@@ -855,7 +855,7 @@ class Expression extends Scopable {
 			let maxSemiHeight = context.fontInfo.semiHeight;
 			
 			let child;
-			for (var i = 0; i < this.children.length; ++i) {
+			for (let i = 0; i < this.children.length; ++i) {
 				child = this.children[i];
 				child.prepareDisplay(context);
 				
@@ -872,7 +872,7 @@ class Expression extends Scopable {
 			
 			this.width += widthAfter; // closing parentheses
 			
-			for (var i = 0; i < this.children.length; ++i) {
+			for (let i = 0; i < this.children.length; ++i) {
 				child = this.children[i];
 				child.y = this.horzBaseline - child.horzBaseline;
 			}
@@ -885,7 +885,7 @@ class Expression extends Scopable {
 	
 	displayAsList(context, x, y) {
 		let child;
-		for (var i = 0; i < this.children.length; ++i) {
+		for (let i = 0; i < this.children.length; ++i) {
 			child = this.children[i];
 			if (i > 0) this.drawText(context, "\uFF0C", x + child.x - this.separatorWidth, y + this.horzBaseline + Math.round(context.fontInfo.size / 2));
 			child.display(context, x + child.x, y + child.y);

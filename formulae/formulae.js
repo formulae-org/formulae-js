@@ -1076,20 +1076,7 @@ Formulae.f1 = function() {
 	window.open("/?reference=" + Formulae.sExpression.getTag());
 }
 
-//Formulae.showSelectionXML = function xml() {
 Formulae.showSelectionXML = async function () {
-	//console.log(Formulae.sExpression.toXML());
-	//console.log(new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
-	
-	/*
-	let win = window.open('', '');
-	//win.document.open("text/xml");
-	//win.document.open("text/plain");
-	win.document.write(new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
-	//win.document.write('<?xml version="1.0" encoding="UTF-8" standalone="no" ?>' + new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
-	win.focus();
-	*/
-	
 	let blob = new Blob([new XMLSerializer().serializeToString(await Formulae.sExpression.toXML())], { type: 'text/xml' });
 	let dataURI = window.URL.createObjectURL(blob);
 	let win = window.open(dataURI);
@@ -1098,18 +1085,6 @@ Formulae.showSelectionXML = async function () {
 }
 
 Formulae.showScriptXML = async function() {
-	//console.log(Formulae.sExpression.toXML());
-	//console.log(new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
-	
-	/*
-	let win = window.open('', '');
-	//win.document.open("text/xml");
-	//win.document.open("text/plain");
-	win.document.write(new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
-	//win.document.write('<?xml version="1.0" encoding="UTF-8" standalone="no" ?>' + new XMLSerializer().serializeToString(Formulae.sExpression.toXML()));
-	win.focus();
-	*/
-	
 	let xmlDocument = await Formulae.scriptToXML();
 	let blob = new Blob([new XMLSerializer().serializeToString(xmlDocument)], {type: 'text/xml'});
 	let dataURI = window.URL.createObjectURL(blob);
@@ -1445,7 +1420,7 @@ Formulae.toServer = async function(expression, remote, alt, promises) {
 	});
 }
 
-Formulae.onKey = function(e) {
+Formulae.onKeyDown = function(e) {
 	if (Formulae.menu.style.visibility == "visible") {
 		Formulae.menu.style.visibility = "hidden";
 		e.preventDefault();
@@ -1453,25 +1428,24 @@ Formulae.onKey = function(e) {
 	}
 	
 	e = e || window.event;
-	// console.log("code = " + e.code + ", charCode = " + e.charCode + ", key = " + e.key + ", keyCode = " + e.keyCode);
 	
 	Formulae.clearHighlightedExpression();
 	
 	// ctrl+x or cmd+x pressed?
-	if ((e.ctrlKey || e.metaKey) && e.keyCode == 88) {
+	if ((e.ctrlKey || e.metaKey) && e.key === "x") {
 		if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 		Formulae.editionCut();
 		return;
 	}
 	
 	// ctrl+c or cmd+c pressed?
-	if ((e.ctrlKey || e.metaKey) && e.keyCode == 67) {
+	if ((e.ctrlKey || e.metaKey) && e.key === "c") {
 		Formulae.editionCopy();
 		return;
 	}
 	
 	// ctrl+v or cmd+v pressed?
-	if ((e.ctrlKey || e.metaKey) && e.keyCode == 86) {
+	if ((e.ctrlKey || e.metaKey) && e.key === "v") {
 		if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 		Formulae.editionPaste();
 		return;
@@ -1482,93 +1456,93 @@ Formulae.onKey = function(e) {
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.editionNumber();
 			return;
-			
+		
 		case "+":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			(e.altKey ? Formulae.editionAdditionAlt : Formulae.editionAddition)();
 			return;
-			
+		
 		case "-":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			(e.altKey ? Formulae.editionSubtractionAlt : Formulae.editionSubtraction)();
 			return;
-			
+		
 		case "_":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.editionNegative();
 			return;
-			
+		
 		case "*":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			(e.altKey ? Formulae.editionMultiplicationAlt : Formulae.editionMultiplication)();
 			return;
-			
+		
 		case "/":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition("Math.Arithmetic.Division", e.altKey);
 			return;
-			
+		
 		case "=":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition(e.altKey ? "Relation.Different" : "Relation.Equals", false);
 			return;
-			
+		
 		case ">":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition(e.altKey ? "Relation.GreaterOrEquals" : "Relation.Greater", false);
 			return;
-			
+		
 		case "<":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition(e.altKey ? "Relation.LessOrEquals" : "Relation.Less", false);
 			return;
-			
+		
 		case "a":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition("Logic.Conjunction", e.altKey);
 			return;
-			
+		
 		case "o":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition("Logic.Disjunction", e.altKey);
 			return;
-			
+		
 		case "N":
 		case "¬":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.wrapperEdition("Logic.Negation");
 			return;
-			
+		
 		case "c":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition("Expression.Child", false);
 			return;
-			
+		
 		case "{":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.wrapperEdition("List.List");
 			return;
-			
+		
 		case "s":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.editionSymbol();
 			return;
-			
+		
 		case "l":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.wrapperEdition("Symbolic.Local");
 			return;
-			
+		
 		case "f":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.editionFunction();
 			return;
-			
+		
 		case '"':
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.editionString();
 			return;
-			
+		
 		case 't':
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.editionText();
@@ -1578,64 +1552,62 @@ Formulae.onKey = function(e) {
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.wrapperEdition("Programming.Block");
 			return;
-	}
-	
-	switch (e.keyCode) {
-		case 222: // <^> ???
+			
+		case '^': // it does not work for dead keys keyboards
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition("Math.Arithmetic.Exponentiation", false);
 			return;
-			
-		case 8: // <backspace>
+		
+		case "Backspace":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Expression.binaryEdition("Symbolic.Assignment", false);
 			return;
-			
-		case 27: // <esc>
+		
+		case "Escape":
 			e.preventDefault(); // for Safari
 			Formulae.editionEscape();
 			return;
-			
-		case 45: // <insert>, <alt><insert>
+		
+		case "Insert": // <insert>, <alt><insert>
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.editionInsert(e.altKey);
 			//console.log(Formulae.sHandler.toString());
 			return;
-			
-		case 46: // <delete>
+		
+		case "Delete":
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.editionDelete();
 			//console.log(Formulae.sHandler.toString());
 			return;
-			
-		case 38: // up arrow
+		
+		case "ArrowUp":
 			Formulae.editionArrow(Expression.UP);
 			return;
-			
-		case 40: // down arrow
+		
+		case "ArrowDown":
 			Formulae.editionArrow(Expression.DOWN);
 			return;
-			
-		case 37: // left arrow
+		
+		case "ArrowLeft":
 			Formulae.editionArrow(Formulae.ltr ? Expression.PREVIOUS : Expression.NEXT);
 			return;
-			
-		case 39: // right arrow
+		
+		case "ArrowRight":
 			Formulae.editionArrow(Formulae.ltr ? Expression.NEXT : Expression.PREVIOUS);
 			return;
-			
-		case 13: // <enter>
+		
+		case "Enter": // <enter>, <alt><enter>
 			e.preventDefault();
 			if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 			Formulae.onEnter(e.altKey);
 			return;
-			
-		case 32: // space
+		
+		case " ":
 			e.preventDefault();
 			Formulae.editionAction();
 			return;
-			
-		case 112: // f1
+		
+		case "F1":
 			e.preventDefault();
 			Formulae.f1();
 			return;
@@ -2054,7 +2026,7 @@ Formulae.push = async function() {
 // https://stackoverflow.com/questions/376373/pretty-printing-xml-with-javascript
 
 Formulae.formatXML = function(xml, tab = '\t') {
-	var formatted = '', indent= '';
+	let formatted = '', indent= '';
 	xml.split(/>\s*</).forEach(function(node) {
 		if (node.match(/^\/\w/)) indent = indent.substring(tab.length); // decrease indent by one 'tab'
 		formatted += indent + '<' + node + '>\r\n';
@@ -2078,20 +2050,7 @@ Formulae.saveFile = async function(e) {
 	a.click(); 
 }
 
-Formulae.print = function() {
-	let mywindow = window.open('', 'PRINT', 'height=400,width=600');
-	
-	mywindow.document.write('<html><head><title>' + document.title  + '</title>');
-	mywindow.document.write('</head><body >');
-	mywindow.document.write('<h1>' + document.title  + '</h1>');
-	mywindow.document.write(document.getElementById("container").innerHTML);
-	mywindow.document.write('</body></html>');
-	
-	mywindow.document.close(); // necessary for IE >= 10
-	mywindow.focus(); // necessary for IE >= 10*/
-	
-	mywindow.print();
-	mywindow.close();
+Formulae.print = function() { // TODO
 }
 
 Formulae.fillFileInfo = function() {
@@ -2316,21 +2275,22 @@ Formulae.toggleMode = function() {
 	document.getElementById("main").focus();
 };
 
+// Known web crawlers and bots. Add new entries here as needed.
+Formulae.CRAWLER_USER_AGENTS = new RegExp(
+	"bot|spider|crawl|" +                                                                                                        // generic
+	"APIs-Google|AdsBot|Googlebot|mediapartners|Google Favicon|FeedFetcher|Google-Read-Aloud|DuplexWeb-Google|googleweblight|" + // Google
+	"bing|yandex|baidu|duckduck|yahoo|ecosia|ia_archiver|" +                                                                     // other search engines
+	"facebook|instagram|pinterest|reddit|slack|twitter|whatsapp|youtube|" +                                                      // social media
+	"semrush",                                                                                                                   // other
+	"i"
+);
+
 Formulae.start = async function() {
 	Formulae.fillFileInfo();
 	
 	// special output for crawling
 	
-	if (
-		new RegExp(
-			"bot|spider|crawl|" + // generic
-			"APIs-Google|AdsBot|Googlebot|mediapartners|Google Favicon|FeedFetcher|Google-Read-Aloud|DuplexWeb-Google|googleweblight|" + // Google
-			"bing|yandex|baidu|duckduck|yahoo|ecosia|ia_archiver|" + // other engines
-			"facebook|instagram|pinterest|reddit|slack|twitter|whatsapp|youtube|" + // social
-			"semrush", // other
-			"i"
-		).test(navigator.userAgent)
-	) { // a web crawer
+	if (Formulae.CRAWLER_USER_AGENTS.test(navigator.userAgent)) {
 		Formulae.outputForCrawling();
 		return;
 	}
@@ -2363,19 +2323,17 @@ Formulae.start = async function() {
 	
 	//////////////////////////////////////////////////////////////
 	
-	// preventing scroll using arrow keys
-	// direction keys
-	
-	document.addEventListener("keydown", function(e) {
+	document.addEventListener("keydown", e => {
 		if (Formulae.readMode) {
 			return;
 		}
 		
-		if([37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+		// preventing scroll using arrow keys
+		if ([ "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown" ].includes(e.key)) {
 			e.preventDefault();
 		}
 		
-		Formulae.onKey(e);
+		Formulae.onKeyDown(e);
 	}, false);
 	
 	/////////////////
@@ -2389,7 +2347,7 @@ Formulae.start = async function() {
 	///////////
 	
 	Formulae.modal.addEventListener("keydown", event => {
-		if (event.keyCode == 27) {
+		if (event.key === 'Escape') {
 			event.preventDefault(); // for Safari
 			Formulae.modal.style.display = "none";
 		}
@@ -2704,16 +2662,6 @@ Formulae.savePreferences = function() {
 	
 	alert(Formulae.messages.labelSettingsSaved);
 };
-
-
-// returns: whether new packages were loaded
-
-Formulae.doesURLExist = function(url) {
-	let http = new XMLHttpRequest();
-	http.open("HEAD", url, false);
-	http.send();
-	return http.status != 404;
-}
 
 Formulae.loadPackages = async () => {
 	let newPackagesLoaded = false;
