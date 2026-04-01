@@ -90,8 +90,9 @@ Formulae.packages.set("org.formulae.logic",               new Formulae.PackageIn
 Formulae.packages.set("org.formulae.expression",          new Formulae.PackageInfo("Expression management", true,  false));
 Formulae.packages.set("org.formulae.list",                new Formulae.PackageInfo("Lists",                 true,  false));
 Formulae.packages.set("org.formulae.symbolic",            new Formulae.PackageInfo("Symbolic",              true,  false));
-Formulae.packages.set("org.formulae.lambda",              new Formulae.PackageInfo("LambdaCalculus",        true,  false));
+Formulae.packages.set("org.formulae.lambda",              new Formulae.PackageInfo("LambdaCalculus",        false, false));
 Formulae.packages.set("org.formulae.text.string",         new Formulae.PackageInfo("Strings",               true,  false));
+Formulae.packages.set("org.formulae.internet",            new Formulae.PackageInfo("Internet",              true,  false));
 Formulae.packages.set("org.formulae.color",               new Formulae.PackageInfo("Color",                 true,  false));
 Formulae.packages.set("org.formulae.programming",         new Formulae.PackageInfo("Programming",           true,  false));
 Formulae.packages.set("org.formulae.graphics.raster",     new Formulae.PackageInfo("Graphics",              true,  false));
