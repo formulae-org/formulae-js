@@ -920,6 +920,95 @@ class Expression extends Scopable {
 		if (this.noParentheses === undefined) this.drawParentheses(context, x + this.width, y, this.height, false);
 	}
 	
+	prepareDisplayAsMatrix(context, space, border) {
+		let r, c;
+		let rows = this.children.length;
+		let row, child;
+
+		let maxHorzBaseline = new Array(rows).fill(0);
+		let maxSemiHeight   = new Array(rows).fill(0);
+		let maxVertBaseline = new Array(this.cols).fill(0);
+		let maxSemiWidth    = new Array(this.cols).fill(0);
+
+		for (r = 0; r < rows; ++r) {
+			row = this.children[r];
+
+			for (c = 0; c < this.cols; ++c) {
+				(child = row.children[c]).prepareDisplay(context);
+
+				if (child.horzBaseline > maxHorzBaseline[r]) {
+					maxHorzBaseline[r] = child.horzBaseline;
+				}
+
+				if (child.height - child.horzBaseline > maxSemiHeight[r]) {
+					maxSemiHeight[r] = child.height - child.horzBaseline;
+				}
+
+				if (child.vertBaseline > maxVertBaseline[c]) {
+					maxVertBaseline[c] = child.vertBaseline;
+				}
+
+				if (child.width - child.vertBaseline > maxSemiWidth[c]) {
+					maxSemiWidth[c] = child.width - child.vertBaseline;
+				}
+			}
+		}
+
+		this.xs = new Array(this.cols);
+
+		this.width = border;
+		let centers = new Array(this.cols).fill(0);
+		for (c = 0; c < this.cols; ++c) {
+			if (c > 0) this.width += space;
+			this.xs[c] = this.width;
+			this.width += maxVertBaseline[c];
+			centers[c] = this.width;
+			this.width += maxSemiWidth[c];
+		}
+		this.width += border;
+
+
+		this.height = border;
+		for (r = 0; r < rows; ++r) {
+			row = this.children[r];
+
+			if (r > 0) this.height += space;
+
+			row.x = 0;
+			row.y = this.height;
+			row.width = this.width;
+			row.height = maxHorzBaseline[r] + maxSemiHeight[r];
+
+			for (c = 0; c < this.cols; ++c) {
+				child = row.children[c];
+
+				child.x = centers[c] - child.vertBaseline;
+				child.y = maxHorzBaseline[r] - child.horzBaseline;
+			}
+
+			this.height += maxHorzBaseline[r] + maxSemiHeight[r];
+		}
+		this.height += border;
+
+		this.vertBaseline = Math.round(this.width / 2);
+		this.horzBaseline = Math.round(this.height / 2);
+	}
+
+	displayAsMatrix(context, x, y) {
+		let row, child;
+
+		for (let r = 0, rows = this.children.length; r < rows; ++r) {
+			row = this.children[r];
+			for (let c = 0; c < this.cols; ++c) {
+				(child = row.children[c]).display(
+					context,
+					x + row.x + child.x,
+					y + row.y + child.y
+				);
+			}
+		}
+	}
+
 	prepareDisplay(context) {}
 	display(context, x, y) {}
 	

@@ -89,6 +89,7 @@ Formulae.packages.set("org.formulae.relation",            new Formulae.PackageIn
 Formulae.packages.set("org.formulae.logic",               new Formulae.PackageInfo("Logic",                 true,  false));
 Formulae.packages.set("org.formulae.expression",          new Formulae.PackageInfo("Expression management", true,  false));
 Formulae.packages.set("org.formulae.list",                new Formulae.PackageInfo("Lists",                 true,  false));
+Formulae.packages.set("org.formulae.matrix",              new Formulae.PackageInfo("Matrix",                true,  false));
 Formulae.packages.set("org.formulae.symbolic",            new Formulae.PackageInfo("Symbolic",              true,  false));
 Formulae.packages.set("org.formulae.lambda",              new Formulae.PackageInfo("LambdaCalculus",        false, false));
 Formulae.packages.set("org.formulae.text.string",         new Formulae.PackageInfo("Strings",               true,  false));
