@@ -362,11 +362,11 @@ Formulae.mouseMove = function(handler, mouseEvent) {
 	if (test !== Formulae.hExpression) { // current expression (test) has changed
 		if (Formulae.readMode) {
 			if (test !== null) {
-				if (test.getTag() === "Internet.UniformResourceLocator") {
+				if (test.getTag() === "Internet.Hyperlink") {
 					document.body.style.cursor = "pointer";
 				}
 				else {
-					//if (Formulae.hExpression !== null && Formulae.hExpression.getTag() === "Internet.UniformResourceLocator") {
+					//if (Formulae.hExpression !== null && Formulae.hExpression.getTag() === "Internet.Hyperlink") {
 						document.body.style.cursor = "default";
 					//}
 				}
@@ -448,7 +448,7 @@ Formulae.mouseWheel = function() {
 
 Formulae.mouseClick = function(handler, mouseEvent) {
 	if (Formulae.readMode) {
-		if (Formulae.hExpression !== null && Formulae.hExpression.getTag() === "Internet.UniformResourceLocator") {
+		if (Formulae.hExpression !== null && Formulae.hExpression.getTag() === "Internet.Hyperlink") {
 			let win = window.open(Formulae.hExpression.get("Value"), "_blank");
 			win.focus();
 		}
@@ -2173,7 +2173,7 @@ Formulae.xmlToCrawling = function(element, container) {
 			return;
 		}
 		
-		case "Internet.UniformResourceLocator": {
+		case "Internet.Hyperlink": {
 			let a = document.createElement("a");
 			a.href = element.getAttribute("Value");
 			a.innerHTML = element.getAttribute("Description").replace(/[\u00A0-\u9999<>\&]/g, i => '&#' + i.charCodeAt(0) + ';') + ' ';
