@@ -77,44 +77,7 @@ Formulae.PackageInfo = class {
 	}
 };
 
-Formulae.packages = new Map(); // Map from package name to package info
-
-// Basic packages
-
-//                                                                                                       default  common
-Formulae.packages.set("org.formulae.math.arithmetic",     new Formulae.PackageInfo("Arithmetic",            true,  false));
-Formulae.packages.set("org.formulae.algebra",             new Formulae.PackageInfo("Algebra",               true,  false));
-Formulae.packages.set("org.formulae.math.complex",        new Formulae.PackageInfo("Complex",               true,  false));
-Formulae.packages.set("org.formulae.relation",            new Formulae.PackageInfo("Relation",              true,  false));
-Formulae.packages.set("org.formulae.logic",               new Formulae.PackageInfo("Logic",                 true,  false));
-Formulae.packages.set("org.formulae.expression",          new Formulae.PackageInfo("Expression management", true,  false));
-Formulae.packages.set("org.formulae.list",                new Formulae.PackageInfo("Lists",                 true,  false));
-Formulae.packages.set("org.formulae.matrix",              new Formulae.PackageInfo("Matrix",                true,  false));
-Formulae.packages.set("org.formulae.symbolic",            new Formulae.PackageInfo("Symbolic",              true,  false));
-Formulae.packages.set("org.formulae.lambda",              new Formulae.PackageInfo("LambdaCalculus",        false, false));
-Formulae.packages.set("org.formulae.text.string",         new Formulae.PackageInfo("Strings",               true,  false));
-Formulae.packages.set("org.formulae.internet",            new Formulae.PackageInfo("Internet",              true,  false));
-Formulae.packages.set("org.formulae.color",               new Formulae.PackageInfo("Color",                 true,  false));
-Formulae.packages.set("org.formulae.programming",         new Formulae.PackageInfo("Programming",           true,  false));
-Formulae.packages.set("org.formulae.graphics.raster",     new Formulae.PackageInfo("Graphics",              true,  false));
-Formulae.packages.set("org.formulae.chart",               new Formulae.PackageInfo("Charts",                false, false));
-Formulae.packages.set("org.formulae.diagramming",         new Formulae.PackageInfo("Diagrams",              false, false));
-Formulae.packages.set("org.formulae.time",                new Formulae.PackageInfo("Time",                  true,  true ));
-Formulae.packages.set("org.formulae.typesetting",         new Formulae.PackageInfo("Typesetting",           true,  false));
-Formulae.packages.set("org.formulae.visualization",       new Formulae.PackageInfo("Visualization",         true,  false));
-Formulae.packages.set("org.formulae.localization",        new Formulae.PackageInfo("Localization",          false, false)); // WIP
-Formulae.packages.set("org.formulae.bitwise",             new Formulae.PackageInfo("Bitwise",               false, false));
-Formulae.packages.set("org.formulae.plot",                new Formulae.PackageInfo("Plots",                 false, false)); // WIP
-Formulae.packages.set("org.formulae.chemistry",           new Formulae.PackageInfo("Chemistry",             false, true ));
-Formulae.packages.set("org.formulae.cryptography",        new Formulae.PackageInfo("Cryptography",          false, false));
-Formulae.packages.set("org.formulae.data",                new Formulae.PackageInfo("Data",                  false, false));
-
-// Experimental packages
-
-Formulae.packages.set("org.formulae.programming.quantum",     new Formulae.PackageInfo("Quantum programming (experimental)", false, false));
-Formulae.packages.set("org.formulae.filesystem",              new Formulae.PackageInfo("Filesystem (experimental)",          false, false));
-Formulae.packages.set("org.formulae.library",                 new Formulae.PackageInfo("Library book (experimental)",        false, false));
-Formulae.packages.set("org.formulae.programming.prototyping", new Formulae.PackageInfo("Prototyping (experimental)",         false, false));
+Formulae.packages = new Map(); // Map from package name to package info — populated at startup from packages.json
 
 ///////////////
 // functions //
@@ -2545,7 +2508,12 @@ Formulae.start = async function() {
 	//await Formulae.loadRefreshLocalization(true); // first time
 	
 	Formulae.setOrientation();
-	
+
+	const packagesConfig = await fetch("packages.json").then(r => r.json());
+	for (const p of packagesConfig.packages) {
+		Formulae.packages.set(p.name, new Formulae.PackageInfo(p.description, p.required, p.commonRequired));
+	}
+
 	Formulae.messages = await Formulae.loadMessages(null);
 	Formulae.setLocalizationCodes();
 	
