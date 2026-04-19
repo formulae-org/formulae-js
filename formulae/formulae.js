@@ -1213,9 +1213,13 @@ Formulae.onEnter = alt => {
 	
 	if (isPersistent && Formulae.serverType == 2) return Formulae.beep();
 	
-	if (Formulae.sHandler.expression.getTag().startsWith("Typesetting")) {
-		alert("Expression does not seem to be computable");
-		return;
+	if (!Formulae.sHandler.expression.getTag().startsWith("Typesetting")) {
+		Formulae.compute(alt, isPersistent);
+	}
+	else {
+		//alert("Expression does not seem to be computable");
+		//return;
+		Formulae.converse();
 	}
 	
 	//////////////////////////////////////////////////////////////////
@@ -1235,6 +1239,9 @@ Formulae.onEnter = alt => {
 	*/
 	//////////////////////////////////////////////////////////////////
 	
+};
+
+Formulae.compute = (alt, isPersistent) => {
 	Formulae.beforeChanges();
 	
 	//Formulae.clearHighlightedExpression();
@@ -1313,7 +1320,75 @@ Formulae.onEnter = alt => {
 	hResult.prepareDisplay();
 	hResult.display();
 	*/
-};
+}
+
+Formulae.converse = () => {
+	if (!Formulae.AI?.getActiveProvider()) {
+		alert("AI provider is not configured.");
+		return;
+	}
+	
+	Formulae.beforeChanges();
+	
+	//Formulae.clearHighlightedExpression();
+	
+	let index = Formulae.sHandler.index;
+	
+	let wait = Formulae.createExpression("Formulae.WaitingExpression");
+	
+	let hResult, hNull = null;
+	
+	if (index == Formulae.handlers.length - 1) { // new result
+		hResult = Formulae.addExpression(wait, Formulae.ROW_OUTPUT);
+		hNull = Formulae.addExpression(new Expression.Null(), Formulae.ROW_INPUT);
+	}
+	else {
+		hResult = Formulae.handlers[index + 1];
+		
+		if (hResult.type == Formulae.ROW_OUTPUT) { // previous result
+			hResult.setExpression(wait);
+		}
+		else { // no previous result, it needs to be created
+			hResult = Formulae.insertExpression(wait, Formulae.ROW_OUTPUT, index + 1);
+		}
+	}
+	
+	hResult.prepareDisplay();
+	hResult.display();
+	
+	if (hNull != null) {
+		hNull.prepareDisplay();
+		hNull.display();
+	}
+	
+	if (index + 2 <= Formulae.handlers.length - 1) {
+		Formulae.setSelected(Formulae.handlers[index + 2], Formulae.handlers[index + 2].expression.moveTo(Expression.DOWN), true);
+	}
+	else {
+		Formulae.setSelected(Formulae.handlers[index + 1], Formulae.handlers[index + 1].expression.moveTo(Expression.DOWN), true);
+	}
+	
+	///////////// converse
+	
+	setTimeout(async () => {
+		let start = new Date().valueOf();
+		
+		let xml = new XMLSerializer().serializeToString(await Formulae.handlers[index].expression.toXML());
+		
+		let responseXml = await Formulae.AI.sendToAI(xml);
+		
+		let promises = [];
+		let responseExpr = Formulae.xmlToExpression(responseXml, promises);
+		await Promise.all(promises);
+		
+		console.log(Formulae.ellaspedTime(new Date().valueOf() - start));
+		
+		hResult.setExpression(responseExpr);
+		
+		hResult.prepareDisplay();
+		hResult.display();
+	}, 0);
+}
 
 Formulae.ellaspedTime = millis => {
 	let h = Math.floor(millis / (60 * 60 * 1000));

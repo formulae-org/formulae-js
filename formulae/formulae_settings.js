@@ -36,6 +36,8 @@ Formulae.Settings.showSettings = function() {
 <button type="button" onClick='Formulae.Settings.onChangeFontSize(parseInt(document.getElementById("fontSize").value));'>${Formulae.messages.labelFontSizeApply}</button>
 <tr>
 <td>GitHub<td><button type='button' onClick='Formulae.Settings.GitHubSettings()'>Settings</button>
+<tr>
+<td>AI connections<td><button type='button' onClick='Formulae.AI.showConnectionsManager()'>Manage&hellip;</button>
 <tr><td>${Formulae.messages.labelServer}
 <td>
 <select id="servers" onchange="Formulae.serverType = this.selectedIndex;">
