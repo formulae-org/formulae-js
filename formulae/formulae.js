@@ -1213,12 +1213,11 @@ Formulae.onEnter = alt => {
 	
 	if (isPersistent && Formulae.serverType == 2) return Formulae.beep();
 	
-	if (!Formulae.sHandler.expression.getTag().startsWith("Typesetting")) {
+	let tag = Formulae.sHandler.expression.getTag();
+	if (tag !== "Typesetting.Paragraph" && tag !== "Typesetting.MultiParagraph") {
 		Formulae.compute(alt, isPersistent);
 	}
 	else {
-		//alert("Expression does not seem to be computable");
-		//return;
 		Formulae.converse();
 	}
 	
@@ -1372,19 +1371,27 @@ Formulae.converse = () => {
 	
 	setTimeout(async () => {
 		let start = new Date().valueOf();
-		
-		let xml = new XMLSerializer().serializeToString(await Formulae.handlers[index].expression.toXML());
-		
-		let responseXml = await Formulae.AI.sendToAI(xml);
-		
-		let promises = [];
-		let responseExpr = Formulae.xmlToExpression(responseXml, promises);
-		await Promise.all(promises);
-		
+
+		try {
+			let xml = new XMLSerializer().serializeToString(await Formulae.handlers[index].expression.toXML());
+
+			let responseXml = await Formulae.AI.sendToAI(xml);
+
+			let promises = [];
+			let responseExpr = Formulae.xmlToExpression(responseXml, promises);
+			await Promise.all(promises);
+
+			hResult.setExpression(responseExpr);
+		}
+		catch (e) {
+			let errExpr = Formulae.createExpression("Error");
+			errExpr.set("Description", e.message);
+			errExpr.addChild(Formulae.createExpression("Null"));
+			hResult.setExpression(errExpr);
+		}
+
 		console.log(Formulae.ellaspedTime(new Date().valueOf() - start));
-		
-		hResult.setExpression(responseExpr);
-		
+
 		hResult.prepareDisplay();
 		hResult.display();
 	}, 0);

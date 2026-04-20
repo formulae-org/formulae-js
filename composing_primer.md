@@ -174,21 +174,6 @@ Note that the `Math.Arithmetic.Addition` expression is nested inside the paragra
 
 ## Conversational model
 
-Fōrmulæ operates in three modes:
-
-- **Compute**: the user builds an expression and submits it to the reduction engine for evaluation.
-- **Compose**: expressions are assembled into a visual document for display.
-- **Converse**: expressions are exchanged between the user and an AI model.
-
-### How expressions are routed
-
-When the user submits an expression in the Fōrmulæ front-end, the routing depends on the expression's root tag:
-
-- If the root is **`Typesetting.Paragraph`** or **`Typesetting.MultiParagraph`** → the expression is sent to the AI model as a prompt.
-- Otherwise → the expression is passed to the reduction engine for evaluation.
-
-The paragraph expression *is* the prompt. No additional envelope is needed.
-
 ### Human prompt structure
 
 A prompt is a `Typesetting.Paragraph` (for short, single-section prompts) or a `Typesetting.MultiParagraph` (for longer, multi-section prompts). Any expression type may appear as a subexpression of the paragraph, not just text. This enables multimodal prompts — for example, embedding a `Graphics.RasterGraphics` expression to include an image, or embedding a mathematical formula, a table, or a computed result.
