@@ -65,7 +65,18 @@ Formulae.AI.providers = (() => {
 			});
 		}
 		async onStart(params, primer) {}
-		async onPrompt(params, primer, xml) {
+		async onPrompt(params, primer, xml, mediaMap) {
+			let userContent;
+			if (Object.keys(mediaMap).length === 0) {
+				userContent = xml;
+			} else {
+				userContent = [];
+				for (let [ref, media] of Object.entries(mediaMap)) {
+					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
+					userContent.push({ type: "image", source: { type: "base64", media_type: media.format, data: media.data } });
+				}
+				userContent.push({ type: "text", text: xml });
+			}
 			const response = await fetch("https://api.anthropic.com/v1/messages", {
 				method: "POST",
 				headers: {
@@ -76,13 +87,13 @@ Formulae.AI.providers = (() => {
 				body: JSON.stringify({
 					model: params.model,
 					system: primer,
-					messages: [{ role: "user", content: xml }],
+					messages: [{ role: "user", content: userContent }],
 					max_tokens: params.maxTokens
 				})
 			});
 			const data = await response.json();
 			if (data.error) throw new Error(data.error.message);
-			return data.content[0].text;
+			return { responseXml: data.content[0].text, responseMediaMap: {} };
 		}
 	}
 
@@ -119,7 +130,18 @@ Formulae.AI.providers = (() => {
 			});
 		}
 		async onStart(params, primer) {}
-		async onPrompt(params, primer, xml) {
+		async onPrompt(params, primer, xml, mediaMap) {
+			let userContent;
+			if (Object.keys(mediaMap).length === 0) {
+				userContent = xml;
+			} else {
+				userContent = [];
+				for (let [ref, media] of Object.entries(mediaMap)) {
+					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
+					userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
+				}
+				userContent.push({ type: "text", text: xml });
+			}
 			const response = await fetch("https://api.openai.com/v1/chat/completions", {
 				method: "POST",
 				headers: {
@@ -130,13 +152,13 @@ Formulae.AI.providers = (() => {
 					model: params.model,
 					messages: [
 						{ role: "system", content: primer },
-						{ role: "user", content: xml }
+						{ role: "user", content: userContent }
 					]
 				})
 			});
 			const data = await response.json();
 			if (data.error) throw new Error(data.error.message);
-			return data.choices[0].message.content;
+			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
 		}
 	}
 
@@ -144,7 +166,7 @@ Formulae.AI.providers = (() => {
 		constructor() { this._cacheName = null; }
 		getProviderName() { return "Google (Gemini)"; }
 		getModels() {
-			return ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-pro"];
+			return ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.5-flash-image"];
 		}
 		configure(existing) {
 			return new Promise(resolve => {
@@ -196,9 +218,17 @@ Formulae.AI.providers = (() => {
 				console.warn("Gemini context cache creation failed, will use system_instruction per-request:", e.message);
 			}
 		}
-		async onPrompt(params, primer, xml) {
+		async onPrompt(params, primer, xml, mediaMap) {
+			let parts = [];
+			for (let [ref, media] of Object.entries(mediaMap)) {
+				parts.push({ text: `[MediaRef: ${ref}]` });
+				parts.push({ inline_data: { mime_type: media.format, data: media.data } });
+			}
+			parts.push({ text: xml });
 			const body = {
-				contents: [{ role: "user", parts: [{ text: xml }] }]
+				contents: [{ role: "user", parts }]
+				//contents: [{ role: "user", parts }],
+				//generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
 			};
 			if (this._cacheName) {
 				body.cachedContent = this._cacheName;
@@ -214,8 +244,21 @@ Formulae.AI.providers = (() => {
 				}
 			);
 			const data = await response.json();
+			console.log("G");
+			console.log(data);
 			if (data.error) throw new Error(data.error.message);
-			return data.candidates[0].content.parts[0].text;
+			let responseParts = data.candidates[0].content.parts;
+			let xmlParts = [], responseMediaMap = {}, genIdx = 0;
+			for (let part of responseParts) {
+				if (part.text) xmlParts.push(part.text);
+				else if (part.inline_data) {
+					responseMediaMap[`gen-${genIdx++}`] = {
+						data: part.inline_data.data,
+						format: part.inline_data.mime_type
+					};
+				}
+			}
+			return { responseXml: xmlParts.join(""), responseMediaMap };
 		}
 	}
 
@@ -259,7 +302,18 @@ Formulae.AI.providers = (() => {
 			});
 		}
 		async onStart(params, primer) {}
-		async onPrompt(params, primer, xml) {
+		async onPrompt(params, primer, xml, mediaMap) {
+			let userContent;
+			if (Object.keys(mediaMap).length === 0) {
+				userContent = xml;
+			} else {
+				userContent = [];
+				for (let [ref, media] of Object.entries(mediaMap)) {
+					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
+					userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
+				}
+				userContent.push({ type: "text", text: xml });
+			}
 			const url = `https://${params.resourceName}.openai.azure.com/openai/deployments/${params.deploymentName}/chat/completions?api-version=${params.apiVersion}`;
 			const response = await fetch(url, {
 				method: "POST",
@@ -270,13 +324,13 @@ Formulae.AI.providers = (() => {
 				body: JSON.stringify({
 					messages: [
 						{ role: "system", content: primer },
-						{ role: "user", content: xml }
+						{ role: "user", content: userContent }
 					]
 				})
 			});
 			const data = await response.json();
 			if (data.error) throw new Error(data.error.message);
-			return data.choices[0].message.content;
+			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
 		}
 	}
 
@@ -318,7 +372,18 @@ Formulae.AI.providers = (() => {
 			});
 		}
 		async onStart(params, primer) {}
-		async onPrompt(params, primer, xml) {
+		async onPrompt(params, primer, xml, mediaMap) {
+			let userContent;
+			if (Object.keys(mediaMap).length === 0) {
+				userContent = xml;
+			} else {
+				userContent = [];
+				for (let [ref, media] of Object.entries(mediaMap)) {
+					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
+					userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
+				}
+				userContent.push({ type: "text", text: xml });
+			}
 			const response = await fetch("https://api.llama.com/v1/chat/completions", {
 				method: "POST",
 				headers: {
@@ -329,13 +394,13 @@ Formulae.AI.providers = (() => {
 					model: params.model,
 					messages: [
 						{ role: "system", content: primer },
-						{ role: "user", content: xml }
+						{ role: "user", content: userContent }
 					]
 				})
 			});
 			const data = await response.json();
 			if (data.error) throw new Error(data.error.message);
-			return data.choices[0].message.content;
+			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
 		}
 	}
 

@@ -182,6 +182,37 @@ A prompt is a `Typesetting.Paragraph` (for short, single-section prompts) or a `
 
 The AI should reply with a **single root Fōrmulæ expression**. The response does not need to be a typesetting expression. If the most appropriate answer is a table, reply with a `List.Table`; if it is a formula, reply with the formula expression; if it is a formatted document, reply with a `Typesetting.MultiParagraph`. Choose whichever expression type best represents the answer.
 
+### Media references
+
+Binary media (images, audio, etc.) is never embedded inline in the XML. Instead, each media expression carries a `MediaRef` attribute that identifies it by name, and the actual content is passed to you natively through the API.
+
+**Input media** — when a prompt contains a media expression, you will see it as:
+
+```xml
+<expression tag="Graphics.RasterGraphics" MediaRef="img-0"/>
+```
+
+The label `[MediaRef: img-0]` will appear in the conversation immediately before the corresponding media item so you can associate the two.
+
+**Referencing input media in a response** — if your answer needs to include a media item that was part of the prompt, use the same `MediaRef` identifier:
+
+```xml
+<expression tag="Graphics.RasterGraphics" MediaRef="img-0"/>
+```
+
+**AI-generated media in a response** — if you generate new images, you must do two things together:
+
+1. Place a placeholder expression in the XML for each image, using sequential identifiers starting from `gen-0`:
+
+```xml
+<expression tag="Graphics.RasterGraphics" MediaRef="gen-0"/>
+<expression tag="Graphics.RasterGraphics" MediaRef="gen-1"/>
+```
+
+2. **Return the actual image data as separate `inline_data` parts in the API response**, one per `gen-N` placeholder, in the same order. The system reads those parts and pairs them with the matching `MediaRef` identifiers. If the image data is not present as a separate part, the placeholder cannot be resolved and the image will be missing from the output.
+
+In other words: the XML carries the structure, and the API parts carry the binary data. Both are required.
+
 ---
 
 ## Conversational examples
@@ -220,7 +251,7 @@ The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI id
 <expression tag="Typesetting.MultiParagraph">
     <expression tag="String.Text" Value="Identify the following image:"/>
     <expression tag="Typesetting.Centering">
-        <expression tag="Graphics.RasterGraphics" Value="..." Format="image/png"/>
+        <expression tag="Graphics.RasterGraphics" MediaRef="img-0"/>
     </expression>
 </expression>
 ```
@@ -253,7 +284,7 @@ The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI id
 </expression>
 ```
 
-Note that the `Graphics.RasterGraphics` expression carries the image as base64-encoded PNG data in its `Value` attribute (abbreviated as `"..."` here). Any expression can appear as an inline item inside a paragraph, enabling multimodal prompts.
+The image is passed natively via the API and referenced in the XML by `MediaRef="img-0"`. Any expression can appear as an inline item inside a paragraph, enabling multimodal prompts.
 
 ### Example 3 — Image generation and table
 
@@ -287,25 +318,25 @@ The user sends a text-only `Typesetting.MultiParagraph` asking for a seasonal ta
         </expression>
         <expression tag="List.List">
             <expression tag="String.Text" Value="Spring"/>
-            <expression tag="Graphics.RasterGraphics" Value="..." Format="image/png"/>
+            <expression tag="Graphics.RasterGraphics" MediaRef="gen-0"/>
         </expression>
         <expression tag="List.List">
             <expression tag="String.Text" Value="Summer"/>
-            <expression tag="Graphics.RasterGraphics" Value="..." Format="image/png"/>
+            <expression tag="Graphics.RasterGraphics" MediaRef="gen-1"/>
         </expression>
         <expression tag="List.List">
             <expression tag="String.Text" Value="Autumn"/>
-            <expression tag="Graphics.RasterGraphics" Value="..." Format="image/png"/>
+            <expression tag="Graphics.RasterGraphics" MediaRef="gen-2"/>
         </expression>
         <expression tag="List.List">
             <expression tag="String.Text" Value="Winter"/>
-            <expression tag="Graphics.RasterGraphics" Value="..." Format="image/png"/>
+            <expression tag="Graphics.RasterGraphics" MediaRef="gen-3"/>
         </expression>
     </expression>
 </expression>
 ```
 
-The `List.Table` holds a single `List.List` subexpression (the matrix), which itself contains one `List.List` per row. The first row is the header (wrapped in `Visualization.Bold`); subsequent rows are data rows. The images are AI-generated and encoded as base64 PNG in their `Value` attributes.
+The `List.Table` holds a single `List.List` subexpression (the matrix), which itself contains one `List.List` per row. The first row is the header (wrapped in `Visualization.Bold`); subsequent rows are data rows. The four AI-generated images are referenced by `MediaRef="gen-0"` through `MediaRef="gen-3"` in the order they are returned by the API.
 
 ---
 
@@ -915,7 +946,7 @@ A `Programming.ConditionalSwitch` with two conditions and an else branch has fiv
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Graphics.RasterGraphics` | Represents a raster (bitmap) graphics | Zero | | "Value": the image encoded as base64 PNG data; "Format": the image format (always "image/png") |
+| `Graphics.RasterGraphics` | Represents a raster (bitmap) graphics | Zero | | "MediaRef": identifier referencing the media content passed natively via the API (e.g., "img-0" for input media, "gen-0" for AI-generated media) |
 
 ---
 

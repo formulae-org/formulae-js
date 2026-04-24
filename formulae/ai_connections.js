@@ -27,6 +27,9 @@ Formulae.AI._esc = s => String(s)
 	.replace(/>/g, "&gt;")
 	.replace(/"/g, "&quot;");
 
+// Media expression tags whose Value/Format attributes contain binary data
+Formulae.AI.MEDIA_TAGS = new Set(["Graphics.RasterGraphics"]);
+
 // localStorage keys
 const AI_CONNECTIONS_KEY    = "aiConnections";
 const AI_ACTIVE_ID_KEY      = "aiActiveConnectionId";
@@ -73,6 +76,39 @@ Formulae.AI._getPrimer = async function() {
 	return Formulae.AI._primerText;
 };
 
+Formulae.AI.extractMedia = function(xmlString) {
+	let doc = new DOMParser().parseFromString(xmlString, "text/xml");
+	let mediaMap = {};
+	let counter = 0;
+	doc.querySelectorAll("expression").forEach(el => {
+		if (Formulae.AI.MEDIA_TAGS.has(el.getAttribute("tag"))) {
+			let data = el.getAttribute("Value");
+			if (data) {
+				let ref = `img-${counter++}`;
+				mediaMap[ref] = { data, format: el.getAttribute("Format") };
+				el.removeAttribute("Value");
+				el.removeAttribute("Format");
+				el.setAttribute("MediaRef", ref);
+			}
+		}
+	});
+	return { strippedXml: new XMLSerializer().serializeToString(doc), mediaMap };
+};
+
+Formulae.AI.reinsertMedia = function(xmlString, mediaMap) {
+	if (Object.keys(mediaMap).length === 0) return xmlString;
+	let doc = new DOMParser().parseFromString(xmlString, "text/xml");
+	doc.querySelectorAll("expression[MediaRef]").forEach(el => {
+		let media = mediaMap[el.getAttribute("MediaRef")];
+		if (media) {
+			el.setAttribute("Value", media.data);
+			if (media.format) el.setAttribute("Format", media.format);
+			el.removeAttribute("MediaRef");
+		}
+	});
+	return new XMLSerializer().serializeToString(doc);
+};
+
 Formulae.AI.sendToAI = async function(xmlString) {
 	let info = Formulae.AI.getActiveProvider();
 	if (!info) throw new Error("No active AI connection configured");
@@ -81,7 +117,23 @@ Formulae.AI.sendToAI = async function(xmlString) {
 		await info.provider.onStart(info.connection.parameters, primer);
 		Formulae.AI._sessionStarted = true;
 	}
-	return await info.provider.onPrompt(info.connection.parameters, primer, xmlString);
+	let { strippedXml, mediaMap } = Formulae.AI.extractMedia(xmlString);
+	
+	console.log(xmlString);
+	console.log(strippedXml);
+	console.log(mediaMap);
+	
+	let { responseXml, responseMediaMap } = await info.provider.onPrompt(
+		info.connection.parameters, primer, strippedXml, mediaMap
+	);
+	
+	let xml = Formulae.AI.reinsertMedia(responseXml, { ...mediaMap, ...responseMediaMap });
+	
+	console.log(responseXml);
+	console.log(responseMediaMap);
+	console.log(xml);
+	
+	return xml;
 };
 
 // ─── UI ────────────────────────────────────────────────────────────────────

@@ -1384,6 +1384,7 @@ Formulae.converse = () => {
 			hResult.setExpression(responseExpr);
 		}
 		catch (e) {
+			console.log(e);
 			let errExpr = Formulae.createExpression("Error");
 			errExpr.set("Description", e.message);
 			errExpr.addChild(Formulae.createExpression("Null"));
