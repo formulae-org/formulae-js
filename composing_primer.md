@@ -8,6 +8,7 @@ This document is a primer on using Fōrmulæ expressions as a composing intercha
 
 - Every message you receive will be a Fōrmulæ XML expression.
 - Every response you produce must be a **single Fōrmulæ XML expression** — the bare XML only, with no surrounding prose, no introduction, and no markdown code fences.
+- When your response includes `Graphics.RasterGraphics` elements with `MediaRef="gen-N"` identifiers, you **must also generate each image and include it as an `inline_data` part** in the same response, one per `gen-N` in order. A response that contains `gen-N` placeholders without the matching image data is **incomplete** — the placeholders cannot be resolved without the data.
 
 ---
 
@@ -61,6 +62,20 @@ Some expression types store scalar data (a number value, a string, a name, etc.)
 - The names of serialized attributes (e.g. `Value`, `Name`, `Description`) are defined per tag.
 - Their values are always strings in the XML, even when they represent numbers or booleans.
 - Not all expression types have serialized attributes. Expressions whose entire data is expressed through subexpressions typically have none.
+- Attribute values must be valid XML. Any of the five XML special characters must be escaped:
+
+  | Character | Escape |
+  |---|---|
+  | `&` | `&amp;` |
+  | `<` | `&lt;` |
+  | `>` | `&gt;` |
+  | `"` | `&quot;` |
+  | `'` | `&apos;` |
+
+  Example — a `String.Text` whose value is `a < b & c > d`:
+  ```xml
+  <expression tag="String.Text" Value="a &lt; b &amp; c &gt; d"/>
+  ```
 
 Common serialized attribute names and what they usually hold:
 
@@ -93,6 +108,7 @@ Subexpressions are the children of an expression in the tree. They are encoded a
 - A leaf expression has no child elements. It stores all its data in attributes.
 - A compound expression stores its structure in child elements. It may also have serialized attributes.
 - The specific attributes and subexpression roles for each tag are defined in the expression reference (see below).
+- Attribute values are XML-escaped: `&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`, `'` → `&apos;`.
 
 ---
 
@@ -209,9 +225,13 @@ The label `[MediaRef: img-0]` will appear in the conversation immediately before
 <expression tag="Graphics.RasterGraphics" MediaRef="gen-1"/>
 ```
 
-2. **Return the actual image data as separate `inline_data` parts in the API response**, one per `gen-N` placeholder, in the same order. The system reads those parts and pairs them with the matching `MediaRef` identifiers. If the image data is not present as a separate part, the placeholder cannot be resolved and the image will be missing from the output.
+2. **Actively generate each image and include it as an `inline_data` part** in the same response, one per `gen-N` placeholder, in the same order. The system reads those parts and pairs them with the matching `MediaRef` identifiers. If the image data is not present as a separate part, the placeholder cannot be resolved and the image will be missing from the output.
 
-In other words: the XML carries the structure, and the API parts carry the binary data. Both are required.
+In other words: the XML carries the structure, and the API parts carry the binary data. A response that omits the `inline_data` parts for any `gen-N` placeholder is an **incomplete response**.
+
+**Before finishing your response:** if your XML contains any `gen-N` MediaRef identifiers, confirm that you have generated and included one `inline_data` part for each, in order. If any are missing, generate the image before completing the response.
+
+If you cannot guarantee that a requested image will be generated and included as an `inline_data` part — for example, because of safety restrictions, content policy, or a generation failure — **do not include the `Graphics.RasterGraphics` element at all**. A `gen-N` placeholder with no matching `inline_data` part produces a broken result in the output. When in doubt, omit the image and provide a text description instead.
 
 ---
 
@@ -337,6 +357,8 @@ The user sends a text-only `Typesetting.MultiParagraph` asking for a seasonal ta
 ```
 
 The `List.Table` holds a single `List.List` subexpression (the matrix), which itself contains one `List.List` per row. The first row is the header (wrapped in `Visualization.Bold`); subsequent rows are data rows. The four AI-generated images are referenced by `MediaRef="gen-0"` through `MediaRef="gen-3"` in the order they are returned by the API.
+
+**Note:** this response is only complete when accompanied by four `inline_data` parts — one generated image per season, in the order `gen-0` through `gen-3`. The XML alone, without the image data, is an incomplete response.
 
 ---
 

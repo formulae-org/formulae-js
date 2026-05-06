@@ -96,14 +96,17 @@ Formulae.AI.extractMedia = function(xmlString) {
 };
 
 Formulae.AI.reinsertMedia = function(xmlString, mediaMap) {
-	if (Object.keys(mediaMap).length === 0) return xmlString;
+	if (Object.keys(mediaMap).length === 0 && !xmlString.includes("MediaRef=")) return xmlString;
 	let doc = new DOMParser().parseFromString(xmlString, "text/xml");
 	doc.querySelectorAll("expression[MediaRef]").forEach(el => {
-		let media = mediaMap[el.getAttribute("MediaRef")];
+		let ref = el.getAttribute("MediaRef");
+		let media = mediaMap[ref];
 		if (media) {
 			el.setAttribute("Value", media.data);
 			if (media.format) el.setAttribute("Format", media.format);
 			el.removeAttribute("MediaRef");
+		} else if (ref && ref.startsWith("gen-")) {
+			el.parentNode?.removeChild(el);
 		}
 	});
 	return new XMLSerializer().serializeToString(doc);

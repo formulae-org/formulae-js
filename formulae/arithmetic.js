@@ -294,6 +294,37 @@ BigInt.prototype.remainder = function(other) { return this % other; };
 BigInt.prototype.gcd = function(other) { let [a, b] = [this, other]; while (b != 0n) [a, b] = [b, a % b]; return a < 0n ? -a : a; };
 BigInt.prototype.integerDivisionForGCD = function(gcd) { return this / gcd; };
 BigInt.prototype.absoluteValue = function() { return this < 0n ? -this : this; };
+
+// Newton's method starting from a guaranteed overestimate, which converges monotonically to floor(√n), then verify exactness.
+BigInt.prototype.squareRoot = function() {
+	if (this === 0n) return this;
+	let negative = this < 0n;
+	let n = negative ? -this : this;
+	
+	// Initial overestimate: 2^⌈bitLength/2⌉
+	const bitLen = n.toString(16).length * 4;  // hex digits × 4 ≥ actual bit count
+	let x = 1n << BigInt(Math.ceil(bitLen / 2));
+	
+	// Newton's method: x₁ = ⌊(x + ⌊n/x⌋) / 2⌋
+	// Starting from an overestimate, each step is strictly smaller until we hit ⌊√n⌋
+	for (;;) {
+		const x1 = (x + n / x) >> 1n;
+		if (x1 >= x) break;
+		x = x1;
+	}
+	
+	if (x * x === n) {
+		if (negative) {
+			return new Complex(NumberI.ZERO, x);
+		}
+		else {
+			return x;
+		}
+	}
+	
+	return null;
+};
+
 BigInt.prototype.roundToPrecision = function(precision) {}; // TODO
 BigInt.prototype.roundToInteger = function() { return this; }
 BigInt.prototype.roundToDecimalPlaces = function(places, session) { if (places >= 0) return this; let m = 10n ** (-places); return this.integerDivision(m, session).multiplication(m); };

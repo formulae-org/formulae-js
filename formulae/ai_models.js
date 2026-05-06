@@ -1,4 +1,4 @@
-/*
+	/*
 Fōrmulæ AI provider models.
 Copyright (C) 2015-2026 Laurence R. Ugalde
 
@@ -21,9 +21,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Formulae.AI = Formulae.AI || {};
 
 Formulae.AI.providers = (() => {
-
 	class AnthropicProvider {
 		getProviderName() { return "Anthropic (Claude)"; }
+		
 		getModels() {
 			return [
 				"claude-opus-4-7",
@@ -31,6 +31,7 @@ Formulae.AI.providers = (() => {
 				"claude-haiku-4-5-20251001"
 			];
 		}
+		
 		configure(existing) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
@@ -64,7 +65,9 @@ Formulae.AI.providers = (() => {
 				};
 			});
 		}
+		
 		async onStart(params, primer) {}
+		
 		async onPrompt(params, primer, xml, mediaMap) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
@@ -96,12 +99,14 @@ Formulae.AI.providers = (() => {
 			return { responseXml: data.content[0].text, responseMediaMap: {} };
 		}
 	}
-
+	
 	class OpenAIProvider {
 		getProviderName() { return "OpenAI (ChatGPT)"; }
+		
 		getModels() {
 			return ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1", "o1-mini"];
 		}
+		
 		configure(existing) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
@@ -129,7 +134,9 @@ Formulae.AI.providers = (() => {
 				};
 			});
 		}
+		
 		async onStart(params, primer) {}
+		
 		async onPrompt(params, primer, xml, mediaMap) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
@@ -161,13 +168,16 @@ Formulae.AI.providers = (() => {
 			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
 		}
 	}
-
+	
 	class GoogleProvider {
 		constructor() { this._cacheName = null; }
+		
 		getProviderName() { return "Google (Gemini)"; }
+		
 		getModels() {
 			return ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.5-flash-image"];
 		}
+		
 		configure(existing) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
@@ -195,6 +205,7 @@ Formulae.AI.providers = (() => {
 				};
 			});
 		}
+		
 		async onStart(params, primer) {
 			this._cacheName = null;
 			try {
@@ -218,6 +229,7 @@ Formulae.AI.providers = (() => {
 				console.warn("Gemini context cache creation failed, will use system_instruction per-request:", e.message);
 			}
 		}
+		
 		async onPrompt(params, primer, xml, mediaMap) {
 			let parts = [];
 			for (let [ref, media] of Object.entries(mediaMap)) {
@@ -225,16 +237,22 @@ Formulae.AI.providers = (() => {
 				parts.push({ inline_data: { mime_type: media.format, data: media.data } });
 			}
 			parts.push({ text: xml });
+			
 			const body = {
-				contents: [{ role: "user", parts }]
-				//contents: [{ role: "user", parts }],
-				//generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
+				//contents: [{ role: "user", parts }]
+				
+				contents: [{ role: "user", parts }],
+				generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
 			};
+			
 			if (this._cacheName) {
 				body.cachedContent = this._cacheName;
 			} else {
 				body.system_instruction = { parts: [{ text: primer }] };
 			}
+			
+			console.log(JSON.stringify(body, null, 2));
+			
 			const response = await fetch(
 				`https://generativelanguage.googleapis.com/v1beta/models/${params.model}:generateContent?key=${params.apiKey}`,
 				{
@@ -243,28 +261,39 @@ Formulae.AI.providers = (() => {
 					body: JSON.stringify(body)
 				}
 			);
+			
 			const data = await response.json();
-			console.log("G");
+			
+			console.log("G1");
 			console.log(data);
+			console.log("G2");
+			console.log(JSON.stringify(data, null, 2));
+			
 			if (data.error) throw new Error(data.error.message);
+			
 			let responseParts = data.candidates[0].content.parts;
 			let xmlParts = [], responseMediaMap = {}, genIdx = 0;
 			for (let part of responseParts) {
-				if (part.text) xmlParts.push(part.text);
-				else if (part.inline_data) {
+				if (part.text) {
+					xmlParts.push(part.text);
+				}
+				else if (part.inlineData) {
 					responseMediaMap[`gen-${genIdx++}`] = {
-						data: part.inline_data.data,
-						format: part.inline_data.mime_type
+						data: part.inlineData.data,
+						format: part.inlineData.mime_type
 					};
 				}
 			}
+			
 			return { responseXml: xmlParts.join(""), responseMediaMap };
 		}
 	}
-
+	
 	class AzureProvider {
 		getProviderName() { return "Microsoft Azure OpenAI"; }
+		
 		getModels() { return []; }
+		
 		configure(existing) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
@@ -301,7 +330,9 @@ Formulae.AI.providers = (() => {
 				};
 			});
 		}
+		
 		async onStart(params, primer) {}
+		
 		async onPrompt(params, primer, xml, mediaMap) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
@@ -333,9 +364,10 @@ Formulae.AI.providers = (() => {
 			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
 		}
 	}
-
+	
 	class MetaProvider {
 		getProviderName() { return "Meta (Llama)"; }
+		
 		getModels() {
 			return [
 				"Llama-4-Scout-17B-16E-Instruct",
@@ -344,6 +376,7 @@ Formulae.AI.providers = (() => {
 				"Meta-Llama-3.1-8B-Instruct"
 			];
 		}
+		
 		configure(existing) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
@@ -371,7 +404,9 @@ Formulae.AI.providers = (() => {
 				};
 			});
 		}
+		
 		async onStart(params, primer) {}
+		
 		async onPrompt(params, primer, xml, mediaMap) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
@@ -403,7 +438,7 @@ Formulae.AI.providers = (() => {
 			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
 		}
 	}
-
+	
 	return [
 		new AnthropicProvider(),
 		new OpenAIProvider(),
