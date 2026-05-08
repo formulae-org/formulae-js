@@ -121,22 +121,10 @@ Formulae.AI.sendToAI = async function(xmlString) {
 		Formulae.AI._sessionStarted = true;
 	}
 	let { strippedXml, mediaMap } = Formulae.AI.extractMedia(xmlString);
-	
-	console.log(xmlString);
-	console.log(strippedXml);
-	console.log(mediaMap);
-	
 	let { responseXml, responseMediaMap } = await info.provider.onPrompt(
 		info.connection.parameters, primer, strippedXml, mediaMap
 	);
-	
-	let xml = Formulae.AI.reinsertMedia(responseXml, { ...mediaMap, ...responseMediaMap });
-	
-	console.log(responseXml);
-	console.log(responseMediaMap);
-	console.log(xml);
-	
-	return xml;
+	return Formulae.AI.reinsertMedia(responseXml, { ...mediaMap, ...responseMediaMap });
 };
 
 // ─── UI ────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-	/*
+/*
 Fōrmulæ AI provider models.
 Copyright (C) 2015-2026 Laurence R. Ugalde
 
@@ -21,135 +21,55 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Formulae.AI = Formulae.AI || {};
 
 Formulae.AI.providers = (() => {
-	class AnthropicProvider {
-		getProviderName() { return "Anthropic (Claude)"; }
-		
-		getModels() {
-			return [
-				"claude-opus-4-7",
-				"claude-sonnet-4-6",
-				"claude-haiku-4-5-20251001"
-			];
-		}
-		
+	class OpenAICompatibleProvider {
+		getProviderName() { return "OpenAI-compatible"; }
+
 		configure(existing) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
 				table.classList.add("bordered");
-				let models = this.getModels();
-				let modelOptions = models.map(m =>
-					`<option value="${m}">${m}</option>`
-				).join("");
 				table.innerHTML = `
-<tr><th colspan=2>Configure — Anthropic (Claude)
+<tr><th colspan=2>Configure — OpenAI-compatible
+<tr><td>Base URL<td><input type="text" id="ai-baseUrl" size=40 placeholder="https://openrouter.ai/api/v1">
 <tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
-<tr><td>Model<td><select id="ai-model">${modelOptions}</select>
-<tr><td>Max tokens<td><input type="number" id="ai-maxTokens" min="1" max="32768" value="4096">
+<tr><td>Model<td><input type="text" id="ai-model" size=40 placeholder="e.g. openai/gpt-4o">
 <tr><td colspan=2 align=center>
   <button id="ai-back">&#x2190; Back</button>&nbsp;
   <button id="ai-save">Save</button>`;
 				Formulae.setModal(table);
-				let defaultModel = existing?.model || models[0];
+				table.querySelector("#ai-baseUrl").value = existing?.baseUrl || "";
 				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
-				table.querySelector("#ai-model").value = defaultModel;
-				table.querySelector("#ai-maxTokens").value = existing?.maxTokens ?? 4096;
+				table.querySelector("#ai-model").value = existing?.model || "";
 				table.querySelector("#ai-back").onclick = () => resolve(null);
 				table.querySelector("#ai-save").onclick = () => {
+					let baseUrl = table.querySelector("#ai-baseUrl").value.trim().replace(/\/$/, "");
 					let apiKey = table.querySelector("#ai-apiKey").value.trim();
-					if (!apiKey) { alert("API key is required"); return; }
-					resolve({
-						apiKey,
-						model: table.querySelector("#ai-model").value,
-						maxTokens: parseInt(table.querySelector("#ai-maxTokens").value) || 4096
-					});
+					let model = table.querySelector("#ai-model").value.trim();
+					if (!baseUrl) { alert("Base URL is required"); return; }
+					if (!apiKey)  { alert("API key is required"); return; }
+					if (!model)   { alert("Model is required"); return; }
+					resolve({ baseUrl, apiKey, model });
 				};
 			});
 		}
-		
+
 		async onStart(params, primer) {}
-		
+
 		async onPrompt(params, primer, xml, mediaMap) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
 				userContent = xml;
-			} else {
-				userContent = [];
-				for (let [ref, media] of Object.entries(mediaMap)) {
-					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
-					userContent.push({ type: "image", source: { type: "base64", media_type: media.format, data: media.data } });
-				}
-				userContent.push({ type: "text", text: xml });
 			}
-			const response = await fetch("https://api.anthropic.com/v1/messages", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"x-api-key": params.apiKey,
-					"anthropic-version": "2023-06-01"
-				},
-				body: JSON.stringify({
-					model: params.model,
-					system: primer,
-					messages: [{ role: "user", content: userContent }],
-					max_tokens: params.maxTokens
-				})
-			});
-			const data = await response.json();
-			if (data.error) throw new Error(data.error.message);
-			return { responseXml: data.content[0].text, responseMediaMap: {} };
-		}
-	}
-	
-	class OpenAIProvider {
-		getProviderName() { return "OpenAI (ChatGPT)"; }
-		
-		getModels() {
-			return ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1", "o1-mini"];
-		}
-		
-		configure(existing) {
-			return new Promise(resolve => {
-				let table = document.createElement("table");
-				table.classList.add("bordered");
-				let models = this.getModels();
-				let modelOptions = models.map(m =>
-					`<option value="${m}">${m}</option>`
-				).join("");
-				table.innerHTML = `
-<tr><th colspan=2>Configure — OpenAI (ChatGPT)
-<tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
-<tr><td>Model<td><select id="ai-model">${modelOptions}</select>
-<tr><td colspan=2 align=center>
-  <button id="ai-back">&#x2190; Back</button>&nbsp;
-  <button id="ai-save">Save</button>`;
-				Formulae.setModal(table);
-				let defaultModel = existing?.model || models[0];
-				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
-				table.querySelector("#ai-model").value = defaultModel;
-				table.querySelector("#ai-back").onclick = () => resolve(null);
-				table.querySelector("#ai-save").onclick = () => {
-					let apiKey = table.querySelector("#ai-apiKey").value.trim();
-					if (!apiKey) { alert("API key is required"); return; }
-					resolve({ apiKey, model: table.querySelector("#ai-model").value });
-				};
-			});
-		}
-		
-		async onStart(params, primer) {}
-		
-		async onPrompt(params, primer, xml, mediaMap) {
-			let userContent;
-			if (Object.keys(mediaMap).length === 0) {
-				userContent = xml;
-			} else {
+			else {
 				userContent = [];
 				for (let [ref, media] of Object.entries(mediaMap)) {
-					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
+					userContent.push({ type: "text",      text: `[MediaRef: ${ref}]` });
 					userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
 				}
 				userContent.push({ type: "text", text: xml });
 			}
-			const response = await fetch("https://api.openai.com/v1/chat/completions", {
+			
+			const response = await fetch(params.baseUrl + "/chat/completions", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -158,54 +78,145 @@ Formulae.AI.providers = (() => {
 				body: JSON.stringify({
 					model: params.model,
 					messages: [
-						{ role: "system", content: primer },
-						{ role: "user", content: userContent }
-					]
+						{ role: "system", content: primer      },
+						{ role: "user",   content: userContent }
+					],
+					stream: false
 				})
 			});
+			
 			const data = await response.json();
+			//console.log(data);
 			if (data.error) throw new Error(data.error.message);
-			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
+			
+			const message = data.choices[0].message;
+			
+			return { responseXml: message.content, responseMediaMap: {} };
 		}
 	}
-	
-	class GoogleProvider {
-		constructor() { this._cacheName = null; }
-		
-		getProviderName() { return "Google (Gemini)"; }
-		
-		getModels() {
-			return ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.5-flash-image"];
-		}
-		
+
+	class AnthropicProvider {
+		getProviderName() { return "Anthropic"; }
+
 		configure(existing) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
 				table.classList.add("bordered");
-				let models = this.getModels();
-				let modelOptions = models.map(m =>
-					`<option value="${m}">${m}</option>`
-				).join("");
 				table.innerHTML = `
-<tr><th colspan=2>Configure — Google (Gemini)
+<tr><th colspan=2>Configure — Anthropic
 <tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
-<tr><td>Model<td><select id="ai-model">${modelOptions}</select>
+<tr><td>Model<td>
+  <input type="text" id="ai-model" size=40 list="ai-anthropic-models" placeholder="e.g. claude-sonnet-4-6">
+  <datalist id="ai-anthropic-models">
+    <option value="claude-opus-4-7">
+    <option value="claude-sonnet-4-6">
+    <option value="claude-haiku-4-5-20251001">
+    <option value="claude-3-5-sonnet-20241022">
+    <option value="claude-3-5-haiku-20241022">
+  </datalist>
+<tr><td>Max tokens<td><input type="number" id="ai-maxTokens" size=10 value="4096">
 <tr><td colspan=2 align=center>
   <button id="ai-back">&#x2190; Back</button>&nbsp;
   <button id="ai-save">Save</button>`;
 				Formulae.setModal(table);
-				let defaultModel = existing?.model || models[0];
-				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
-				table.querySelector("#ai-model").value = defaultModel;
+				table.querySelector("#ai-apiKey").value    = existing?.apiKey    || "";
+				table.querySelector("#ai-model").value     = existing?.model     || "claude-sonnet-4-6";
+				table.querySelector("#ai-maxTokens").value = existing?.maxTokens ?? 4096;
 				table.querySelector("#ai-back").onclick = () => resolve(null);
 				table.querySelector("#ai-save").onclick = () => {
-					let apiKey = table.querySelector("#ai-apiKey").value.trim();
+					let apiKey    = table.querySelector("#ai-apiKey").value.trim();
+					let model     = table.querySelector("#ai-model").value.trim();
+					let maxTokens = parseInt(table.querySelector("#ai-maxTokens").value) || 4096;
 					if (!apiKey) { alert("API key is required"); return; }
-					resolve({ apiKey, model: table.querySelector("#ai-model").value });
+					if (!model)  { alert("Model is required"); return; }
+					resolve({ apiKey, model, maxTokens });
 				};
 			});
 		}
-		
+
+		async onStart(params, primer) {}
+
+		async onPrompt(params, primer, xml, mediaMap) {
+			let userContent;
+			if (Object.keys(mediaMap).length === 0) {
+				userContent = xml;
+			} else {
+				userContent = [];
+				for (let [ref, media] of Object.entries(mediaMap)) {
+					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
+					userContent.push({
+						type:   "image",
+						source: { type: "base64", media_type: media.format, data: media.data }
+					});
+				}
+				userContent.push({ type: "text", text: xml });
+			}
+
+			const response = await fetch("https://api.anthropic.com/v1/messages", {
+				method: "POST",
+				headers: {
+					"Content-Type":      "application/json",
+					"x-api-key":         params.apiKey,
+					"anthropic-version": "2023-06-01"
+				},
+				body: JSON.stringify({
+					model:      params.model,
+					system:     primer,
+					messages:   [{ role: "user", content: userContent }],
+					max_tokens: params.maxTokens
+				})
+			});
+
+			const data = await response.json();
+			if (data.error) throw new Error(data.error.message ?? JSON.stringify(data.error));
+			return { responseXml: data.content[0].text, responseMediaMap: {} };
+		}
+	}
+
+	class GoogleProvider {
+		constructor() { this._cacheName = null; }
+
+		getProviderName() { return "Google (Gemini)"; }
+
+		configure(existing) {
+			return new Promise(resolve => {
+				let table = document.createElement("table");
+				table.classList.add("bordered");
+				table.innerHTML = `
+<tr><th colspan=2>Configure — Google (Gemini)
+<tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
+<tr><td>Model<td>
+  <input type="text" id="ai-model" size=40 list="ai-gemini-models" placeholder="e.g. gemini-2.5-flash">
+  <datalist id="ai-gemini-models">
+    <option value="gemini-2.5-flash">
+    <option value="gemini-2.5-pro">
+    <option value="gemini-2.0-flash">
+    <option value="gemini-2.0-flash-preview-image-generation">
+    <option value="gemini-1.5-pro">
+  </datalist>
+<tr><td>Image generation<td><label><input type="checkbox" id="ai-imageGen"> Enable (requires image-capable model)</label>
+<tr><td colspan=2 align=center>
+  <button id="ai-back">&#x2190; Back</button>&nbsp;
+  <button id="ai-save">Save</button>`;
+				Formulae.setModal(table);
+				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
+				table.querySelector("#ai-model").value = existing?.model || "gemini-2.5-flash";
+				table.querySelector("#ai-imageGen").checked = existing?.imageGeneration ?? false;
+				table.querySelector("#ai-back").onclick = () => resolve(null);
+				table.querySelector("#ai-save").onclick = () => {
+					let apiKey = table.querySelector("#ai-apiKey").value.trim();
+					let model  = table.querySelector("#ai-model").value.trim();
+					if (!apiKey) { alert("API key is required"); return; }
+					if (!model)  { alert("Model is required"); return; }
+					resolve({
+						apiKey,
+						model,
+						imageGeneration: table.querySelector("#ai-imageGen").checked
+					});
+				};
+			});
+		}
+
 		async onStart(params, primer) {
 			this._cacheName = null;
 			try {
@@ -229,7 +240,7 @@ Formulae.AI.providers = (() => {
 				console.warn("Gemini context cache creation failed, will use system_instruction per-request:", e.message);
 			}
 		}
-		
+
 		async onPrompt(params, primer, xml, mediaMap) {
 			let parts = [];
 			for (let [ref, media] of Object.entries(mediaMap)) {
@@ -237,22 +248,19 @@ Formulae.AI.providers = (() => {
 				parts.push({ inline_data: { mime_type: media.format, data: media.data } });
 			}
 			parts.push({ text: xml });
-			
-			const body = {
-				//contents: [{ role: "user", parts }]
-				
-				contents: [{ role: "user", parts }],
-				generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
-			};
-			
+
+			const body = { contents: [{ role: "user", parts }] };
+
+			if (params.imageGeneration) {
+				body.generationConfig = { responseModalities: ["TEXT", "IMAGE"] };
+			}
+
 			if (this._cacheName) {
 				body.cachedContent = this._cacheName;
 			} else {
 				body.system_instruction = { parts: [{ text: primer }] };
 			}
-			
-			console.log(JSON.stringify(body, null, 2));
-			
+
 			const response = await fetch(
 				`https://generativelanguage.googleapis.com/v1beta/models/${params.model}:generateContent?key=${params.apiKey}`,
 				{
@@ -261,189 +269,28 @@ Formulae.AI.providers = (() => {
 					body: JSON.stringify(body)
 				}
 			);
-			
 			const data = await response.json();
-			
-			console.log("G1");
-			console.log(data);
-			console.log("G2");
-			console.log(JSON.stringify(data, null, 2));
-			
 			if (data.error) throw new Error(data.error.message);
-			
+
 			let responseParts = data.candidates[0].content.parts;
 			let xmlParts = [], responseMediaMap = {}, genIdx = 0;
 			for (let part of responseParts) {
 				if (part.text) {
 					xmlParts.push(part.text);
-				}
-				else if (part.inlineData) {
+				} else if (part.inlineData) {
 					responseMediaMap[`gen-${genIdx++}`] = {
-						data: part.inlineData.data,
+						data:   part.inlineData.data,
 						format: part.inlineData.mime_type
 					};
 				}
 			}
-			
 			return { responseXml: xmlParts.join(""), responseMediaMap };
 		}
 	}
-	
-	class AzureProvider {
-		getProviderName() { return "Microsoft Azure OpenAI"; }
-		
-		getModels() { return []; }
-		
-		configure(existing) {
-			return new Promise(resolve => {
-				let table = document.createElement("table");
-				table.classList.add("bordered");
-				table.innerHTML = `
-<tr><th colspan=2>Configure — Microsoft Azure OpenAI
-<tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
-<tr><td>Resource name<td><input type="text" id="ai-resource" size=30>
-<tr><td>Deployment name<td><input type="text" id="ai-deployment" size=30>
-<tr><td>API version<td><input type="text" id="ai-apiVersion" size=30>
-<tr><td colspan=2 align=center>
-  <button id="ai-back">&#x2190; Back</button>&nbsp;
-  <button id="ai-save">Save</button>`;
-				Formulae.setModal(table);
-				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
-				table.querySelector("#ai-resource").value = existing?.resourceName || "";
-				table.querySelector("#ai-deployment").value = existing?.deploymentName || "";
-				table.querySelector("#ai-apiVersion").value = existing?.apiVersion || "2024-12-01-preview";
-				table.querySelector("#ai-back").onclick = () => resolve(null);
-				table.querySelector("#ai-save").onclick = () => {
-					let apiKey = table.querySelector("#ai-apiKey").value.trim();
-					let resourceName = table.querySelector("#ai-resource").value.trim();
-					let deploymentName = table.querySelector("#ai-deployment").value.trim();
-					if (!apiKey || !resourceName || !deploymentName) {
-						alert("API key, resource name, and deployment name are required");
-						return;
-					}
-					resolve({
-						apiKey,
-						resourceName,
-						deploymentName,
-						apiVersion: table.querySelector("#ai-apiVersion").value.trim() || "2024-12-01-preview"
-					});
-				};
-			});
-		}
-		
-		async onStart(params, primer) {}
-		
-		async onPrompt(params, primer, xml, mediaMap) {
-			let userContent;
-			if (Object.keys(mediaMap).length === 0) {
-				userContent = xml;
-			} else {
-				userContent = [];
-				for (let [ref, media] of Object.entries(mediaMap)) {
-					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
-					userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
-				}
-				userContent.push({ type: "text", text: xml });
-			}
-			const url = `https://${params.resourceName}.openai.azure.com/openai/deployments/${params.deploymentName}/chat/completions?api-version=${params.apiVersion}`;
-			const response = await fetch(url, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"api-key": params.apiKey
-				},
-				body: JSON.stringify({
-					messages: [
-						{ role: "system", content: primer },
-						{ role: "user", content: userContent }
-					]
-				})
-			});
-			const data = await response.json();
-			if (data.error) throw new Error(data.error.message);
-			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
-		}
-	}
-	
-	class MetaProvider {
-		getProviderName() { return "Meta (Llama)"; }
-		
-		getModels() {
-			return [
-				"Llama-4-Scout-17B-16E-Instruct",
-				"Llama-4-Maverick-17B-128E-Instruct-FP8",
-				"Meta-Llama-3.1-70B-Instruct",
-				"Meta-Llama-3.1-8B-Instruct"
-			];
-		}
-		
-		configure(existing) {
-			return new Promise(resolve => {
-				let table = document.createElement("table");
-				table.classList.add("bordered");
-				let models = this.getModels();
-				let modelOptions = models.map(m =>
-					`<option value="${m}">${m}</option>`
-				).join("");
-				table.innerHTML = `
-<tr><th colspan=2>Configure — Meta (Llama)
-<tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
-<tr><td>Model<td><select id="ai-model">${modelOptions}</select>
-<tr><td colspan=2 align=center>
-  <button id="ai-back">&#x2190; Back</button>&nbsp;
-  <button id="ai-save">Save</button>`;
-				Formulae.setModal(table);
-				let defaultModel = existing?.model || models[0];
-				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
-				table.querySelector("#ai-model").value = defaultModel;
-				table.querySelector("#ai-back").onclick = () => resolve(null);
-				table.querySelector("#ai-save").onclick = () => {
-					let apiKey = table.querySelector("#ai-apiKey").value.trim();
-					if (!apiKey) { alert("API key is required"); return; }
-					resolve({ apiKey, model: table.querySelector("#ai-model").value });
-				};
-			});
-		}
-		
-		async onStart(params, primer) {}
-		
-		async onPrompt(params, primer, xml, mediaMap) {
-			let userContent;
-			if (Object.keys(mediaMap).length === 0) {
-				userContent = xml;
-			} else {
-				userContent = [];
-				for (let [ref, media] of Object.entries(mediaMap)) {
-					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
-					userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
-				}
-				userContent.push({ type: "text", text: xml });
-			}
-			const response = await fetch("https://api.llama.com/v1/chat/completions", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"Authorization": `Bearer ${params.apiKey}`
-				},
-				body: JSON.stringify({
-					model: params.model,
-					messages: [
-						{ role: "system", content: primer },
-						{ role: "user", content: userContent }
-					]
-				})
-			});
-			const data = await response.json();
-			if (data.error) throw new Error(data.error.message);
-			return { responseXml: data.choices[0].message.content, responseMediaMap: {} };
-		}
-	}
-	
+
 	return [
+		new OpenAICompatibleProvider(),
 		new AnthropicProvider(),
-		new OpenAIProvider(),
-		new GoogleProvider(),
-		new AzureProvider(),
-		new MetaProvider()
+		new GoogleProvider()
 	];
 })();
