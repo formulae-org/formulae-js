@@ -17,6 +17,7 @@
 		{ "name": "org.formulae.color",                   "description": "Color",                              "required": true,  "commonRequired": false },
 		{ "name": "org.formulae.programming",             "description": "Programming",                        "required": true,  "commonRequired": false },
 		{ "name": "org.formulae.graphics.raster",         "description": "Graphics",                           "required": true,  "commonRequired": false },
+		{ "name": "org.formulae.audio",                   "description": "Audio",                              "required": true,  "commonRequired": false },
 		{ "name": "org.formulae.chart",                   "description": "Charts",                             "required": false, "commonRequired": false },
 		{ "name": "org.formulae.diagramming",             "description": "Diagrams",                           "required": false, "commonRequired": false },
 		{ "name": "org.formulae.time",                    "description": "Time",                               "required": true,  "commonRequired": true  },
