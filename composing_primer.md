@@ -205,15 +205,21 @@ Binary media (images, audio, etc.) is never embedded inline in the XML. Instead,
 **Input media** — when a prompt contains a media expression, you will see it as:
 
 ```xml
-<expression tag="Graphics.RasterGraphics" MediaRef="img-0"/>
+<expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
 ```
 
-The label `[MediaRef: img-0]` will appear in the conversation immediately before the corresponding media item so you can associate the two.
+Audio is referenced the same way:
+
+```xml
+<expression tag="Audio.WaveformAudio" MediaRef="media-0"/>
+```
+
+The label `[MediaRef: media-0]` will appear in the conversation immediately before the corresponding media item so you can associate the two.
 
 **Referencing input media in a response** — if your answer needs to include a media item that was part of the prompt, use the same `MediaRef` identifier:
 
 ```xml
-<expression tag="Graphics.RasterGraphics" MediaRef="img-0"/>
+<expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
 ```
 
 **AI-generated media in a response** — if you generate new images, you must do two things together:
@@ -271,7 +277,7 @@ The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI id
 <expression tag="Typesetting.MultiParagraph">
     <expression tag="String.Text" Value="Identify the following image:"/>
     <expression tag="Typesetting.Centering">
-        <expression tag="Graphics.RasterGraphics" MediaRef="img-0"/>
+        <expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
     </expression>
 </expression>
 ```
@@ -304,9 +310,32 @@ The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI id
 </expression>
 ```
 
-The image is passed natively via the API and referenced in the XML by `MediaRef="img-0"`. Any expression can appear as an inline item inside a paragraph, enabling multimodal prompts.
+The image is passed natively via the API and referenced in the XML by `MediaRef="media-0"`. Any expression can appear as an inline item inside a paragraph, enabling multimodal prompts.
 
-### Example 3 — Image generation and table
+### Example 3 — Audio transcription
+
+The user embeds an audio clip inside a `Typesetting.Paragraph` prompt. The AI transcribes it and responds with a `Typesetting.Paragraph`.
+
+**Human prompt:**
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="Transcribe the following speech:"/>
+    <expression tag="Audio.WaveformAudio" MediaRef="media-0"/>
+</expression>
+```
+
+**AI response:**
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="The quick brown fox jumps over the lazy dog."/>
+</expression>
+```
+
+The audio clip is passed natively via the API and referenced in the XML by `MediaRef="media-0"`.
+
+### Example 4 — Image generation and table
 
 The user sends a text-only `Typesetting.MultiParagraph` asking for a seasonal table with generated images. The AI responds with a `List.Table` — not a typesetting expression. This illustrates that the AI response may be any expression type.
 
@@ -968,7 +997,15 @@ A `Programming.ConditionalSwitch` with two conditions and an else branch has fiv
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Graphics.RasterGraphics` | Represents a raster (bitmap) graphics | Zero | | "MediaRef": identifier referencing the media content passed natively via the API (e.g., "img-0" for input media, "gen-0" for AI-generated media) |
+| `Graphics.RasterGraphics` | Represents a raster (bitmap) graphics | Zero | | "MediaRef": identifier referencing the media content passed natively via the API (e.g., "media-0" for input media, "gen-0" for AI-generated media) |
+
+---
+
+### Audio
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Audio.WaveformAudio` | Represents a waveform audio clip | Zero | | "MediaRef": identifier referencing the audio content passed natively via the API (e.g., "media-0" for input audio) |
 
 ---
 

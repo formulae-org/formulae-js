@@ -28,7 +28,7 @@ Formulae.AI._esc = s => String(s)
 	.replace(/"/g, "&quot;");
 
 // Media expression tags whose Value/Format attributes contain binary data
-Formulae.AI.MEDIA_TAGS = new Set(["Graphics.RasterGraphics"]);
+Formulae.AI.MEDIA_TAGS = new Set(["Graphics.RasterGraphics", "Audio.WaveformAudio"]);
 
 // localStorage keys
 const AI_CONNECTIONS_KEY    = "aiConnections";
@@ -84,7 +84,7 @@ Formulae.AI.extractMedia = function(xmlString) {
 		if (Formulae.AI.MEDIA_TAGS.has(el.getAttribute("tag"))) {
 			let data = el.getAttribute("Value");
 			if (data) {
-				let ref = `img-${counter++}`;
+				let ref = `media-${counter++}`;
 				mediaMap[ref] = { data, format: el.getAttribute("Format") };
 				el.removeAttribute("Value");
 				el.removeAttribute("Format");

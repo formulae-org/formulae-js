@@ -21,6 +21,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Formulae.AI = Formulae.AI || {};
 
 Formulae.AI.providers = (() => {
+	function _audioFormatFromMime(mimeType) {
+		const map = {
+			"audio/mpeg":  "mp3",
+			"audio/mp3":   "mp3",
+			"audio/wav":   "wav",
+			"audio/wave":  "wav",
+			"audio/x-wav": "wav",
+			"audio/flac":  "flac",
+			"audio/ogg":   "ogg",
+			"audio/webm":  "webm",
+			"audio/mp4":   "m4a",
+			"audio/aac":   "aac",
+		};
+		return map[mimeType.toLowerCase()] ?? mimeType.split("/")[1];
+	}
+
 	class OpenAICompatibleProvider {
 		getProviderName() { return "OpenAI-compatible"; }
 
@@ -63,8 +79,12 @@ Formulae.AI.providers = (() => {
 			else {
 				userContent = [];
 				for (let [ref, media] of Object.entries(mediaMap)) {
-					userContent.push({ type: "text",      text: `[MediaRef: ${ref}]` });
-					userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
+					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
+					if (media.format.startsWith("image/")) {
+						userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
+					} else if (media.format.startsWith("audio/")) {
+						userContent.push({ type: "input_audio", input_audio: { data: media.data, format: _audioFormatFromMime(media.format) } });
+					}
 				}
 				userContent.push({ type: "text", text: xml });
 			}
@@ -86,7 +106,7 @@ Formulae.AI.providers = (() => {
 			});
 			
 			const data = await response.json();
-			//console.log(data);
+			console.log(data);
 			if (data.error) throw new Error(data.error.message);
 			
 			const message = data.choices[0].message;
