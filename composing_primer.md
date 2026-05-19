@@ -809,6 +809,37 @@ There does not exist an expression to represent mathematical vectors. For this p
 
 ---
 
+### Matrices
+
+#### Notes
+
+There does not exist a single expression to represent matrices. A matrix is just a `List.List` expression containing one or several `List.List` subexpressions with the same cardinality.
+
+
+For example, the 2×3 matrix:
+
+```
+| 1  2  3 |
+| 4  5  6 |
+```
+
+is represented as an outer `List.List` containing one `List.List` per row, each with the same number of children:
+
+```xml
+<expression tag="List.List">
+    <expression tag="List.List">
+        <expression tag="Math.Number" Value="1"/>
+        <expression tag="Math.Number" Value="2"/>
+        <expression tag="Math.Number" Value="3"/>
+    </expression>
+    <expression tag="List.List">
+        <expression tag="Math.Number" Value="4"/>
+        <expression tag="Math.Number" Value="5"/>
+        <expression tag="Math.Number" Value="6"/>
+    </expression>
+</expression>
+```
+
 ### Matrices — Matrix operations
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
@@ -818,11 +849,7 @@ There does not exist an expression to represent mathematical vectors. For this p
 | `Math.Matrix.Adjoint` | The conjugate transpose of a matrix (transpose with each element replaced by its complex conjugate) | One | The matrix | |
 | `Math.Matrix.KroneckerProduct` | The Kronecker (tensor) product of two or more matrices | Two or more | Each subexpression is a matrix | |
 
-#### Notes
-
-There does not exist a single expression to represent matrices. A matrix is just a `List.List` containing one or several `List.List` subexpressions with the same cardinality.
-
-### Matrices — Tables
+### Tables
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
@@ -1013,7 +1040,41 @@ A `Programming.ConditionalSwitch` with two conditions and an else branch has fiv
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Diagramming.Tree` | A tree diagram node; displays a root content and zero or more subtree branches | One or more | Subexpression 1: the root content; subexpressions 2 and beyond: child branches (typically `Diagramming.Tree` nodes), displayed when the node is expanded | "Expanded": whether the child branches are currently visible ("True" or "False") |
+| `Diagramming.Tree` | A recursive tree diagram node; displays a root label and zero or more child branches | One or more | Subexpression 1: the node's label content (any expression); subexpressions 2 and beyond: child branches, each of which must be a `Diagramming.Tree` expression. A leaf node has exactly one subexpression and no children. | "Expanded": whether the child branches are currently visible ("True" or "False") |
+
+#### Notes
+
+`Diagramming.Tree` builds tree diagrams recursively. Every node — internal or leaf — is a `Diagramming.Tree`. The first subexpression is the node's displayed label (any expression, typically a `String.Text`). Subexpressions 2 and beyond are the node's children, each of which must itself be a `Diagramming.Tree`. A **leaf** is a `Diagramming.Tree` with only one subexpression (no children).
+
+For example, to represent this tree:
+
+```
+    A
+   / \
+  B   C
+     / \
+    D   E
+```
+
+```xml
+<expression tag="Diagramming.Tree" Expanded="True">
+    <expression tag="String.Text" Value="A"/>
+    <expression tag="Diagramming.Tree" Expanded="True">
+        <expression tag="String.Text" Value="B"/>
+    </expression>
+    <expression tag="Diagramming.Tree" Expanded="True">
+        <expression tag="String.Text" Value="C"/>
+        <expression tag="Diagramming.Tree" Expanded="True">
+            <expression tag="String.Text" Value="D"/>
+        </expression>
+        <expression tag="Diagramming.Tree" Expanded="True">
+            <expression tag="String.Text" Value="E"/>
+        </expression>
+    </expression>
+</expression>
+```
+
+"B", "D", and "E" are leaf nodes: each contains only its label subexpression and has no child branches.
 
 ---
 
@@ -1270,3 +1331,154 @@ Each chemical element is a distinct zero-subexpression literal expression whose 
 | --- | --- | --- | --- | --- |
 | `Chemistry.HomonuclearCompound` | A homonuclear compound: a single element with a subscript count, e.g. H₂ or O₃ | Two | Subexpression 1: the element (a `Chemistry.Element.{ElementName}`); subexpression 2: the atom count (rendered as a subscript) | |
 | `Chemistry.HeteronuclearCompound` | A heteronuclear compound: a sequence of two or more elements or homonuclear groups joined without separator, e.g. H₂O; a nested `Chemistry.HeteronuclearCompound` child is automatically wrapped in parentheses | Two or more | Each subexpression is a component of the compound: a `Chemistry.Element.{ElementName}`, a `Chemistry.HomonuclearCompound`, or a parenthesized `Chemistry.HeteronuclearCompound` | |
+
+---
+
+### Calculus — Integrals
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Calculus.Integral.IndefiniteIntegral` | Indefinite integral ∫ f dx | Two | Subexpression 1: the integrand; subexpression 2: the integration variable | |
+| `Calculus.Integral.DefiniteIntegral` | Definite integral ∫_a^b f dx | Four | Subexpression 1: the integrand; subexpression 2: the integration variable; subexpression 3: the lower bound; subexpression 4: the upper bound | |
+| `Calculus.Integral.DefiniteIntegralOverDomain` | Definite integral over a domain (∬_D f dA, ∭_V f dV, etc.) | Three | Subexpression 1: the integrand; subexpression 2: the domain (rendered below the integral sign at reduced size); subexpression 3: the differential element | "Dimensions": number of integral signs stacked (1, 2, or 3); "ClosedDomain": "True" if the domain is closed (uses ∮-style loop on the sign), "False" otherwise |
+
+#### Notes
+
+A multiple indefinite integral expression is just several nested `Calculus.Integral.IndefiniteIntegral` expressions. The double indefinite integral ∫∫ x·y dy dx is represented as:
+
+```xml
+<expression tag="Calculus.Integral.IndefiniteIntegral">
+    <expression tag="Calculus.Integral.IndefiniteIntegral">
+        <expression tag="Math.Arithmetic.Multiplication">
+            <expression tag="Symbolic.Symbol" Name="x"/>
+            <expression tag="Symbolic.Symbol" Name="y"/>
+        </expression>
+        <expression tag="Symbolic.Symbol" Name="y"/>
+    </expression>
+    <expression tag="Symbolic.Symbol" Name="x"/>
+</expression>
+```
+
+A multiple definite integral expression is just several nested `Calculus.Integral.DefiniteIntegral` expressions. The iterated integral ∫_0^1 ∫_0^1 x·y dy dx is represented as:
+
+```xml
+<expression tag="Calculus.Integral.DefiniteIntegral">
+    <expression tag="Calculus.Integral.DefiniteIntegral">
+        <expression tag="Math.Arithmetic.Multiplication">
+            <expression tag="Symbolic.Symbol" Name="x"/>
+            <expression tag="Symbolic.Symbol" Name="y"/>
+        </expression>
+        <expression tag="Symbolic.Symbol" Name="y"/>
+        <expression tag="Math.Number" Value="0"/>
+        <expression tag="Math.Number" Value="1"/>
+    </expression>
+    <expression tag="Symbolic.Symbol" Name="x"/>
+    <expression tag="Math.Number" Value="0"/>
+    <expression tag="Math.Number" Value="1"/>
+</expression>
+```
+
+### Calculus — Limits
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Calculus.Limit.Limit` | Limit lim_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
+| `Calculus.Limit.LimitInferior` | Limit inferior lim inf_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
+| `Calculus.Limit.LimitSuperior` | Limit superior lim sup_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
+
+### Calculus — Derivatives
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Calculus.Differential.TotalDerivative` | Total derivative of a function with respect to one or more variables (Leibniz, Euler, or subscript style) | Two or more | Subexpression 1: the function; subexpressions 2…n: the differentiation variables (one per variable) | |
+| `Calculus.Differential.TotalDerivativeWithoutVariables` | Total derivative of a function without explicit variables (Lagrange f′/f″/f⁽ⁿ⁾ or Newton dot style) | One | The function | "Order": the order of differentiation (positive integer) |
+| `Calculus.Differential.PartialDerivative` | Partial derivative of a function with respect to one or more variables (Leibniz quotient or operator style) | Two or more | Subexpression 1: the function; subexpressions 2…n: the differentiation variables (one per variable) | |
+
+### Calculus — Evaluation bar
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Calculus.EvaluationBar` | Evaluation bar f(x)\|_a^b or [f(x)]_a^b | Three | Subexpression 1: the expression being evaluated; subexpression 2: the lower bound; subexpression 3: the upper bound | |
+
+---
+
+### Set theory — Standard sets
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Set.Empty` | The empty set ∅ | Zero | | |
+| `Set.Set` | An explicit set { a, b, … } | Zero or more | The elements of the set | |
+| `Set.Literal.Number.Naturals` | The set of natural numbers ℕ | Zero | | |
+| `Set.Literal.Number.Integers` | The set of integers ℤ | Zero | | |
+| `Set.Literal.Number.Rationals` | The set of rational numbers ℚ | Zero | | |
+| `Set.Literal.Number.Reals` | The set of real numbers ℝ | Zero | | |
+| `Set.Literal.Number.Complex` | The set of complex numbers ℂ | Zero | | |
+| `Set.Literal.Number.Primes` | The set of prime numbers ℙ | Zero | | |
+| `Set.Literal.Number.Quaternions` | The set of quaternions ℍ | Zero | | |
+
+### Set theory — Set operations
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Set.Union` | The union of two or more sets, displayed with the ∪ operator | Two or more | The sets to unite | |
+| `Set.Intersection` | The intersection of two or more sets, displayed with the ∩ operator | Two or more | The sets to intersect | |
+| `Set.Difference` | The difference of two sets (A ∖ B), displayed with the ∖ operator | Two | Subexpression 1: the minuend set; subexpression 2: the subtrahend set | |
+| `Set.SymmetricDifference` | The symmetric difference of two sets (A ∆ B), displayed with the ∆ operator | Two | Subexpression 1: the first set; subexpression 2: the second set | |
+| `Set.Complement` | The complement of a set, displayed as Aᶜ | One | The set to complement | |
+| `Set.SetBuilder` | Set-builder (comprehension) notation, displayed as { x \| P(x) } | Two | Subexpression 1: the bound variable; subexpression 2: the membership condition | |
+
+---
+
+### Vector analysis — Differential operators
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `VectorAnalysis.Differential.Gradient` | Gradient ∇f | One | The scalar field f | |
+| `VectorAnalysis.Differential.Divergence` | Divergence ∇·F | One | The vector field F | |
+| `VectorAnalysis.Differential.Curl` | Curl ∇×F | One | The vector field F | |
+| `VectorAnalysis.Differential.Laplacian` | Laplacian ∇²f or Δf (style is a package-level preference) | One | The function f | |
+
+### Vector analysis — Norm and inner product
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `VectorAnalysis.Norm` | Norm ‖v‖ or ‖v‖_p | One or two | Subexpression 1: the expression; subexpression 2 (optional): the order p, rendered as a subscript | |
+| `VectorAnalysis.InnerProduct` | Inner product ⟨u, v⟩ | Two | Subexpression 1: left argument; subexpression 2: right argument | |
+
+### Vector analysis — Dirac notation
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `VectorAnalysis.Dirac.Bra` | Dirac bra ⟨ψ\| | One | The state | |
+| `VectorAnalysis.Dirac.Ket` | Dirac ket \|φ⟩ | One | The state | |
+| `VectorAnalysis.Dirac.Braket` | Dirac braket ⟨ψ\|φ⟩ | Two | Subexpression 1: the bra state; subexpression 2: the ket state | |
+
+---
+
+### Geometry
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Geometry.Angle` | Angle ∠ABC | One or more | Each subexpression is a point label | |
+| `Geometry.Triangle` | Triangle △ABC | Three | Each subexpression is a vertex label | |
+| `Geometry.Parallel` | Parallel relation AB ∥ CD | Two or more | Each subexpression is a geometric entity | |
+| `Geometry.Perpendicular` | Perpendicular relation AB ⊥ CD | Two | Subexpression 1: left entity; subexpression 2: right entity | |
+| `Geometry.Arc` | Arc ⌢ drawn over the subexpression | One | The label | |
+| `Geometry.Segment` | Line segment: overline drawn over the subexpression | One | The label | |
+| `Geometry.Ray` | Ray: right arrow drawn over the subexpression | One | The label | |
+| `Geometry.Line` | Line: double-headed arrow drawn over the subexpression | One | The label | |
+
+---
+
+### Statistics
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Statistics.Probability` | Simple probability P(A) | One | The event | |
+| `Statistics.ConditionalProbability` | Conditional probability P(A\|B) | Two | Subexpression 1: the event; subexpression 2: the condition | |
+| `Statistics.ExpectedValue` | Expected value E[X] | One | The random variable or expression | |
+| `Statistics.Variance` | Variance Var(X) | One | The random variable | |
+| `Statistics.StandardDeviation` | Standard deviation σ(X) | One | The random variable | |
+| `Statistics.Mean` | Sample mean: overline drawn over the subexpression | One | The expression to average | |
+| `Statistics.Median` | Median med(X) | One | The random variable or dataset | |
+| `Statistics.Mode` | Mode mode(X) | One | The random variable or dataset | |

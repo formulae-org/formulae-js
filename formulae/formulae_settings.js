@@ -24,6 +24,8 @@ Formulae.Settings.showSettings = function() {
 	//if (Formulae.Settings.settingsForm === undefined) {
 		let table = document.createElement("table");
 		table.classList.add("bordered");
+		
+		/*
 		table.innerHTML =
 `
 <tr><th colspan=2>${Formulae.messages.labelSettingsGeneral}
@@ -47,6 +49,24 @@ Formulae.Settings.showSettings = function() {
 </select>
 <tr><td>${Formulae.messages.labelSaveSettings}<td><button onClick="Formulae.savePreferences();">${Formulae.messages.labelSaveSettings}</button>
 `;
+		*/
+		
+		table.innerHTML =
+`
+<tr><th colspan=2>${Formulae.messages.labelSettingsGeneral}
+<tr><td>${Formulae.messages.labelLocale}<td><button type="button" onClick="Formulae.Forms.localeSelection(Formulae.locale, Formulae.Settings.onChangeLocale);">${Formulae.messages.labelChooseLocale}</button>
+<tr><td>${Formulae.messages.labelTimeZone}<td><button type="button" onClick="Formulae.Forms.timeZoneSelection(Formulae.timeZone, Formulae.Settings.onChangeTimeZone);">${Formulae.messages.labelChooseTimeZone}</button>
+<tr>
+<td>${Formulae.messages.labelFontSize}
+<td>
+<input type="number" id="fontSize" min="6" max="999" value="${Formulae.fontSize}"/>
+<button type="button" onClick='Formulae.Settings.onChangeFontSize(parseInt(document.getElementById("fontSize").value));'>${Formulae.messages.labelFontSizeApply}</button>
+<tr>
+<td>AI connections<td><button type='button' onClick='Formulae.AI.showConnectionsManager()'>Manage&hellip;</button>
+<tr><td>${Formulae.messages.labelSaveSettings}<td><button onClick="Formulae.savePreferences();">${Formulae.messages.labelSaveSettings}</button>
+`;
+		
+		
 		let row, col, button;
 		
 		// package loading
@@ -55,10 +75,14 @@ Formulae.Settings.showSettings = function() {
 		col = document.createElement("th"); col.setAttribute("colSpan", "2"); col.setAttribute("align", "center"); col.innerHTML = "Package loading";
 		row.appendChild(col);
 		
+		row = table.insertRow();
+		col = row.insertCell(); col.setAttribute("colSpan", "2"); col.setAttribute("align", "center");
+		let packageList = document.createElement("div");
+		packageList.style.cssText = "max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding:4px;";
+		col.appendChild(packageList);
+
 		Formulae.packages.forEach(packageInfo => {
 			if (packageInfo.classExpression === null) {
-				row = table.insertRow();
-				col = row.insertCell(); col.setAttribute("colSpan", "2"); col.setAttribute("align", "center");
 				button = document.createElement("button"); button.innerHTML = packageInfo.description;
 				button.addEventListener(
 					"click",
@@ -69,7 +93,7 @@ Formulae.Settings.showSettings = function() {
 						Formulae.loadReloadEditions();
 					}
 				);
-				col.appendChild(button);
+				packageList.appendChild(button);
 			}
 		});
 
@@ -79,13 +103,17 @@ Formulae.Settings.showSettings = function() {
 		col = document.createElement("th"); col.setAttribute("colSpan", "2"); col.setAttribute("align", "center"); col.innerHTML = "Package settings";
 		row.appendChild(col);
 		
+		row = table.insertRow();
+		col = row.insertCell(); col.setAttribute("colSpan", "2"); col.setAttribute("align", "center");
+		let packageSettingsList = document.createElement("div");
+		packageSettingsList.style.cssText = "max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding:4px;";
+		col.appendChild(packageSettingsList);
+
 		Formulae.packages.forEach(packageInfo => {
 			if (packageInfo.classExpression !== null && packageInfo.classExpression.isConfigurable()) {
-				row = table.insertRow();
-				col = row.insertCell(); col.setAttribute("colSpan", "2"); col.setAttribute("align", "center");
 				button = document.createElement("button"); button.innerHTML = packageInfo.description;
 				button.addEventListener("click", () => packageInfo.classExpression.onConfiguration());
-				col.appendChild(button);
+				packageSettingsList.appendChild(button);
 			}
 		});
 		
@@ -95,7 +123,7 @@ Formulae.Settings.showSettings = function() {
 	Formulae.modalContent.removeChild(Formulae.modalContent.childNodes[0]);
 	Formulae.modalContent.appendChild(Formulae.Settings.settingsForm);
 	
-	document.getElementById("servers").selectedIndex = Formulae.serverType;
+	//document.getElementById("servers").selectedIndex = Formulae.serverType;
 	
 	Formulae.modal.style.display = "block";
 	Formulae.modal.focus();

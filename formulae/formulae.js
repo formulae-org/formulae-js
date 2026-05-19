@@ -2291,8 +2291,10 @@ Formulae.toggleMode = function() {
 	let display = Formulae.readMode ? "none" : "block";
 	
 	[
-		"button-home", "button-save", "button-pull", "button-push", "button-cut",
-		"button-copy", "button-paste",
+		"button-home",
+		"button-save",
+		//"button-pull", "button-push",
+		"button-cut", "button-copy", "button-paste",
 		"button-ins-after", "button-ins-before", "button-delete",
 		"button-change-type", "button-execute_sticky",
 		"button-tools", "button-settings"
@@ -2415,8 +2417,10 @@ Formulae.start = async function() {
 	document.getElementById("file-input") .addEventListener("change", e => Formulae.openFile(e), false);
 	document.getElementById("button-save").addEventListener("click", () => Formulae.saveFile());
 	
+	/*
 	document.getElementById("button-pull").addEventListener("click", () => Formulae.pull());
 	document.getElementById("button-push").addEventListener("click", () => Formulae.push());
+	*/
 	
 	document.getElementById("button-cut")  .addEventListener("click", () => Formulae.editionCut());
 	document.getElementById("button-copy") .addEventListener("click", () => Formulae.editionCopy());
