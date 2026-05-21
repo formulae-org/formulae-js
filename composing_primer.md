@@ -389,6 +389,76 @@ The `List.Table` holds a single `List.List` subexpression (the matrix), which it
 
 **Note:** this response is only complete when accompanied by four `inline_data` parts — one generated image per season, in the order `gen-0` through `gen-3`. The XML alone, without the image data, is an incomplete response.
 
+### Example 5 — Mathematical formulas (differentiation rules)
+
+The user asks for two basic differentiation rules. The AI responds with a `Typesetting.MultiParagraph` containing a numbered list. Each list item is a `Typesetting.Paragraph` that holds bold label text followed by a single `Relation.Equals` expression, whose two children are the derivative and its result.
+
+**Human prompt:**
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="List two basic formulas of differentiation."/>
+</expression>
+```
+
+**AI response:**
+
+```xml
+<expression tag="Typesetting.MultiParagraph">
+    <expression tag="Typesetting.Paragraph">
+        <expression tag="String.Text" Value="Here are two basic differentiation formulas:"/>
+    </expression>
+    <expression tag="Typesetting.NumberedList">
+        <expression tag="Typesetting.Paragraph">
+            <expression tag="Typesetting.BoldChunk">
+                <expression tag="String.Text" Value="Power rule:"/>
+            </expression>
+            <expression tag="String.Text" Value=" "/>
+            <expression tag="Relation.Equals">
+                <expression tag="Calculus.Differential.TotalDerivative">
+                    <expression tag="Math.Arithmetic.Exponentiation">
+                        <expression tag="Symbolic.Symbol" Name="x"/>
+                        <expression tag="Symbolic.Symbol" Name="n"/>
+                    </expression>
+                    <expression tag="Symbolic.Symbol" Name="x"/>
+                </expression>
+                <expression tag="Math.Arithmetic.Multiplication">
+                    <expression tag="Symbolic.Symbol" Name="n"/>
+                    <expression tag="Math.Arithmetic.Exponentiation">
+                        <expression tag="Symbolic.Symbol" Name="x"/>
+                        <expression tag="Math.Arithmetic.Addition">
+                            <expression tag="Symbolic.Symbol" Name="n"/>
+                            <expression tag="Math.Arithmetic.Negative">
+                                <expression tag="Math.Number" Value="1"/>
+                            </expression>
+                        </expression>
+                    </expression>
+                </expression>
+            </expression>
+        </expression>
+        <expression tag="Typesetting.Paragraph">
+            <expression tag="Typesetting.BoldChunk">
+                <expression tag="String.Text" Value="Sine rule:"/>
+            </expression>
+            <expression tag="String.Text" Value=" "/>
+            <expression tag="Relation.Equals">
+                <expression tag="Calculus.Differential.TotalDerivative">
+                    <expression tag="Math.Trigonometric.Sine">
+                        <expression tag="Symbolic.Symbol" Name="x"/>
+                    </expression>
+                    <expression tag="Symbolic.Symbol" Name="x"/>
+                </expression>
+                <expression tag="Math.Trigonometric.Cosine">
+                    <expression tag="Symbolic.Symbol" Name="x"/>
+                </expression>
+            </expression>
+        </expression>
+    </expression>
+</expression>
+```
+
+Each list item is a paragraph containing label text and a single `Relation.Equals` whose first child is the derivative expression and whose second child is the result. There are no extra siblings in the paragraph and no extra children inside `Relation.Equals`.
+
 ---
 
 ## Expression reference
@@ -657,6 +727,104 @@ Example 4. The complex number (2/3 - 10ℹ) is represented as:
 | `Relation.NotIn` | The non-membership relation: whether subexpression 1 is not a member of subexpression 2 | Two | Subexpression 1: the element to test; subexpression 2: the list | |
 | `Relation.Min` | The minimum value among its subexpressions | One or more | The expressions to compare | |
 | `Relation.Max` | The maximum value among its subexpressions | One or more | The expressions to compare | |
+
+#### Notes
+
+`Relation.Equals` renders its two children as `LHS = RHS`. Both sides of the equality must be **subexpressions** (children) of the `Relation.Equals` node. Do not place the left-hand side as a sibling expression before `Relation.Equals` in an enclosing paragraph.
+
+Example: the power rule of differentiation, d(xⁿ)/dx = n·xⁿ⁻¹, expressed inside a paragraph.
+
+**Wrong** — the derivative is a paragraph sibling, not a child of `Relation.Equals`:
+
+```xml
+<!-- WRONG -->
+<expression tag="Typesetting.Paragraph">
+    <expression tag="Calculus.Differential.TotalDerivative">
+        <expression tag="Math.Arithmetic.Exponentiation">
+            <expression tag="Symbolic.Symbol" Name="x"/>
+            <expression tag="Symbolic.Symbol" Name="n"/>
+        </expression>
+        <expression tag="Symbolic.Symbol" Name="x"/>
+    </expression>
+    <expression tag="Relation.Equals">
+        <expression tag="Math.Arithmetic.Multiplication">
+            <expression tag="Symbolic.Symbol" Name="n"/>
+            <expression tag="Math.Arithmetic.Exponentiation">
+                <expression tag="Symbolic.Symbol" Name="x"/>
+                <expression tag="Math.Arithmetic.Addition">
+                    <expression tag="Symbolic.Symbol" Name="n"/>
+                    <expression tag="Math.Arithmetic.Negative">
+                        <expression tag="Math.Number" Value="1"/>
+                    </expression>
+                </expression>
+            </expression>
+        </expression>
+        <expression tag="Math.Number" Value="0"/>
+    </expression>
+</expression>
+```
+
+This renders as `d(xⁿ)/dx` then `n·xⁿ⁻¹ = 0` — two unrelated pieces side by side, with a spurious `= 0` at the end.
+
+**Correct** — both sides are children of `Relation.Equals`:
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="Relation.Equals">
+        <expression tag="Calculus.Differential.TotalDerivative">
+            <expression tag="Math.Arithmetic.Exponentiation">
+                <expression tag="Symbolic.Symbol" Name="x"/>
+                <expression tag="Symbolic.Symbol" Name="n"/>
+            </expression>
+            <expression tag="Symbolic.Symbol" Name="x"/>
+        </expression>
+        <expression tag="Math.Arithmetic.Multiplication">
+            <expression tag="Symbolic.Symbol" Name="n"/>
+            <expression tag="Math.Arithmetic.Exponentiation">
+                <expression tag="Symbolic.Symbol" Name="x"/>
+                <expression tag="Math.Arithmetic.Addition">
+                    <expression tag="Symbolic.Symbol" Name="n"/>
+                    <expression tag="Math.Arithmetic.Negative">
+                        <expression tag="Math.Number" Value="1"/>
+                    </expression>
+                </expression>
+            </expression>
+        </expression>
+    </expression>
+</expression>
+```
+
+This renders as `d(xⁿ)/dx = n·xⁿ⁻¹`.
+
+The same rule applies to integrals. For `∫xⁿ dx = xⁿ⁺¹/(n+1) + C`, the integral is child 1 and the full right-hand side `xⁿ⁺¹/(n+1) + C` is child 2. The constant of integration C is **added** via `Math.Arithmetic.Addition` — it is not a second child of `Relation.Equals`:
+
+```xml
+<expression tag="Relation.Equals">
+    <expression tag="Calculus.Integral.IndefiniteIntegral">
+        <expression tag="Math.Arithmetic.Exponentiation">
+            <expression tag="Symbolic.Symbol" Name="x"/>
+            <expression tag="Symbolic.Symbol" Name="n"/>
+        </expression>
+        <expression tag="Symbolic.Symbol" Name="x"/>
+    </expression>
+    <expression tag="Math.Arithmetic.Addition">
+        <expression tag="Math.Arithmetic.Division">
+            <expression tag="Math.Arithmetic.Exponentiation">
+                <expression tag="Symbolic.Symbol" Name="x"/>
+                <expression tag="Math.Arithmetic.Addition">
+                    <expression tag="Symbolic.Symbol" Name="n"/>
+                    <expression tag="Math.Number" Value="1"/>
+                </expression>
+            </expression>
+            <expression tag="Math.Arithmetic.Addition">
+                <expression tag="Symbolic.Symbol" Name="n"/>
+                <expression tag="Math.Number" Value="1"/>
+            </expression>
+        </expression>
+        <expression tag="Symbolic.Symbol" Name="C"/>
+    </expression>
+</expression>
+```
 
 ---
 

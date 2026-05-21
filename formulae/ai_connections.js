@@ -183,8 +183,10 @@ ${rows}
 				if (!conn) return;
 				let provider = Formulae.AI.providers?.find(p => p.getProviderName() === conn.providerName);
 				if (!provider) return;
-				let params = await provider.configure(conn.parameters);
-				if (params !== null) {
+				let result = await provider.configure(conn.parameters, conn.name, conn.id);
+				if (result !== null) {
+					const { name: newName, ...params } = result;
+					conn.name = newName;
 					conn.parameters = params;
 					if (conn.id === Formulae.AI.activeConnectionId) {
 						Formulae.AI._sessionStarted = false;
@@ -223,7 +225,6 @@ Formulae.AI._showAddStep = function() {
 	table.classList.add("bordered");
 	table.innerHTML = `
 <tr><th colspan=2>Add Connection
-<tr><td>Name<td><input type="text" id="ai-name" size=30 placeholder="e.g. My Claude">
 <tr><td>Provider<td><select id="ai-provider">${providerOptions}</select>
 <tr><td colspan=2 align=center>
   <button id="ai-back">&#x2190; Back</button>&nbsp;
@@ -233,13 +234,12 @@ Formulae.AI._showAddStep = function() {
 
 	table.querySelector("#ai-back").onclick = () => Formulae.AI._showMainView();
 	table.querySelector("#ai-next").onclick = async () => {
-		let name = table.querySelector("#ai-name").value.trim();
-		if (!name) { alert("Please enter a name for this connection"); return; }
 		let providerName = table.querySelector("#ai-provider").value;
 		let provider = Formulae.AI.providers?.find(p => p.getProviderName() === providerName);
 		if (!provider) return;
-		let params = await provider.configure(null);
-		if (params !== null) {
+		let result = await provider.configure(null, "");
+		if (result !== null) {
+			const { name, ...params } = result;
 			let newConn = {
 				id: crypto.randomUUID(),
 				name,

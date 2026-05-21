@@ -40,12 +40,13 @@ Formulae.AI.providers = (() => {
 	class OpenAICompatibleProvider {
 		getProviderName() { return "OpenAI-compatible"; }
 
-		configure(existing) {
+		configure(existing, name = "", connId = null) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
 				table.classList.add("bordered");
 				table.innerHTML = `
 <tr><th colspan=2>Configure — OpenAI-compatible
+<tr><td>Connection name<td><input type="text" id="ai-connName" size=40>
 <tr><td>Base URL<td><input type="text" id="ai-baseUrl" size=40 placeholder="https://openrouter.ai/api/v1">
 <tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
 <tr><td>Model<td><input type="text" id="ai-model" size=40 placeholder="e.g. openai/gpt-4o">
@@ -53,18 +54,22 @@ Formulae.AI.providers = (() => {
   <button id="ai-back">&#x2190; Back</button>&nbsp;
   <button id="ai-save">Save</button>`;
 				Formulae.setModal(table);
+				table.querySelector("#ai-connName").value = name;
 				table.querySelector("#ai-baseUrl").value = existing?.baseUrl || "";
 				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
 				table.querySelector("#ai-model").value = existing?.model || "";
 				table.querySelector("#ai-back").onclick = () => resolve(null);
 				table.querySelector("#ai-save").onclick = () => {
+					let connName = table.querySelector("#ai-connName").value.trim();
 					let baseUrl = table.querySelector("#ai-baseUrl").value.trim().replace(/\/$/, "");
 					let apiKey = table.querySelector("#ai-apiKey").value.trim();
 					let model = table.querySelector("#ai-model").value.trim();
+					if (!connName) { alert("Connection name is required"); return; }
+					if (Formulae.AI.connections.some(c => c.id !== connId && c.name === connName)) { alert("A connection with this name already exists"); return; }
 					if (!baseUrl) { alert("Base URL is required"); return; }
 					if (!apiKey)  { alert("API key is required"); return; }
 					if (!model)   { alert("Model is required"); return; }
-					resolve({ baseUrl, apiKey, model });
+					resolve({ name: connName, baseUrl, apiKey, model });
 				};
 			});
 		}
@@ -118,12 +123,13 @@ Formulae.AI.providers = (() => {
 	class AnthropicProvider {
 		getProviderName() { return "Anthropic"; }
 
-		configure(existing) {
+		configure(existing, name = "", connId = null) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
 				table.classList.add("bordered");
 				table.innerHTML = `
 <tr><th colspan=2>Configure — Anthropic
+<tr><td>Connection name<td><input type="text" id="ai-connName" size=40>
 <tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
 <tr><td>Model<td>
   <input type="text" id="ai-model" size=40 list="ai-anthropic-models" placeholder="e.g. claude-sonnet-4-6">
@@ -139,17 +145,21 @@ Formulae.AI.providers = (() => {
   <button id="ai-back">&#x2190; Back</button>&nbsp;
   <button id="ai-save">Save</button>`;
 				Formulae.setModal(table);
+				table.querySelector("#ai-connName").value = name;
 				table.querySelector("#ai-apiKey").value    = existing?.apiKey    || "";
 				table.querySelector("#ai-model").value     = existing?.model     || "claude-sonnet-4-6";
 				table.querySelector("#ai-maxTokens").value = existing?.maxTokens ?? 4096;
 				table.querySelector("#ai-back").onclick = () => resolve(null);
 				table.querySelector("#ai-save").onclick = () => {
+					let connName  = table.querySelector("#ai-connName").value.trim();
 					let apiKey    = table.querySelector("#ai-apiKey").value.trim();
 					let model     = table.querySelector("#ai-model").value.trim();
 					let maxTokens = parseInt(table.querySelector("#ai-maxTokens").value) || 4096;
+					if (!connName) { alert("Connection name is required"); return; }
+					if (Formulae.AI.connections.some(c => c.id !== connId && c.name === connName)) { alert("A connection with this name already exists"); return; }
 					if (!apiKey) { alert("API key is required"); return; }
 					if (!model)  { alert("Model is required"); return; }
-					resolve({ apiKey, model, maxTokens });
+					resolve({ name: connName, apiKey, model, maxTokens });
 				};
 			});
 		}
@@ -198,12 +208,13 @@ Formulae.AI.providers = (() => {
 
 		getProviderName() { return "Google (Gemini)"; }
 
-		configure(existing) {
+		configure(existing, name = "", connId = null) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
 				table.classList.add("bordered");
 				table.innerHTML = `
 <tr><th colspan=2>Configure — Google (Gemini)
+<tr><td>Connection name<td><input type="text" id="ai-connName" size=40>
 <tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
 <tr><td>Model<td>
   <input type="text" id="ai-model" size=40 list="ai-gemini-models" placeholder="e.g. gemini-2.5-flash">
@@ -219,16 +230,21 @@ Formulae.AI.providers = (() => {
   <button id="ai-back">&#x2190; Back</button>&nbsp;
   <button id="ai-save">Save</button>`;
 				Formulae.setModal(table);
+				table.querySelector("#ai-connName").value = name;
 				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
 				table.querySelector("#ai-model").value = existing?.model || "gemini-2.5-flash";
 				table.querySelector("#ai-imageGen").checked = existing?.imageGeneration ?? false;
 				table.querySelector("#ai-back").onclick = () => resolve(null);
 				table.querySelector("#ai-save").onclick = () => {
+					let connName = table.querySelector("#ai-connName").value.trim();
 					let apiKey = table.querySelector("#ai-apiKey").value.trim();
 					let model  = table.querySelector("#ai-model").value.trim();
+					if (!connName) { alert("Connection name is required"); return; }
+					if (Formulae.AI.connections.some(c => c.id !== connId && c.name === connName)) { alert("A connection with this name already exists"); return; }
 					if (!apiKey) { alert("API key is required"); return; }
 					if (!model)  { alert("Model is required"); return; }
 					resolve({
+						name: connName,
 						apiKey,
 						model,
 						imageGeneration: table.querySelector("#ai-imageGen").checked
