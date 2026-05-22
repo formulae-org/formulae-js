@@ -225,7 +225,7 @@ Formulae.AI._showAddStep = function() {
 	table.classList.add("bordered");
 	table.innerHTML = `
 <tr><th colspan=2>Add Connection
-<tr><td>Provider<td><select id="ai-provider">${providerOptions}</select>
+<tr><td>Provider<td><select id="ai-provider" size="3">${providerOptions}</select>
 <tr><td colspan=2 align=center>
   <button id="ai-back">&#x2190; Back</button>&nbsp;
   <button id="ai-next">Next &#x2192;</button>`;
