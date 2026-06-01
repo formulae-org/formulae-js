@@ -94,6 +94,8 @@ Formulae.AI.providers = (() => {
 				userContent.push({ type: "text", text: xml });
 			}
 			
+			console.log(userContent);
+			
 			const response = await fetch(params.baseUrl + "/chat/completions", {
 				method: "POST",
 				headers: {
@@ -112,8 +114,11 @@ Formulae.AI.providers = (() => {
 			
 			const data = await response.json();
 			console.log(data);
-			if (data.error) throw new Error(data.error.message);
-			
+			if (data.error) {
+				const msg = typeof data.error === 'string' ? data.error : (data.error.message ?? JSON.stringify(data.error));
+				throw new Error(msg);
+			}
+
 			const message = data.choices[0].message;
 			
 			return { responseXml: message.content, responseMediaMap: {} };
@@ -198,7 +203,10 @@ Formulae.AI.providers = (() => {
 			});
 
 			const data = await response.json();
-			if (data.error) throw new Error(data.error.message ?? JSON.stringify(data.error));
+			if (data.error) {
+				const msg = typeof data.error === 'string' ? data.error : (data.error.message ?? JSON.stringify(data.error));
+				throw new Error(msg);
+			}
 			return { responseXml: data.content[0].text, responseMediaMap: {} };
 		}
 	}

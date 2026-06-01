@@ -70,7 +70,7 @@ Formulae.AI.getActiveProvider = function() {
 
 Formulae.AI._getPrimer = async function() {
 	if (Formulae.AI._primerText === null) {
-		let response = await fetch("composing_primer.md");
+		let response = await fetch("formulae/ai_primer.md");
 		Formulae.AI._primerText = await response.text();
 	}
 	return Formulae.AI._primerText;

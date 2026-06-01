@@ -1845,6 +1845,35 @@ Expression.ErrorExpression = class extends Expression.UnaryExpression {
 	}
 }
 
+Expression.Button = class extends Expression.NullaryExpression {
+	getTag() { return "Button"; }
+	getName() { return "Button"; }
+	
+	prepareDisplay(context) {
+		if (this.button === undefined) {
+			this.button = document.createElement('button');
+			this.button.innerHTML = 'Cancel';
+			this.button.style.position = "absolute";
+			this.button.style.zIndex = 10;
+			
+			context.canvas.parentElement.appendChild(this.button);
+		}
+		
+		this.width = (this.button.offsetWidth - 0) + 2;
+		this.height = (this.button.offsetHeight - 0) + 2;
+		
+		console.log(this.width + " - " + this.height);
+		
+		this.horzBaseline = Math.floor(this.height / 2);
+		this.vertBaseline = Math.floor(this.width / 2);
+	}
+	
+	display(context, x, y) {
+		this.button.style.top  = (y + 12) + "px";
+		this.button.style.left = (x + 12) + "px";
+	}
+}
+
 // editions
 
 Expression.replacingEdition = function(tag) {

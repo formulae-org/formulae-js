@@ -1,18 +1,19 @@
-# Fōrmulæ — Composing primer
+# Fōrmulæ — AI primer
 
-This document is a primer on using Fōrmulæ expressions as a composing interchange format. It is written for AI models.
+This document is a primer on using Fōrmulæ expressions as an interchange format with AI models.
 
 ---
 
 ## Instructions
 
-- Every message you receive will be a Fōrmulæ XML expression.
+- Every message you receive will be a **single Fōrmulæ XML expression** — the bare XML only, with no surrounding prose, no introduction, and no markdown code fences.
 - Every response you produce must be a **single Fōrmulæ XML expression** — the bare XML only, with no surrounding prose, no introduction, and no markdown code fences.
-- When your response includes `Graphics.RasterGraphics` elements with `MediaRef="gen-N"` identifiers, you **must also generate each image and include it as an `inline_data` part** in the same response, one per `gen-N` in order. A response that contains `gen-N` placeholders without the matching image data is **incomplete** — the placeholders cannot be resolved without the data.
 
 ---
 
-## Overview
+## Fōrmulæ XML expression
+
+### Overview
 
 Fōrmulæ expressions can be exchanged as XML between a human and an AI model (or between AI models) to compose rich, structured visual content. A human creates an expression in the Fōrmulæ interactive notebook — a mathematical formula, a paragraph, a chemical compound, a diagram, etc. — and sends its XML representation as a message. The AI responds with its own XML expression tree, which Fōrmulæ renders back in the notebook.
 
@@ -20,9 +21,7 @@ This primer explains the XML format for those exchanges, and provides a referenc
 
 The XML structure is that of a single expression tree: one root `<expression>` element, optionally containing nested `<expression>` elements, forming a tree of arbitrary depth.
 
----
-
-## The `<expression>` element
+### The `<expression>` element
 
 Every node in the expression tree is represented by an XML element named `expression`. Every such element must have a `tag` attribute. Beyond `tag`, an element may have:
 
@@ -38,9 +37,7 @@ General shape:
 </expression>
 ```
 
----
-
-## Tag names
+### Tag names
 
 The `tag` attribute identifies the expression type. Tags are dot-separated, PascalCase strings that form a hierarchical namespace. Examples:
 
@@ -53,9 +50,7 @@ The `tag` attribute identifies the expression type. Tags are dot-separated, Pasc
 
 The tag uniquely determines: (a) which serialized attributes are valid, (b) how many subexpressions are expected and what each one means.
 
----
-
-## Serialized attributes
+### Serialized attributes
 
 Some expression types store scalar data (a number value, a string, a name, etc.) directly on the `<expression>` element as XML attributes. These are called **serialized attributes**.
 
@@ -64,18 +59,19 @@ Some expression types store scalar data (a number value, a string, a name, etc.)
 - Not all expression types have serialized attributes. Expressions whose entire data is expressed through subexpressions typically have none.
 - Attribute values must be valid XML. Any of the five XML special characters must be escaped:
 
-  | Character | Escape |
-  |---|---|
-  | `&` | `&amp;` |
-  | `<` | `&lt;` |
-  | `>` | `&gt;` |
-  | `"` | `&quot;` |
-  | `'` | `&apos;` |
+| Character | Escape |
+|---|---|
+| `&` | `&amp;` |
+| `<` | `&lt;` |
+| `>` | `&gt;` |
+| `"` | `&quot;` |
+| `'` | `&apos;` |
 
-  Example — a `String.Text` whose value is `a < b & c > d`:
-  ```xml
-  <expression tag="String.Text" Value="a &lt; b &amp; c &gt; d"/>
-  ```
+Example — a `String.Text` whose value is `a < b & c > d`:
+  
+```xml
+<expression tag="String.Text" Value="a &lt; b &amp; c &gt; d"/>
+```
 
 Common serialized attribute names and what they usually hold:
 
@@ -86,9 +82,7 @@ Common serialized attribute names and what they usually hold:
 | `Description` | A human-readable label |
 | `Type` | An enumerated type discriminator |
 
----
-
-## Subexpressions
+### Subexpressions
 
 Subexpressions are the children of an expression in the tree. They are encoded as direct child `<expression>` elements, **in order**. Their position (first child, second child, etc.) is significant — each position has a defined role determined by the parent's tag.
 
@@ -96,9 +90,7 @@ Subexpressions are the children of an expression in the tree. They are encoded a
 - An expression with one or more subexpressions is **compound**. Its children appear in order inside the element.
 - Some tags accept a fixed number of subexpressions; others accept a variable number (including unlimited).
 
----
-
-## Rules summary
+### Rules summary
 
 - Every node is an `<expression>` element.
 - Every `<expression>` element must have a `tag` attribute.
@@ -110,9 +102,7 @@ Subexpressions are the children of an expression in the tree. They are encoded a
 - The specific attributes and subexpression roles for each tag are defined in the expression reference (see below).
 - Attribute values are XML-escaped: `&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`, `'` → `&apos;`.
 
----
-
-## Examples
+### Examples
 
 The following examples use four expression types:
 
@@ -123,7 +113,7 @@ The following examples use four expression types:
 | `String.Text` | Leaf | `Value`: the text content | Zero |
 | `Typesetting.Paragraph` | Compound | None | One or more (inline elements displayed in sequence) |
 
-### A number
+#### A number
 
 The number 5:
 
@@ -137,15 +127,7 @@ The number 3.14:
 <expression tag="Math.Number" Value="3.14"/>
 ```
 
-### A text string
-
-The text "Hello":
-
-```xml
-<expression tag="String.Text" Value="Hello"/>
-```
-
-### Arithmetic addition
+#### Arithmetic addition
 
 The sum 2 + 3. `Math.Arithmetic.Addition` takes its addends as subexpressions in order. It has no serialized attributes.
 
@@ -166,7 +148,15 @@ A three-term sum 2 + 3 + 4 (addition accepts more than two addends):
 </expression>
 ```
 
-### A paragraph
+#### A text string
+
+The text "Hello":
+
+```xml
+<expression tag="String.Text" Value="Hello"/>
+```
+
+#### A paragraph
 
 `Typesetting.Paragraph` lays out its subexpressions inline, left to right. Each subexpression is a piece of content (text, a number, a formula, etc.). There are no serialized attributes.
 
@@ -185,279 +175,6 @@ The phrase "The result of 2 + 3 is 5" expressed as a paragraph containing text a
 ```
 
 Note that the `Math.Arithmetic.Addition` expression is nested inside the paragraph as one of its subexpressions, and it in turn contains two `Math.Number` leaf expressions as its own subexpressions.
-
----
-
-## Conversational model
-
-### Human prompt structure
-
-A prompt is a `Typesetting.Paragraph` (for short, single-section prompts) or a `Typesetting.MultiParagraph` (for longer, multi-section prompts). Any expression type may appear as a subexpression of the paragraph, not just text. This enables multimodal prompts — for example, embedding a `Graphics.RasterGraphics` expression to include an image, or embedding a mathematical formula, a table, or a computed result.
-
-### AI response structure
-
-The AI should reply with a **single root Fōrmulæ expression**. The response does not need to be a typesetting expression. If the most appropriate answer is a table, reply with a `List.Table`; if it is a formula, reply with the formula expression; if it is a formatted document, reply with a `Typesetting.MultiParagraph`. Choose whichever expression type best represents the answer.
-
-### Media references
-
-Binary media (images, audio, etc.) is never embedded inline in the XML. Instead, each media expression carries a `MediaRef` attribute that identifies it by name, and the actual content is passed to you natively through the API.
-
-**Input media** — when a prompt contains a media expression, you will see it as:
-
-```xml
-<expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
-```
-
-Audio is referenced the same way:
-
-```xml
-<expression tag="Audio.WaveformAudio" MediaRef="media-0"/>
-```
-
-The label `[MediaRef: media-0]` will appear in the conversation immediately before the corresponding media item so you can associate the two.
-
-**Referencing input media in a response** — if your answer needs to include a media item that was part of the prompt, use the same `MediaRef` identifier:
-
-```xml
-<expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
-```
-
-**AI-generated media in a response** — if you generate new images, you must do two things together:
-
-1. Place a placeholder expression in the XML for each image, using sequential identifiers starting from `gen-0`:
-
-```xml
-<expression tag="Graphics.RasterGraphics" MediaRef="gen-0"/>
-<expression tag="Graphics.RasterGraphics" MediaRef="gen-1"/>
-```
-
-2. **Actively generate each image and include it as an `inline_data` part** in the same response, one per `gen-N` placeholder, in the same order. The system reads those parts and pairs them with the matching `MediaRef` identifiers. If the image data is not present as a separate part, the placeholder cannot be resolved and the image will be missing from the output.
-
-In other words: the XML carries the structure, and the API parts carry the binary data. A response that omits the `inline_data` parts for any `gen-N` placeholder is an **incomplete response**.
-
-**Before finishing your response:** if your XML contains any `gen-N` MediaRef identifiers, confirm that you have generated and included one `inline_data` part for each, in order. If any are missing, generate the image before completing the response.
-
-If you cannot guarantee that a requested image will be generated and included as an `inline_data` part — for example, because of safety restrictions, content policy, or a generation failure — **do not include the `Graphics.RasterGraphics` element at all**. A `gen-N` placeholder with no matching `inline_data` part produces a broken result in the output. When in doubt, omit the image and provide a text description instead.
-
----
-
-## Conversational examples
-
-### Example 1 — Water molecule
-
-The user asks the AI to provide the expression for a water molecule. The human prompt is a short `Typesetting.Paragraph`, and the AI replies with a `Chemistry.HeteronuclearCompound`:
-
-**Human prompt:**
-
-```xml
-<expression tag="Typesetting.Paragraph">
-    <expression tag="String.Text" Value="Show me the expression for a water molecule."/>
-</expression>
-```
-
-**AI response:**
-
-```xml
-<expression tag="Chemistry.HeteronuclearCompound">
-    <expression tag="Chemistry.HomonuclearCompound">
-        <expression tag="Chemistry.Element.Hydrogen"/>
-        <expression tag="Math.Number" Value="2"/>
-    </expression>
-    <expression tag="Chemistry.Element.Oxygen"/>
-</expression>
-```
-
-### Example 2 — Image identification
-
-The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI identifies the image and responds with a formatted `Typesetting.MultiParagraph` containing bold text and a bulleted list.
-
-**Human prompt:**
-
-```xml
-<expression tag="Typesetting.MultiParagraph">
-    <expression tag="String.Text" Value="Identify the following image:"/>
-    <expression tag="Typesetting.Centering">
-        <expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
-    </expression>
-</expression>
-```
-
-**AI response:**
-
-```xml
-<expression tag="Typesetting.MultiParagraph">
-    <expression tag="Typesetting.Paragraph">
-        <expression tag="String.Text" Value="This image depicts"/>
-        <expression tag="Typesetting.BoldChunk">
-            <expression tag="String.Text" Value="Clarus the Dogcow,"/>
-        </expression>
-        <expression tag="String.Text" Value="a mascot character created by graphic designer Susan Kare for Apple's original Macintosh operating system."/>
-    </expression>
-    <expression tag="Typesetting.BulletedList">
-        <expression tag="Typesetting.Paragraph">
-            <expression tag="Typesetting.BoldChunk">
-                <expression tag="String.Text" Value="Origin:"/>
-            </expression>
-            <expression tag="String.Text" Value="Originally part of the Cairo font set designed to look part dog and part cow."/>
-        </expression>
-        <expression tag="Typesetting.Paragraph">
-            <expression tag="Typesetting.BoldChunk">
-                <expression tag="String.Text" Value="Name:"/>
-            </expression>
-            <expression tag="String.Text" Value="The name &quot;Clarus&quot; was given later; &quot;Dogcow&quot; is a portmanteau of dog and cow."/>
-        </expression>
-    </expression>
-</expression>
-```
-
-The image is passed natively via the API and referenced in the XML by `MediaRef="media-0"`. Any expression can appear as an inline item inside a paragraph, enabling multimodal prompts.
-
-### Example 3 — Audio transcription
-
-The user embeds an audio clip inside a `Typesetting.Paragraph` prompt. The AI transcribes it and responds with a `Typesetting.Paragraph`.
-
-**Human prompt:**
-
-```xml
-<expression tag="Typesetting.Paragraph">
-    <expression tag="String.Text" Value="Transcribe the following speech:"/>
-    <expression tag="Audio.WaveformAudio" MediaRef="media-0"/>
-</expression>
-```
-
-**AI response:**
-
-```xml
-<expression tag="Typesetting.Paragraph">
-    <expression tag="String.Text" Value="The quick brown fox jumps over the lazy dog."/>
-</expression>
-```
-
-The audio clip is passed natively via the API and referenced in the XML by `MediaRef="media-0"`.
-
-### Example 4 — Image generation and table
-
-The user sends a text-only `Typesetting.MultiParagraph` asking for a seasonal table with generated images. The AI responds with a `List.Table` — not a typesetting expression. This illustrates that the AI response may be any expression type.
-
-**Human prompt:**
-
-```xml
-<expression tag="Typesetting.MultiParagraph">
-    <expression tag="Typesetting.Paragraph">
-        <expression tag="String.Text" Value="Imagine a scene of a country cottage. In the background there is a beautiful landscape."/>
-    </expression>
-    <expression tag="Typesetting.Paragraph">
-        <expression tag="String.Text" Value="Create a table that shows, for each of the seasons of the year, the name of the season and an image depicting how the scene would look in that season. Each image must be 166 × 92 pixels in size."/>
-    </expression>
-</expression>
-```
-
-**AI response:**
-
-```xml
-<expression tag="List.Table">
-    <expression tag="List.List">
-        <expression tag="List.List">
-            <expression tag="Visualization.Bold" Value="True" Set="True">
-                <expression tag="String.Text" Value="Season"/>
-            </expression>
-            <expression tag="Visualization.Bold" Value="True" Set="True">
-                <expression tag="String.Text" Value="Image"/>
-            </expression>
-        </expression>
-        <expression tag="List.List">
-            <expression tag="String.Text" Value="Spring"/>
-            <expression tag="Graphics.RasterGraphics" MediaRef="gen-0"/>
-        </expression>
-        <expression tag="List.List">
-            <expression tag="String.Text" Value="Summer"/>
-            <expression tag="Graphics.RasterGraphics" MediaRef="gen-1"/>
-        </expression>
-        <expression tag="List.List">
-            <expression tag="String.Text" Value="Autumn"/>
-            <expression tag="Graphics.RasterGraphics" MediaRef="gen-2"/>
-        </expression>
-        <expression tag="List.List">
-            <expression tag="String.Text" Value="Winter"/>
-            <expression tag="Graphics.RasterGraphics" MediaRef="gen-3"/>
-        </expression>
-    </expression>
-</expression>
-```
-
-The `List.Table` holds a single `List.List` subexpression (the matrix), which itself contains one `List.List` per row. The first row is the header (wrapped in `Visualization.Bold`); subsequent rows are data rows. The four AI-generated images are referenced by `MediaRef="gen-0"` through `MediaRef="gen-3"` in the order they are returned by the API.
-
-**Note:** this response is only complete when accompanied by four `inline_data` parts — one generated image per season, in the order `gen-0` through `gen-3`. The XML alone, without the image data, is an incomplete response.
-
-### Example 5 — Mathematical formulas (differentiation rules)
-
-The user asks for two basic differentiation rules. The AI responds with a `Typesetting.MultiParagraph` containing a numbered list. Each list item is a `Typesetting.Paragraph` that holds bold label text followed by a single `Relation.Equals` expression, whose two children are the derivative and its result.
-
-**Human prompt:**
-
-```xml
-<expression tag="Typesetting.Paragraph">
-    <expression tag="String.Text" Value="List two basic formulas of differentiation."/>
-</expression>
-```
-
-**AI response:**
-
-```xml
-<expression tag="Typesetting.MultiParagraph">
-    <expression tag="Typesetting.Paragraph">
-        <expression tag="String.Text" Value="Here are two basic differentiation formulas:"/>
-    </expression>
-    <expression tag="Typesetting.NumberedList">
-        <expression tag="Typesetting.Paragraph">
-            <expression tag="Typesetting.BoldChunk">
-                <expression tag="String.Text" Value="Power rule:"/>
-            </expression>
-            <expression tag="String.Text" Value=" "/>
-            <expression tag="Relation.Equals">
-                <expression tag="Calculus.Differential.TotalDerivative">
-                    <expression tag="Math.Arithmetic.Exponentiation">
-                        <expression tag="Symbolic.Symbol" Name="x"/>
-                        <expression tag="Symbolic.Symbol" Name="n"/>
-                    </expression>
-                    <expression tag="Symbolic.Symbol" Name="x"/>
-                </expression>
-                <expression tag="Math.Arithmetic.Multiplication">
-                    <expression tag="Symbolic.Symbol" Name="n"/>
-                    <expression tag="Math.Arithmetic.Exponentiation">
-                        <expression tag="Symbolic.Symbol" Name="x"/>
-                        <expression tag="Math.Arithmetic.Addition">
-                            <expression tag="Symbolic.Symbol" Name="n"/>
-                            <expression tag="Math.Arithmetic.Negative">
-                                <expression tag="Math.Number" Value="1"/>
-                            </expression>
-                        </expression>
-                    </expression>
-                </expression>
-            </expression>
-        </expression>
-        <expression tag="Typesetting.Paragraph">
-            <expression tag="Typesetting.BoldChunk">
-                <expression tag="String.Text" Value="Sine rule:"/>
-            </expression>
-            <expression tag="String.Text" Value=" "/>
-            <expression tag="Relation.Equals">
-                <expression tag="Calculus.Differential.TotalDerivative">
-                    <expression tag="Math.Trigonometric.Sine">
-                        <expression tag="Symbolic.Symbol" Name="x"/>
-                    </expression>
-                    <expression tag="Symbolic.Symbol" Name="x"/>
-                </expression>
-                <expression tag="Math.Trigonometric.Cosine">
-                    <expression tag="Symbolic.Symbol" Name="x"/>
-                </expression>
-            </expression>
-        </expression>
-    </expression>
-</expression>
-```
-
-Each list item is a paragraph containing label text and a single `Relation.Equals` whose first child is the derivative expression and whose second child is the result. There are no extra siblings in the paragraph and no extra children inside `Relation.Equals`.
 
 ---
 
@@ -649,8 +366,6 @@ A piecewise expression for |x| (absolute value defined by cases) is expressed as
 | `Math.Hyperbolic.ArcSecant` | The inverse hyperbolic secant of its subexpression | One | The expression | |
 | `Math.Hyperbolic.ArcCosecant` | The inverse hyperbolic cosecant of its subexpression | One | The expression | |
 
----
-
 ### Complex numbers
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
@@ -710,6 +425,147 @@ Example 4. The complex number (2/3 - 10ℹ) is represented as:
     </expression>
 </expression>
 ```
+
+### Calculus — Limits
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Calculus.Limit.Limit` | Limit lim_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
+| `Calculus.Limit.LimitInferior` | Limit inferior lim inf_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
+| `Calculus.Limit.LimitSuperior` | Limit superior lim sup_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
+
+### Calculus — Derivatives
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Calculus.Differential.TotalDerivative` | Total derivative of a function with respect to one or more variables (Leibniz, Euler, or subscript style) | Two or more | Subexpression 1: the function; subexpressions 2…n: the differentiation variables (one per variable) | |
+| `Calculus.Differential.TotalDerivativeWithoutVariables` | Total derivative of a function without explicit variables (Lagrange f′/f″/f⁽ⁿ⁾ or Newton dot style) | One | The function | "Order": the order of differentiation (positive integer) |
+| `Calculus.Differential.PartialDerivative` | Partial derivative of a function with respect to one or more variables (Leibniz quotient or operator style) | Two or more | Subexpression 1: the function; subexpressions 2…n: the differentiation variables (one per variable) | |
+
+### Calculus — Evaluation bar
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Calculus.EvaluationBar` | Evaluation bar f(x)\|_a^b or [f(x)]_a^b | Three | Subexpression 1: the expression being evaluated; subexpression 2: the lower bound; subexpression 3: the upper bound | |
+
+### Calculus — Integrals
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Calculus.Integral.IndefiniteIntegral` | Indefinite integral ∫ f dx | Two | Subexpression 1: the integrand; subexpression 2: the integration variable | |
+| `Calculus.Integral.DefiniteIntegral` | Definite integral ∫_a^b f dx | Four | Subexpression 1: the integrand; subexpression 2: the integration variable; subexpression 3: the lower bound; subexpression 4: the upper bound | |
+| `Calculus.Integral.DefiniteIntegralOverDomain` | Definite integral over a domain (∬_D f dA, ∭_V f dV, etc.) | Three | Subexpression 1: the integrand; subexpression 2: the domain (rendered below the integral sign at reduced size); subexpression 3: the differential element | "Dimensions": number of integral signs stacked (1, 2, or 3); "ClosedDomain": "True" if the domain is closed (uses ∮-style loop on the sign), "False" otherwise |
+
+#### Notes
+
+A multiple indefinite integral expression is just several nested `Calculus.Integral.IndefiniteIntegral` expressions. The double indefinite integral ∫∫ x·y dy dx is represented as:
+
+```xml
+<expression tag="Calculus.Integral.IndefiniteIntegral">
+    <expression tag="Calculus.Integral.IndefiniteIntegral">
+        <expression tag="Math.Arithmetic.Multiplication">
+            <expression tag="Symbolic.Symbol" Name="x"/>
+            <expression tag="Symbolic.Symbol" Name="y"/>
+        </expression>
+        <expression tag="Symbolic.Symbol" Name="y"/>
+    </expression>
+    <expression tag="Symbolic.Symbol" Name="x"/>
+</expression>
+```
+
+A multiple definite integral expression is just several nested `Calculus.Integral.DefiniteIntegral` expressions. The iterated integral ∫_0^1 ∫_0^1 x·y dy dx is represented as:
+
+```xml
+<expression tag="Calculus.Integral.DefiniteIntegral">
+    <expression tag="Calculus.Integral.DefiniteIntegral">
+        <expression tag="Math.Arithmetic.Multiplication">
+            <expression tag="Symbolic.Symbol" Name="x"/>
+            <expression tag="Symbolic.Symbol" Name="y"/>
+        </expression>
+        <expression tag="Symbolic.Symbol" Name="y"/>
+        <expression tag="Math.Number" Value="0"/>
+        <expression tag="Math.Number" Value="1"/>
+    </expression>
+    <expression tag="Symbolic.Symbol" Name="x"/>
+    <expression tag="Math.Number" Value="0"/>
+    <expression tag="Math.Number" Value="1"/>
+</expression>
+```
+
+### Set theory — Standard sets
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Set.Empty` | The empty set ∅ | Zero | | |
+| `Set.Set` | An explicit set { a, b, … } | Zero or more | The elements of the set | |
+| `Set.Literal.Number.Naturals` | The set of natural numbers ℕ | Zero | | |
+| `Set.Literal.Number.Integers` | The set of integers ℤ | Zero | | |
+| `Set.Literal.Number.Rationals` | The set of rational numbers ℚ | Zero | | |
+| `Set.Literal.Number.Reals` | The set of real numbers ℝ | Zero | | |
+| `Set.Literal.Number.Complex` | The set of complex numbers ℂ | Zero | | |
+| `Set.Literal.Number.Primes` | The set of prime numbers ℙ | Zero | | |
+| `Set.Literal.Number.Quaternions` | The set of quaternions ℍ | Zero | | |
+
+### Set theory — Set operations
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Set.Union` | The union of two or more sets, displayed with the ∪ operator | Two or more | The sets to unite | |
+| `Set.Intersection` | The intersection of two or more sets, displayed with the ∩ operator | Two or more | The sets to intersect | |
+| `Set.Difference` | The difference of two sets (A ∖ B), displayed with the ∖ operator | Two | Subexpression 1: the minuend set; subexpression 2: the subtrahend set | |
+| `Set.SymmetricDifference` | The symmetric difference of two sets (A ∆ B), displayed with the ∆ operator | Two | Subexpression 1: the first set; subexpression 2: the second set | |
+| `Set.Complement` | The complement of a set, displayed as Aᶜ | One | The set to complement | |
+| `Set.SetBuilder` | Set-builder (comprehension) notation, displayed as { x \| P(x) } | Two | Subexpression 1: the bound variable; subexpression 2: the membership condition | |
+
+### Vector analysis — Differential operators
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `VectorAnalysis.Differential.Gradient` | Gradient ∇f | One | The scalar field f | |
+| `VectorAnalysis.Differential.Divergence` | Divergence ∇·F | One | The vector field F | |
+| `VectorAnalysis.Differential.Curl` | Curl ∇×F | One | The vector field F | |
+| `VectorAnalysis.Differential.Laplacian` | Laplacian ∇²f or Δf (style is a package-level preference) | One | The function f | |
+
+### Vector analysis — Norm and inner product
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `VectorAnalysis.Norm` | Norm ‖v‖ or ‖v‖_p | One or two | Subexpression 1: the expression; subexpression 2 (optional): the order p, rendered as a subscript | |
+| `VectorAnalysis.InnerProduct` | Inner product ⟨u, v⟩ | Two | Subexpression 1: left argument; subexpression 2: right argument | |
+
+### Vector analysis — Dirac notation
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `VectorAnalysis.Dirac.Bra` | Dirac bra ⟨ψ\| | One | The state | |
+| `VectorAnalysis.Dirac.Ket` | Dirac ket \|φ⟩ | One | The state | |
+| `VectorAnalysis.Dirac.Braket` | Dirac braket ⟨ψ\|φ⟩ | Two | Subexpression 1: the bra state; subexpression 2: the ket state | |
+
+### Geometry
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Geometry.Angle` | Angle ∠ABC | One or more | Each subexpression is a point label | |
+| `Geometry.Triangle` | Triangle △ABC | Three | Each subexpression is a vertex label | |
+| `Geometry.Parallel` | Parallel relation AB ∥ CD | Two or more | Each subexpression is a geometric entity | |
+| `Geometry.Perpendicular` | Perpendicular relation AB ⊥ CD | Two | Subexpression 1: left entity; subexpression 2: right entity | |
+| `Geometry.Arc` | Arc ⌢ drawn over the subexpression | One | The label | |
+| `Geometry.Segment` | Line segment: overline drawn over the subexpression | One | The label | |
+| `Geometry.Ray` | Ray: right arrow drawn over the subexpression | One | The label | |
+| `Geometry.Line` | Line: double-headed arrow drawn over the subexpression | One | The label | |
+
+### Statistics
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Statistics.Probability` | Simple probability P(A) | One | The event | |
+| `Statistics.ConditionalProbability` | Conditional probability P(A\|B) | Two | Subexpression 1: the event; subexpression 2: the condition | |
+| `Statistics.ExpectedValue` | Expected value E[X] | One | The random variable or expression | |
+| `Statistics.Variance` | Variance Var(X) | One | The random variable | |
+| `Statistics.StandardDeviation` | Standard deviation σ(X) | One | The random variable | |
+| `Statistics.Mean` | Sample mean: overline drawn over the subexpression | One | The expression to average | |
+| `Statistics.Median` | Median med(X) | One | The random variable or dataset | |
+| `Statistics.Mode` | Mode mode(X) | One | The random variable or dataset | |
 
 ---
 
@@ -828,138 +684,6 @@ The same rule applies to integrals. For `∫xⁿ dx = xⁿ⁺¹/(n+1) + C`, the 
 
 ---
 
-### Logic — Boolean literals
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Logic.True` | The logical truthful literal | Zero | | |
-| `Logic.False` | The logical falsehood literal | Zero | | |
-
-### Logic — Basic logical operations
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Logic.Negation` | The logical negation of its subexpression | One | The expression to be logically negated | |
-| `Logic.Conjunction` | The logical conjunction (AND) of its subexpressions | Two or more | The expressions to be operated under logical conjunction | |
-| `Logic.Disjunction` | The logical disjunction (OR) of its subexpressions | Two or more | The expressions to be operated under logical disjunction | |
-| `Logic.Implication` | The material conditional of its two subexpressions | Two | Subexpression 1: the antecedent; subexpression 2: the consequent | |
-| `Logic.Equivalence` | The logical biconditional (if and only if) of its subexpressions | Two or more | The expressions to be operated under logical equivalence | |
-| `Logic.ExclusiveDisjunction` | The logical exclusive disjunction (XOR) of its subexpressions | Two or more | The expressions to be operated under exclusive disjunction | |
-
-### Logic — Big operators
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Logic.BigConjunction` | The conjunction (AND) of an expression over a range or collection | Three, four, or five | Subexpression 1: the expression to conjoin; subexpression 2: the iteration variable; if three subexpressions: subexpression 3 is the collection to iterate over; if four: subexpression 3 is the lower bound, subexpression 4 is the upper bound; if five: subexpression 3 is the lower bound, subexpression 4 is the upper bound, subexpression 5 is the step | |
-| `Logic.BigDisjunction` | The disjunction (OR) of an expression over a range or collection | Three, four, or five | Subexpression 1: the expression to disjoin; subexpression 2: the iteration variable; if three subexpressions: subexpression 3 is the collection to iterate over; if four: subexpression 3 is the lower bound, subexpression 4 is the upper bound; if five: subexpression 3 is the lower bound, subexpression 4 is the upper bound, subexpression 5 is the step | |
-| `Logic.BigEquivalence` | The equivalence (biconditional) of an expression over a range or collection | Three, four, or five | Subexpression 1: the expression to test for equivalence; subexpression 2: the iteration variable; if three subexpressions: subexpression 3 is the collection to iterate over; if four: subexpression 3 is the lower bound, subexpression 4 is the upper bound; if five: subexpression 3 is the lower bound, subexpression 4 is the upper bound, subexpression 5 is the step | |
-| `Logic.BigExclusiveDisjunction` | The exclusive disjunction (XOR) of an expression over a range or collection | Three, four, or five | Subexpression 1: the expression to exclusively disjoin; subexpression 2: the iteration variable; if three subexpressions: subexpression 3 is the collection to iterate over; if four: subexpression 3 is the lower bound, subexpression 4 is the upper bound; if five: subexpression 3 is the lower bound, subexpression 4 is the upper bound, subexpression 5 is the step | |
-
-### Logic — Predicates and quantifiers
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Logic.Predicate` | A named predicate with optional arguments; rendered as a label when it has no subexpressions, or as a function call when it has one or more | Zero or more | The arguments to the predicate | "Name": the name of the predicate |
-| `Logic.ForAll` | The universal quantifier (∀): asserts that its formula holds for all values of the bound variable | Two | Subexpression 1: the bound variable; subexpression 2: the formula that must hold | |
-| `Logic.Exists` | The existential quantifier (∃): asserts that there exists at least one value of the bound variable for which its formula holds | Two | Subexpression 1: the bound variable; subexpression 2: the formula that must hold | |
-
----
-
-### Strings
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `String.String` | A computer or programming string | Zero | | "Value": the raw string |
-| `String.Text` | A textual value | Zero | | "Value": the text as a raw string |
-| `String.RegularExpression` | A computer or programming regular expression pattern | Zero | | "Value": the pattern as a raw string |
-| `String.Concatenation` | The concatenation of two or more expressions | Two or more | the expressions to concatenate | |
-
-#### Notes
-
-A `String.String` expression is intended to represent a piece of text that would be operated by a computer and therefore its content must be taken exactly as it is, e.g. a user name, a file name or a variable name of a program, or to be processed by a computer program (e.g. to get its length, to extract a substring, etc.)
-
-A `String.Text` expression is intended to represent arbitrary text, to be used by humans or AI models, e.g. a set of instructions.
-
-There are expressions that make a distinction between `String.String` and `String.Text` expressions, for an example, see the `Typesetting.Paragraph` expression (described below).
-
-Arbitrary text processing tasks such as (human) language translation or spell checking could be applied to a `String.Text` expression, but not to a `String.String` expression.
-
-When embedding human-readable text in a composed document or a conversational response, always use `String.Text`. Use `String.String` only when the value is an opaque identifier or a string to be processed programmatically (e.g. a file name, a variable name, a regular expression pattern).
-
----
-
-### Internet
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Internet.Hyperlink` | A hyperlink, displayed as its description text | Zero | | "Value": the URL string; "Description": the human-readable label displayed on the canvas |
-
----
-
-### Localization — Locale component literals
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Localization.Language.Language` | A language literal, displayed as its localized name | Zero | | "Value": BCP 47 language subtag code (e.g. "en", "es", "zh") |
-| `Localization.Country.Country` | A country or region literal, displayed as its localized name | Zero | | "Value": ISO 3166-1 alpha-2 country code (e.g. "US", "MX") |
-| `Localization.Script.Script` | A writing script literal, displayed as its localized name | Zero | | "Value": ISO 15924 script code (e.g. "Latn", "Arab") |
-| `Localization.Numeral.Numeral` | A numeral system literal, displayed as its localized name | Zero | | "Value": Unicode CLDR numeral system code (e.g. "latn", "arab") |
-| `Localization.Calendar.Calendar` | A calendar system literal, displayed as its localized name | Zero | | "Value": Unicode CLDR calendar code (e.g. "gregory", "islamic", "buddhist") |
-| `Localization.Locale.Locale` | A locale literal, displayed as its localized name | Zero | | "Value": locale identifier (e.g. "en_US", "es_MX", "zh_Hans_CN") |
-| `Localization.TimeZone.TimeZone` | A time zone literal, displayed as its IANA identifier | Zero | | "Value": IANA time zone identifier (e.g. "America/New_York", "Europe/Paris") |
-
----
-
-### Time — Time literal
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Time.Time` | Denotes a specific point in time | Zero | | "Value": milliseconds since the Unix epoch as an integer |
-
-#### Notes
-
-There does not exist an expression to represent time with day granularity (a "date" data type). However, a `Time.Time` expression, when it represents a point in time at 0:00 hrs (in the current timezone), it does not show time of the day.
-
-### Time — Month literals
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Time.Gregorian.Month.January` | The January month literal | Zero | | |
-| `Time.Gregorian.Month.February` | The February month literal | Zero | | |
-| `Time.Gregorian.Month.March` | The March month literal | Zero | | |
-| `Time.Gregorian.Month.April` | The April month literal | Zero | | |
-| `Time.Gregorian.Month.May` | The May month literal | Zero | | |
-| `Time.Gregorian.Month.June` | The June month literal | Zero | | |
-| `Time.Gregorian.Month.July` | The July month literal | Zero | | |
-| `Time.Gregorian.Month.August` | The August month literal | Zero | | |
-| `Time.Gregorian.Month.September` | The September month literal | Zero | | |
-| `Time.Gregorian.Month.October` | The October month literal | Zero | | |
-| `Time.Gregorian.Month.November` | The November month literal | Zero | | |
-| `Time.Gregorian.Month.December` | The December month literal | Zero | | |
-
-### Time — Weekday literals
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Time.Gregorian.WeekDay.Sunday` | The Sunday weekday literal | Zero | | |
-| `Time.Gregorian.WeekDay.Monday` | The Monday weekday literal | Zero | | |
-| `Time.Gregorian.WeekDay.Tuesday` | The Tuesday weekday literal | Zero | | |
-| `Time.Gregorian.WeekDay.Wednesday` | The Wednesday weekday literal | Zero | | |
-| `Time.Gregorian.WeekDay.Thursday` | The Thursday weekday literal | Zero | | |
-| `Time.Gregorian.WeekDay.Friday` | The Friday weekday literal | Zero | | |
-| `Time.Gregorian.WeekDay.Saturday` | The Saturday weekday literal | Zero | | |
-
----
-
-### Expression — Introspection
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Expression.Child` | Denotes a subexpression of an expression by index | Two | Subexpression 1: the expression to index into; subexpression 2: the index spec — a positive integer (1-based), a negative integer (counting from the end) | |
-| `Expression.Cardinality` | Denotes the number of subexpressions of an expression | One | The expression to measure the number of its subexpressions | |
-
----
-
 ### Lists
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
@@ -982,7 +706,6 @@ There does not exist an expression to represent mathematical vectors. For this p
 #### Notes
 
 There does not exist a single expression to represent matrices. A matrix is just a `List.List` expression containing one or several `List.List` subexpressions with the same cardinality.
-
 
 For example, the 2×3 matrix:
 
@@ -1017,12 +740,51 @@ is represented as an outer `List.List` containing one `List.List` per row, each 
 | `Math.Matrix.Adjoint` | The conjugate transpose of a matrix (transpose with each element replaced by its complex conjugate) | One | The matrix | |
 | `Math.Matrix.KroneckerProduct` | The Kronecker (tensor) product of two or more matrices | Two or more | Each subexpression is a matrix | |
 
+---
+
 ### Tables
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
 | `List.Table` | Denotes the visualization of a matrix as a bidimensional table | One or two | Subexpression 1: the matrix to display as a table; subexpression 2 (optional): a list used as a header row | |
 | `List.UndecoratedTable` | Denotes the visualization of a matrix as a bidimensional table without grid line decorations | One or two | Subexpression 1: the matrix to display as an undecorated table; subexpression 2 (optional): a list used as a header row | |
+
+---
+
+### Logic — Boolean literals
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Logic.True` | The logical truthful literal | Zero | | |
+| `Logic.False` | The logical falsehood literal | Zero | | |
+
+### Logic — Basic logical operations
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Logic.Negation` | The logical negation of its subexpression | One | The expression to be logically negated | |
+| `Logic.Conjunction` | The logical conjunction (AND) of its subexpressions | Two or more | The expressions to be operated under logical conjunction | |
+| `Logic.Disjunction` | The logical disjunction (OR) of its subexpressions | Two or more | The expressions to be operated under logical disjunction | |
+| `Logic.Implication` | The material conditional of its two subexpressions | Two | Subexpression 1: the antecedent; subexpression 2: the consequent | |
+| `Logic.Equivalence` | The logical biconditional (if and only if) of its subexpressions | Two or more | The expressions to be operated under logical equivalence | |
+| `Logic.ExclusiveDisjunction` | The logical exclusive disjunction (XOR) of its subexpressions | Two or more | The expressions to be operated under exclusive disjunction | |
+
+### Logic — Big operators
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Logic.BigConjunction` | The conjunction (AND) of an expression over a range or collection | Three, four, or five | Subexpression 1: the expression to conjoin; subexpression 2: the iteration variable; if three subexpressions: subexpression 3 is the collection to iterate over; if four: subexpression 3 is the lower bound, subexpression 4 is the upper bound; if five: subexpression 3 is the lower bound, subexpression 4 is the upper bound, subexpression 5 is the step | |
+| `Logic.BigDisjunction` | The disjunction (OR) of an expression over a range or collection | Three, four, or five | Subexpression 1: the expression to disjoin; subexpression 2: the iteration variable; if three subexpressions: subexpression 3 is the collection to iterate over; if four: subexpression 3 is the lower bound, subexpression 4 is the upper bound; if five: subexpression 3 is the lower bound, subexpression 4 is the upper bound, subexpression 5 is the step | |
+| `Logic.BigEquivalence` | The equivalence (biconditional) of an expression over a range or collection | Three, four, or five | Subexpression 1: the expression to test for equivalence; subexpression 2: the iteration variable; if three subexpressions: subexpression 3 is the collection to iterate over; if four: subexpression 3 is the lower bound, subexpression 4 is the upper bound; if five: subexpression 3 is the lower bound, subexpression 4 is the upper bound, subexpression 5 is the step | |
+| `Logic.BigExclusiveDisjunction` | The exclusive disjunction (XOR) of an expression over a range or collection | Three, four, or five | Subexpression 1: the expression to exclusively disjoin; subexpression 2: the iteration variable; if three subexpressions: subexpression 3 is the collection to iterate over; if four: subexpression 3 is the lower bound, subexpression 4 is the upper bound; if five: subexpression 3 is the lower bound, subexpression 4 is the upper bound, subexpression 5 is the step | |
+
+### Logic — Predicates and quantifiers
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Logic.Predicate` | A named predicate with optional arguments; rendered as a label when it has no subexpressions, or as a function call when it has one or more | Zero or more | The arguments to the predicate | "Name": the name of the predicate |
+| `Logic.ForAll` | The universal quantifier (∀): asserts that its formula holds for all values of the bound variable | Two | Subexpression 1: the bound variable; subexpression 2: the formula that must hold | |
+| `Logic.Exists` | The existential quantifier (∃): asserts that there exists at least one value of the bound variable for which its formula holds | Two | Subexpression 1: the bound variable; subexpression 2: the formula that must hold | |
 
 ---
 
@@ -1067,33 +829,26 @@ In any other case it is a function application (or function call).
 
 ---
 
-### Colors
+### Strings
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Color.Color` | A color literal | Zero | | "Red": the red component as a string representing a number between 0 and 1; "Green": the green component as a string representing a number between 0 and 1; "Blue": the blue component as a string representing a number between 0 and 1; "Alpha": the opacity as a string representing a number between 0 and 1 (0 = fully transparent, 1 = fully opaque) |
+| `String.String` | A computer or programming string | Zero | | "Value": the raw string |
+| `String.Text` | A textual value | Zero | | "Value": the text as a raw string |
+| `String.RegularExpression` | A computer or programming regular expression pattern | Zero | | "Value": the pattern as a raw string |
+| `String.Concatenation` | The concatenation of two or more expressions | Two or more | the expressions to concatenate | |
 
 #### Notes
 
-`Color.Color` is a standalone color value — it represents a color as data (e.g. the color red, or the color of a graph series). It is distinct from `Visualization.Color`, which is a visual wrapper that applies a color to a child expression for display purposes. Use `Color.Color` when a color is the subject of the expression; use `Visualization.Color` when you want to render an expression in a particular color.
+A `String.String` expression is intended to represent a piece of text that would be operated by a computer and therefore its content must be taken exactly as it is, e.g. a user name, a file name or a variable name of a program, or to be processed by a computer program (e.g. to get its length, to extract a substring, etc.)
 
----
+A `String.Text` expression is intended to represent arbitrary text, to be used by humans or AI models, e.g. a set of instructions.
 
-### Bitwise — Logical operations
+There are expressions that make a distinction between `String.String` and `String.Text` expressions, for an example, see the `Typesetting.Paragraph` expression (described below).
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Bitwise.Not` | Denotes the bitwise inversion of every bit of an integer | One | The integer operand | |
-| `Bitwise.And` | Denotes the bitwise AND of two or more integers, evaluated left-to-right | Two or more | The integer operands | |
-| `Bitwise.Or` | Denotes the bitwise OR of two or more integers, evaluated left-to-right | Two or more | The integer operands | |
-| `Bitwise.XOr` | Denotes the bitwise XOR of two or more integers, evaluated left-to-right | Two or more | The integer operands | |
+Arbitrary text processing tasks such as (human) language translation or spell checking could be applied to a `String.Text` expression, but not to a `String.String` expression.
 
-### Bitwise — Shift operations
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Bitwise.LeftShift` | Denotes the shift of bits of an integer left by a given number of positions, filling vacated low bits with zeros | Two | Subexpression 1: the integer to shift; subexpression 2: the number of positions to shift left | |
-| `Bitwise.RightShift` | Denotes the shifts on bits of an integer right by a given number of positions, filling vacated high bits with zeros (logical shift) | Two | Subexpression 1: the integer to shift; subexpression 2: the number of positions to shift right | |
+When embedding human-readable text in a composed document or a conversational response, always use `String.Text`. Use `String.String` only when the value is an opaque identifier or a string to be processed programmatically (e.g. a file name, a variable name, a regular expression pattern).
 
 ---
 
@@ -1186,63 +941,105 @@ A `Programming.ConditionalSwitch` with two conditions and an else branch has fiv
 </expression>
 ```
 
----
-
-### Graphics
+### Bitwise — Logical operations
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Graphics.RasterGraphics` | Represents a raster (bitmap) graphics | Zero | | "MediaRef": identifier referencing the media content passed natively via the API (e.g., "media-0" for input media, "gen-0" for AI-generated media) |
+| `Bitwise.Not` | Denotes the bitwise inversion of every bit of an integer | One | The integer operand | |
+| `Bitwise.And` | Denotes the bitwise AND of two or more integers, evaluated left-to-right | Two or more | The integer operands | |
+| `Bitwise.Or` | Denotes the bitwise OR of two or more integers, evaluated left-to-right | Two or more | The integer operands | |
+| `Bitwise.XOr` | Denotes the bitwise XOR of two or more integers, evaluated left-to-right | Two or more | The integer operands | |
 
----
-
-### Audio
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Audio.WaveformAudio` | Represents a waveform audio clip | Zero | | "MediaRef": identifier referencing the audio content passed natively via the API (e.g., "media-0" for input audio) |
-
----
-
-### Diagramming
+### Bitwise — Shift operations
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Diagramming.Tree` | A recursive tree diagram node; displays a root label and zero or more child branches | One or more | Subexpression 1: the node's label content (any expression); subexpressions 2 and beyond: child branches, each of which must be a `Diagramming.Tree` expression. A leaf node has exactly one subexpression and no children. | "Expanded": whether the child branches are currently visible ("True" or "False") |
+| `Bitwise.LeftShift` | Denotes the shift of bits of an integer left by a given number of positions, filling vacated low bits with zeros | Two | Subexpression 1: the integer to shift; subexpression 2: the number of positions to shift left | |
+| `Bitwise.RightShift` | Denotes the shifts on bits of an integer right by a given number of positions, filling vacated high bits with zeros (logical shift) | Two | Subexpression 1: the integer to shift; subexpression 2: the number of positions to shift right | |
+
+---
+
+### Internet
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Internet.Hyperlink` | A hyperlink, displayed as its description text | Zero | | "Value": the URL string; "Description": the human-readable label displayed on the canvas |
+
+---
+
+### Localization — Locale component literals
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Localization.Language.Language` | A language literal, displayed as its localized name | Zero | | "Value": BCP 47 language subtag code (e.g. "en", "es", "zh") |
+| `Localization.Country.Country` | A country or region literal, displayed as its localized name | Zero | | "Value": ISO 3166-1 alpha-2 country code (e.g. "US", "MX") |
+| `Localization.Script.Script` | A writing script literal, displayed as its localized name | Zero | | "Value": ISO 15924 script code (e.g. "Latn", "Arab") |
+| `Localization.Numeral.Numeral` | A numeral system literal, displayed as its localized name | Zero | | "Value": Unicode CLDR numeral system code (e.g. "latn", "arab") |
+| `Localization.Calendar.Calendar` | A calendar system literal, displayed as its localized name | Zero | | "Value": Unicode CLDR calendar code (e.g. "gregory", "islamic", "buddhist") |
+| `Localization.Locale.Locale` | A locale literal, displayed as its localized name | Zero | | "Value": locale identifier (e.g. "en_US", "es_MX", "zh_Hans_CN") |
+| `Localization.TimeZone.TimeZone` | A time zone literal, displayed as its IANA identifier | Zero | | "Value": IANA time zone identifier (e.g. "America/New_York", "Europe/Paris") |
+
+---
+
+### Time — Time literal
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Time.Time` | Denotes a specific point in time | Zero | | "Value": milliseconds since the Unix epoch as an integer |
 
 #### Notes
 
-`Diagramming.Tree` builds tree diagrams recursively. Every node — internal or leaf — is a `Diagramming.Tree`. The first subexpression is the node's displayed label (any expression, typically a `String.Text`). Subexpressions 2 and beyond are the node's children, each of which must itself be a `Diagramming.Tree`. A **leaf** is a `Diagramming.Tree` with only one subexpression (no children).
+There does not exist an expression to represent time with day granularity (a "date" data type). However, a `Time.Time` expression, when it represents a point in time at 0:00 hrs (in the current timezone), does not show time of day.
 
-For example, to represent this tree:
+### Time — Month literals
 
-```
-    A
-   / \
-  B   C
-     / \
-    D   E
-```
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Time.Gregorian.Month.January` | The January month literal | Zero | | |
+| `Time.Gregorian.Month.February` | The February month literal | Zero | | |
+| `Time.Gregorian.Month.March` | The March month literal | Zero | | |
+| `Time.Gregorian.Month.April` | The April month literal | Zero | | |
+| `Time.Gregorian.Month.May` | The May month literal | Zero | | |
+| `Time.Gregorian.Month.June` | The June month literal | Zero | | |
+| `Time.Gregorian.Month.July` | The July month literal | Zero | | |
+| `Time.Gregorian.Month.August` | The August month literal | Zero | | |
+| `Time.Gregorian.Month.September` | The September month literal | Zero | | |
+| `Time.Gregorian.Month.October` | The October month literal | Zero | | |
+| `Time.Gregorian.Month.November` | The November month literal | Zero | | |
+| `Time.Gregorian.Month.December` | The December month literal | Zero | | |
 
-```xml
-<expression tag="Diagramming.Tree" Expanded="True">
-    <expression tag="String.Text" Value="A"/>
-    <expression tag="Diagramming.Tree" Expanded="True">
-        <expression tag="String.Text" Value="B"/>
-    </expression>
-    <expression tag="Diagramming.Tree" Expanded="True">
-        <expression tag="String.Text" Value="C"/>
-        <expression tag="Diagramming.Tree" Expanded="True">
-            <expression tag="String.Text" Value="D"/>
-        </expression>
-        <expression tag="Diagramming.Tree" Expanded="True">
-            <expression tag="String.Text" Value="E"/>
-        </expression>
-    </expression>
-</expression>
-```
+### Time — Weekday literals
 
-"B", "D", and "E" are leaf nodes: each contains only its label subexpression and has no child branches.
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Time.Gregorian.WeekDay.Sunday` | The Sunday weekday literal | Zero | | |
+| `Time.Gregorian.WeekDay.Monday` | The Monday weekday literal | Zero | | |
+| `Time.Gregorian.WeekDay.Tuesday` | The Tuesday weekday literal | Zero | | |
+| `Time.Gregorian.WeekDay.Wednesday` | The Wednesday weekday literal | Zero | | |
+| `Time.Gregorian.WeekDay.Thursday` | The Thursday weekday literal | Zero | | |
+| `Time.Gregorian.WeekDay.Friday` | The Friday weekday literal | Zero | | |
+| `Time.Gregorian.WeekDay.Saturday` | The Saturday weekday literal | Zero | | |
+
+---
+
+### Expression — Introspection
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Expression.Child` | Denotes a subexpression of an expression by index | Two | Subexpression 1: the expression to index into; subexpression 2: the index spec — a positive integer (1-based), a negative integer (counting from the end) | |
+| `Expression.Cardinality` | Denotes the number of subexpressions of an expression | One | The expression to measure the number of its subexpressions | |
+
+---
+
+### Colors
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Color.Color` | A color literal | Zero | | "Red": the red component as a string representing a number between 0 and 1; "Green": the green component as a string representing a number between 0 and 1; "Blue": the blue component as a string representing a number between 0 and 1; "Alpha": the opacity as a string representing a number between 0 and 1 (0 = fully transparent, 1 = fully opaque) |
+
+#### Notes
+
+`Color.Color` is a standalone color value — it represents a color as data (e.g. the color red, or the color of a graph series). It is distinct from `Visualization.Color`, which is a visual wrapper that applies a color to a child expression for display purposes. Use `Color.Color` when a color is the subject of the expression; use `Visualization.Color` when you want to render an expression in a particular color.
 
 ---
 
@@ -1319,50 +1116,45 @@ For example, to represent this tree:
 
 ---
 
-### Typesetting — Document structure
+### Diagramming
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Typesetting.Paragraph` | A word-wrapped paragraph; lays out a sequence of inline content items across multiple lines with proper typographic baselines | One or more | Each subexpression is an inline item: typically a `String.Text` (plain text), an `Internet.Hyperlink` (rendered in green), a `Typesetting.BoldChunk`, a `Typesetting.ItalicChunk`, or a `Typesetting.ColorChunk`; but any expression type is valid as an inline item (e.g. `Graphics.RasterGraphics` for inline images, mathematical expressions, etc.) | |
-| `Typesetting.MultiParagraph` | Stacks two or more typesetting blocks vertically with 15-pixel spacing | Two or more | Each subexpression is a block-level typesetting element (`Typesetting.Paragraph`, `Typesetting.BulletedList`, `Typesetting.Centering`, `Typesetting.Rule`, or `Typesetting.MultiParagraph`) | |
-| `Typesetting.BulletedList` | Displays its subexpressions as a bulleted list; each item is preceded by a bullet "•" and indented; lists may be nested, with indentation increasing per level | One or more | Each subexpression is a list item (typically a `Typesetting.Paragraph`) | |
-| `Typesetting.NumberedList` | Displays its subexpressions as a numbered list; each item is preceded by its 1-based index followed by a period ("1.", "2.", …); number labels are right-aligned so all content starts at the same horizontal position regardless of label width; lists may be nested | One or more | Each subexpression is a list item (typically a `Typesetting.Paragraph`) | |
-| `Typesetting.Centering` | Centers its single subexpression horizontally within the available width | One | The expression to center | |
-| `Typesetting.Rule` | A horizontal rule spanning the full available width | Zero | | |
-
-### Typesetting — Inline formatting chunks
-
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Typesetting.BoldChunk` | Toggles bold formatting for its inline subexpressions within a paragraph | One or more | Inline content items (same kinds as `Typesetting.Paragraph` subexpressions) | |
-| `Typesetting.ItalicChunk` | Toggles italic formatting for its inline subexpressions within a paragraph | One or more | Inline content items (same kinds as `Typesetting.Paragraph` subexpressions) | |
-| `Typesetting.ColorChunk` | Applies an RGBA fill color to its inline subexpressions within a paragraph | One or more | Inline content items (same kinds as `Typesetting.Paragraph` subexpressions) | "Red": red component (float, 0–1); "Green": green component (float, 0–1); "Blue": blue component (float, 0–1); "Alpha": opacity component (float, 0–1) |
+| `Diagramming.Tree` | A recursive tree diagram node; displays a root label and zero or more child branches | One or more | Subexpression 1: the node's label content (any expression); subexpressions 2 and beyond: child branches, each of which must be a `Diagramming.Tree` expression. A leaf node has exactly one subexpression and no children. | "Expanded": whether the child branches are currently visible ("True" or "False") |
 
 #### Notes
 
-The `Typesetting.Paragraph` expression can hold one or several subexpressions. These subexpressions usually are combinations of:
+`Diagramming.Tree` builds tree diagrams recursively. Every node — internal or leaf — is a `Diagramming.Tree`. The first subexpression is the node's displayed label (any expression, typically a `String.Text`). Subexpressions 2 and beyond are the node's children, each of which must itself be a `Diagramming.Tree`. A **leaf** is a `Diagramming.Tree` with only one subexpression (no children).
 
-* `String.Text` expressions, containing textual information.
-* "Chunk" expressions (`Typesetting.BoldChunk`, `Typesetting.ItalicChunk` and `Typesetting.ColorChunk`) to apply these format modifiers (bold, italic, color) to their subexpressions.
-* Any other expression, such as mathematical formulae, images, etc.
+For example, to represent this tree:
 
-A chunk expression can hold the same type of subexpressions as `Typesetting.Paragraph` expressions (`String.Text`, chunks, any other). Because chunk expressions can also hold chunk expressions, format can be combined, e.g. an italic chunk can contain a bold chunk, or vice versa (achieving the same visual result).
+```
+    A
+   / \
+  B   C
+     / \
+    D   E
+```
 
-When a `Typesetting.Paragraph` is visualized, it separates the content of its subexpressions in "words" and keeps the metrics (width and height) of each one these words. The words are extracted according with the type of subexpression:
+```xml
+<expression tag="Diagramming.Tree" Expanded="True">
+    <expression tag="String.Text" Value="A"/>
+    <expression tag="Diagramming.Tree" Expanded="True">
+        <expression tag="String.Text" Value="B"/>
+    </expression>
+    <expression tag="Diagramming.Tree" Expanded="True">
+        <expression tag="String.Text" Value="C"/>
+        <expression tag="Diagramming.Tree" Expanded="True">
+            <expression tag="String.Text" Value="D"/>
+        </expression>
+        <expression tag="Diagramming.Tree" Expanded="True">
+            <expression tag="String.Text" Value="E"/>
+        </expression>
+    </expression>
+</expression>
+```
 
-* For a `String.Text` expression, its serialized attribute `Value` is split using as separator a set of whitespace characters (spaces, tabs, etc.)
-* For a `Internet.Hyperlink` expression, its serialized attribute `Description` is split using as separator a set of whitespace characters (spaces, tabs, etc.)
-* For chunk expressions, the definition is recursive, but taking into account that certain formatting (e.g. bold) produce different metrics.
-* Any other kind of expressions is considered itself a single word, with its own metrics, so it is never "broken".
-
-Then, the paragraph is created as a set of "rows", where each row is formed as the maximum number of remaining words that fit in the available space, leaving between them a minimum space.
-
-The `Typesetting.MultiParagraph` expression holds two or more subexpressions, usually of type `Typesetting.Paragraph`, but they can also be:
-
-* A `Typesetting.BulletedList` expression. It usually contains a `Typesetting.Paragraph` or `Typesetting.MultiParagraph` expression. A bullet will be created for each of its subexpressions.
-* A `Typesetting.NumberedList` expression. It usually contains a `Typesetting.Paragraph` or `Typesetting.MultiParagraph` expression. A sequential number will be created for each of its subexpressions.
-* A `Typesetting.Centering` expression. It contains a single expression, which will be shown centrally aligned respect to the available space.
-* Any other expression. Note that if the width of the expression is longer than the available space (e.g. a `String.Text` expression with a long text), the expression will be shown as it is. If the expression is intended to be split into several rows, it should be put inside a `Typesetting.Paragraph` expression.
+"B", "D", and "E" are leaf nodes: each contains only its label subexpression and has no child branches.
 
 ---
 
@@ -1502,151 +1294,372 @@ Each chemical element is a distinct zero-subexpression literal expression whose 
 
 ---
 
-### Calculus — Integrals
+### Typesetting
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Calculus.Integral.IndefiniteIntegral` | Indefinite integral ∫ f dx | Two | Subexpression 1: the integrand; subexpression 2: the integration variable | |
-| `Calculus.Integral.DefiniteIntegral` | Definite integral ∫_a^b f dx | Four | Subexpression 1: the integrand; subexpression 2: the integration variable; subexpression 3: the lower bound; subexpression 4: the upper bound | |
-| `Calculus.Integral.DefiniteIntegralOverDomain` | Definite integral over a domain (∬_D f dA, ∭_V f dV, etc.) | Three | Subexpression 1: the integrand; subexpression 2: the domain (rendered below the integral sign at reduced size); subexpression 3: the differential element | "Dimensions": number of integral signs stacked (1, 2, or 3); "ClosedDomain": "True" if the domain is closed (uses ∮-style loop on the sign), "False" otherwise |
+#### Breakable expressions
 
-#### Notes
+The expressions:
 
-A multiple indefinite integral expression is just several nested `Calculus.Integral.IndefiniteIntegral` expressions. The double indefinite integral ∫∫ x·y dy dx is represented as:
+* `String.Text`
+* Formatting chunks (`Typesetting.BoldChunk`, `Typesetting.ItalicChunk` and `Typesetting.ColorChunk`)
+* `Internet.Hyperlink`
+
+Are said to be "breakable" because their textual information can be broken into individual words.
+
+Notice that there are expressions that contain textual information but they are not considered breakable. e.g. the text of a `String.String` or a `Visualization.Code` expression must be considered as is, they represent a code identifier, a command with special characters, etc. that must not be visually altered.
+
+#### Non breakable expressions
+
+Any other expression is a non-breakable expression.
+
+#### Formatting chunks
+
+A formatting chunk is an expression that denotes the application of a format.
+
+There are 3 formatting chunk expressions:
+
+1. `Typesetting.BoldChunk`, to apply bold format.
+2. `Typesetting.ItalicChunk`, to apply italic format.
+3. `Typesetting.ColorChunk`, to apply font color format.
+
+A formatting chunk can hold one or several subexpressions, usually breakable expressions, allowing nested formatting.
+
+For example, the formatted text:
+
+```
+"This is text in italic but it contains a" "bold" "word"
+│                                          │    │      │
+│                                          └BOLD┘      │
+└───────────────────── ITALIC ─────────────────────────┘
+```
+
+is represented as:
 
 ```xml
-<expression tag="Calculus.Integral.IndefiniteIntegral">
-    <expression tag="Calculus.Integral.IndefiniteIntegral">
-        <expression tag="Math.Arithmetic.Multiplication">
-            <expression tag="Symbolic.Symbol" Name="x"/>
-            <expression tag="Symbolic.Symbol" Name="y"/>
-        </expression>
-        <expression tag="Symbolic.Symbol" Name="y"/>
-    </expression>
-    <expression tag="Symbolic.Symbol" Name="x"/>
+<expression tag="Typesetting.ItalicChunk">
+	<expression tag="String.Text" Value="This is text in italic but it contains a"/>
+	<expression tag="Typesetting.BoldChunk">
+		<expression tag="String.Text" Value="bold"/>
+	</expression>
+	<expression tag="String.Text" Value="word"/>
 </expression>
 ```
 
-A multiple definite integral expression is just several nested `Calculus.Integral.DefiniteIntegral` expressions. The iterated integral ∫_0^1 ∫_0^1 x·y dy dx is represented as:
+#### Paragraphs
+
+There are expressions able to hold an arbitrary amount of information, e.g. text expressions. The main intention of a text expression is to contain information such as phrases, a speech, etc. but it says nothing about how it is shown. It is especially important when the media where the information will be shown has a limited or variable horizontal space, such as a resizable window.
+
+The `Typesetting.Paragraph` expression can hold one or many subexpressions. It breaks the words of breakable expressions, in order to accommodate them in one or several lines, with an appropriate space between them.
+
+Most of the subexpressions of a `Typesetting.Paragraph` are breakable expressions, but it is common to have other kind of expressions such as simple mathematical expressions, small images, etc. (**inline expressions**). If a subexpression is a non-breakable expression it is taken entirely as a single "word" (with the same metrics as the expression).
+
+Notice that the space between words is calculated automatically, so there is no need to create the spaces between "phrases" manually.
+
+For example, the following paragraph:
+
+```
+"This is" "important"
+│         │        ││
+│         └─ BOLD ─┘│
+└──── PARAGRAPH ────┘
+```
+
+is a `Typesetting.Paragraph` expression, containing the following two subexpressions:
+
+* A `String.Text` expression with the text "This is" (with no trailing spaces)
+* A `Typesetting.BoldChunk` expression, containing a `String.Text` expression with the text "important" (with no leading spaces)
+
+#### Displayed expressions
+
+There are expressions that are too large or too prominent to appear inline inside a `Typesetting.Paragraph` expression, such as complex math expressions, equations, images, tables, etc. Each is usually shown in its own space. They are known as **displayed expressions**.
+
+#### Typesetting rules
+
+The `Typesetting.Rule` is an expression that shows a horizontal line, using the available horizontal space, used as a separator.
+
+#### Centering
+
+The `Typesetting.Centering` expression centers its single subexpression horizontally within the available width.
+
+#### Multiparagraphs
+
+A `Typesetting.MultiParagraph` expression, despite its name, can hold a combination of two or more of the following elements:
+
+* A `Typesetting.Paragraph` expression
+* A `Typesetting.Centering` expression, containing a displayed expression
+* A `Typesetting.Rule` expression
+* A typesetting list (see below)
+
+A `Typesetting.MultiParagraph` expression shows its elements one after the other.
+
+A `Typesetting.MultiParagraph` expression cannot contain a `Typesetting.MultiParagraph` subexpression.
+
+**Note:** `Visualization.CodeBlock` is an exception — it appears directly as an element of a `Typesetting.MultiParagraph` expression, without a `Typesetting.Centering` wrapper, since it already spans the full available width.
+
+#### Typesetting lists
+
+There are two typesetting list expressions:
+
+1. `Typesetting.BulletedList`
+2. `Typesetting.NumberedList`
+
+A typesetting list is like a `Typesetting.MultiParagraph` expression, but it shows its elements using bullets (`Typesetting.BulletedList`) or numbers (`Typesetting.NumberedList`).
+
+Because of the indentation (the space required to show the bullet or the number), the available horizontal space decreases.
+
+A typesetting list contains a combination of one or more of the following elements:
+
+* A `Typesetting.Paragraph` expression
+* A displayed expression
+* A `Typesetting.MultiParagraph` expression
+* A typesetting list expression
+
+Since typesetting lists can contain other typesetting lists, they can be effectively used to create information in several levels, with different indentations.
+
+When using lists, the bullets (`Typesetting.BulletedList`) and numbers (`Typesetting.NumberedList`) themselves are created automatically; they must not be included in the text.
+
+### Typesetting reference — Inline formatting chunks
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Typesetting.BoldChunk` | Toggles bold formatting for its inline subexpressions within a paragraph | One or more | Inline content items (same kinds as `Typesetting.Paragraph` subexpressions) | |
+| `Typesetting.ItalicChunk` | Toggles italic formatting for its inline subexpressions within a paragraph | One or more | Inline content items (same kinds as `Typesetting.Paragraph` subexpressions) | |
+| `Typesetting.ColorChunk` | Applies an RGBA fill color to its inline subexpressions within a paragraph | One or more | Inline content items (same kinds as `Typesetting.Paragraph` subexpressions) | "Red": red component (float, 0–1); "Green": green component (float, 0–1); "Blue": blue component (float, 0–1); "Alpha": opacity component (float, 0–1) |
+
+### Typesetting reference — Document structure
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Typesetting.Paragraph` | A word-wrapped paragraph; lays out a sequence of inline content items across multiple lines with proper typographic baselines | One or more | Each subexpression is an inline item: typically a `String.Text` (plain text), an `Internet.Hyperlink` (rendered in green), a `Typesetting.BoldChunk`, a `Typesetting.ItalicChunk`, or a `Typesetting.ColorChunk`; but any expression type is valid as an inline item (e.g. `Graphics.RasterGraphics` for inline images, mathematical expressions, etc.) | |
+| `Typesetting.MultiParagraph` | Stacks two or more typesetting blocks vertically with 15-pixel spacing | Two or more | Each subexpression is a block-level typesetting element: `Typesetting.Paragraph`, `Typesetting.Centering`, `Typesetting.Rule`, `Typesetting.BulletedList`, `Typesetting.NumberedList`, or `Visualization.CodeBlock` (appears directly, without a `Typesetting.Centering` wrapper) | |
+| `Typesetting.BulletedList` | Displays its subexpressions as a bulleted list; each item is preceded by a bullet "•" and indented; lists may be nested, with indentation increasing per level | One or more | Each subexpression is a list item (typically a `Typesetting.Paragraph`) | |
+| `Typesetting.NumberedList` | Displays its subexpressions as a numbered list; each item is preceded by its 1-based index followed by a period ("1.", "2.", …); number labels are right-aligned so all content starts at the same horizontal position regardless of label width; lists may be nested | One or more | Each subexpression is a list item (typically a `Typesetting.Paragraph`) | |
+| `Typesetting.Centering` | Centers its single subexpression horizontally within the available width | One | The expression to center | |
+| `Typesetting.Rule` | A horizontal rule spanning the full available width | Zero | | |
+
+---
+
+## Conversational model
+
+### Human prompt structure
+
+A prompt is always one of:
+
+* A `Typesetting.Paragraph` expression (for short, single-section prompts).
+* A `Typesetting.MultiParagraph` expression (for longer, multi-section prompts).
+
+### AI response structure
+
+The AI response must be always one of:
+
+* A `Typesetting.Paragraph` expression
+* A `Typesetting.Centering` expression, containing a displayed expression
+* A `Typesetting.MultiParagraph` expression
+* A typesetting list (`Typesetting.BulletedList`, `Typesetting.NumberedList`)
+
+Choose whichever expression type best represents the answer.
+
+### Example — Water molecule
+
+The user asks the AI to provide the expression for a water molecule. The human prompt is a short `Typesetting.Paragraph`, and the AI replies with a centered displayed `Chemistry.HeteronuclearCompound`:
+
+**Human prompt:**
 
 ```xml
-<expression tag="Calculus.Integral.DefiniteIntegral">
-    <expression tag="Calculus.Integral.DefiniteIntegral">
-        <expression tag="Math.Arithmetic.Multiplication">
-            <expression tag="Symbolic.Symbol" Name="x"/>
-            <expression tag="Symbolic.Symbol" Name="y"/>
-        </expression>
-        <expression tag="Symbolic.Symbol" Name="y"/>
-        <expression tag="Math.Number" Value="0"/>
-        <expression tag="Math.Number" Value="1"/>
-    </expression>
-    <expression tag="Symbolic.Symbol" Name="x"/>
-    <expression tag="Math.Number" Value="0"/>
-    <expression tag="Math.Number" Value="1"/>
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="Show me the expression for a water molecule."/>
 </expression>
 ```
 
-### Calculus — Limits
+**AI response:**
+
+```xml
+<expression tag="Typesetting.Centering">
+    <expression tag="Chemistry.HeteronuclearCompound">
+        <expression tag="Chemistry.HomonuclearCompound">
+            <expression tag="Chemistry.Element.Hydrogen"/>
+            <expression tag="Math.Number" Value="2"/>
+        </expression>
+        <expression tag="Chemistry.Element.Oxygen"/>
+    </expression>
+</expression>
+```
+
+## Multimodality
+
+Both the prompt and the AI response can include binary media (images, audio, etc.), enabling multimodality.
+
+### Media references
+
+Binary media (images, audio, etc.) is never embedded inline in the XML. Instead, each media expression carries a `MediaRef` attribute that identifies it by name, and the actual content is passed to you natively through the API.
+
+**Input media** — when a prompt contains an image, you will see it as:
+
+```xml
+<expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
+```
+
+Audio is referenced the same way:
+
+```xml
+<expression tag="Audio.WaveformAudio" MediaRef="media-0"/>
+```
+
+The label `[MediaRef: media-0]` will appear in the conversation immediately before the corresponding media item so you can associate the two.
+
+**Referencing input media in a response** — if your answer needs to include a media item that was part of the prompt, use the same `MediaRef` identifier:
+
+```xml
+<expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
+```
+
+**AI-generated media in a response** — if you generate new images, you must do two things together:
+
+1. Place a placeholder expression in the XML for each image, using sequential identifiers starting from `gen-0`:
+
+```xml
+<expression tag="Graphics.RasterGraphics" MediaRef="gen-0"/>
+<expression tag="Graphics.RasterGraphics" MediaRef="gen-1"/>
+```
+
+2. **Actively generate each image and include it as an `inline_data` part** in the same response, one per `gen-N` placeholder, in the same order. The system reads those parts and pairs them with the matching `MediaRef` identifiers. If the image data is not present as a separate part, the placeholder cannot be resolved and the image will be missing from the output.
+
+In other words: the XML carries the structure, and the API parts carry the binary data. A response that omits the `inline_data` parts for any `gen-N` placeholder is an **incomplete response**.
+
+**Before finishing your response:** if your XML contains any `gen-N` MediaRef identifiers, confirm that you have generated and included one `inline_data` part for each, in order. If any are missing, generate the image before completing the response.
+
+If you cannot guarantee that a requested image will be generated and included as an `inline_data` part — for example, because of safety restrictions, content policy, or a generation failure — **do not include the `Graphics.RasterGraphics` element at all**. A `gen-N` placeholder with no matching `inline_data` part produces a broken result in the output. When in doubt, omit the image and provide a text description instead.
+
+### Expression reference for media
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Calculus.Limit.Limit` | Limit lim_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
-| `Calculus.Limit.LimitInferior` | Limit inferior lim inf_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
-| `Calculus.Limit.LimitSuperior` | Limit superior lim sup_{x→a} f(x) | Three | Subexpression 1: the expression being limited; subexpression 2: the variable; subexpression 3: the limit point | |
+| `Graphics.RasterGraphics` | Represents a raster (bitmap) graphics | Zero | | "MediaRef": identifier referencing the media content passed natively via the API (e.g., "media-0" for input media, "gen-0" for AI-generated media) |
+| `Audio.WaveformAudio` | Represents a waveform audio clip | Zero | | "MediaRef": identifier referencing the audio content passed natively via the API (e.g., "media-0" for input audio) |
 
-### Calculus — Derivatives
+### Example 1 — Image identification
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Calculus.Differential.TotalDerivative` | Total derivative of a function with respect to one or more variables (Leibniz, Euler, or subscript style) | Two or more | Subexpression 1: the function; subexpressions 2…n: the differentiation variables (one per variable) | |
-| `Calculus.Differential.TotalDerivativeWithoutVariables` | Total derivative of a function without explicit variables (Lagrange f′/f″/f⁽ⁿ⁾ or Newton dot style) | One | The function | "Order": the order of differentiation (positive integer) |
-| `Calculus.Differential.PartialDerivative` | Partial derivative of a function with respect to one or more variables (Leibniz quotient or operator style) | Two or more | Subexpression 1: the function; subexpressions 2…n: the differentiation variables (one per variable) | |
+The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI identifies the image and responds with a formatted `Typesetting.MultiParagraph` containing bold text and a bulleted list.
 
-### Calculus — Evaluation bar
+**Human prompt:**
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Calculus.EvaluationBar` | Evaluation bar f(x)\|_a^b or [f(x)]_a^b | Three | Subexpression 1: the expression being evaluated; subexpression 2: the lower bound; subexpression 3: the upper bound | |
+```xml
+<expression tag="Typesetting.MultiParagraph">
+    <expression tag="Typesetting.Paragraph">
+        <expression tag="String.Text" Value="Identify the following image:"/>
+    </expression>
+    <expression tag="Typesetting.Centering">
+        <expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
+    </expression>
+</expression>
+```
 
----
+**AI response:**
 
-### Set theory — Standard sets
+```xml
+<expression tag="Typesetting.MultiParagraph">
+    <expression tag="Typesetting.Paragraph">
+        <expression tag="String.Text" Value="This image depicts"/>
+        <expression tag="Typesetting.BoldChunk">
+            <expression tag="String.Text" Value="Clarus the Dogcow,"/>
+        </expression>
+        <expression tag="String.Text" Value="a mascot character created by graphic designer Susan Kare for Apple's original Macintosh operating system."/>
+    </expression>
+    <expression tag="Typesetting.BulletedList">
+        <expression tag="Typesetting.Paragraph">
+            <expression tag="Typesetting.BoldChunk">
+                <expression tag="String.Text" Value="Origin:"/>
+            </expression>
+            <expression tag="String.Text" Value="Originally part of the Cairo font set designed to look part dog and part cow."/>
+        </expression>
+        <expression tag="Typesetting.Paragraph">
+            <expression tag="Typesetting.BoldChunk">
+                <expression tag="String.Text" Value="Name:"/>
+            </expression>
+            <expression tag="String.Text" Value="The name &quot;Clarus&quot; was given later; &quot;Dogcow&quot; is a portmanteau of dog and cow."/>
+        </expression>
+    </expression>
+</expression>
+```
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Set.Empty` | The empty set ∅ | Zero | | |
-| `Set.Set` | An explicit set { a, b, … } | Zero or more | The elements of the set | |
-| `Set.Literal.Number.Naturals` | The set of natural numbers ℕ | Zero | | |
-| `Set.Literal.Number.Integers` | The set of integers ℤ | Zero | | |
-| `Set.Literal.Number.Rationals` | The set of rational numbers ℚ | Zero | | |
-| `Set.Literal.Number.Reals` | The set of real numbers ℝ | Zero | | |
-| `Set.Literal.Number.Complex` | The set of complex numbers ℂ | Zero | | |
-| `Set.Literal.Number.Primes` | The set of prime numbers ℙ | Zero | | |
-| `Set.Literal.Number.Quaternions` | The set of quaternions ℍ | Zero | | |
+The image is passed natively via the API and referenced in the XML by `MediaRef="media-0"`. Any expression can appear as an inline item inside a paragraph, enabling multimodal prompts.
 
-### Set theory — Set operations
+### Example 2 — Audio transcription
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Set.Union` | The union of two or more sets, displayed with the ∪ operator | Two or more | The sets to unite | |
-| `Set.Intersection` | The intersection of two or more sets, displayed with the ∩ operator | Two or more | The sets to intersect | |
-| `Set.Difference` | The difference of two sets (A ∖ B), displayed with the ∖ operator | Two | Subexpression 1: the minuend set; subexpression 2: the subtrahend set | |
-| `Set.SymmetricDifference` | The symmetric difference of two sets (A ∆ B), displayed with the ∆ operator | Two | Subexpression 1: the first set; subexpression 2: the second set | |
-| `Set.Complement` | The complement of a set, displayed as Aᶜ | One | The set to complement | |
-| `Set.SetBuilder` | Set-builder (comprehension) notation, displayed as { x \| P(x) } | Two | Subexpression 1: the bound variable; subexpression 2: the membership condition | |
+The user embeds an audio clip inside a `Typesetting.Paragraph` prompt. The AI transcribes it and responds with a `Typesetting.Paragraph`.
 
----
+**Human prompt:**
 
-### Vector analysis — Differential operators
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="Transcribe the following speech:"/>
+    <expression tag="Audio.WaveformAudio" MediaRef="media-0"/>
+</expression>
+```
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `VectorAnalysis.Differential.Gradient` | Gradient ∇f | One | The scalar field f | |
-| `VectorAnalysis.Differential.Divergence` | Divergence ∇·F | One | The vector field F | |
-| `VectorAnalysis.Differential.Curl` | Curl ∇×F | One | The vector field F | |
-| `VectorAnalysis.Differential.Laplacian` | Laplacian ∇²f or Δf (style is a package-level preference) | One | The function f | |
+**AI response:**
 
-### Vector analysis — Norm and inner product
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="The quick brown fox jumps over the lazy dog."/>
+</expression>
+```
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `VectorAnalysis.Norm` | Norm ‖v‖ or ‖v‖_p | One or two | Subexpression 1: the expression; subexpression 2 (optional): the order p, rendered as a subscript | |
-| `VectorAnalysis.InnerProduct` | Inner product ⟨u, v⟩ | Two | Subexpression 1: left argument; subexpression 2: right argument | |
+The audio clip is passed natively via the API and referenced in the XML by `MediaRef="media-0"`.
 
-### Vector analysis — Dirac notation
+### Example 3 — Image generation and table
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `VectorAnalysis.Dirac.Bra` | Dirac bra ⟨ψ\| | One | The state | |
-| `VectorAnalysis.Dirac.Ket` | Dirac ket \|φ⟩ | One | The state | |
-| `VectorAnalysis.Dirac.Braket` | Dirac braket ⟨ψ\|φ⟩ | Two | Subexpression 1: the bra state; subexpression 2: the ket state | |
+The user sends a text-only `Typesetting.MultiParagraph` asking for a seasonal table with generated images. The AI responds with a centered displayed `List.Table`.
 
----
+**Human prompt:**
 
-### Geometry
+```xml
+<expression tag="Typesetting.MultiParagraph">
+    <expression tag="Typesetting.Paragraph">
+        <expression tag="String.Text" Value="Imagine a scene of a country cottage. In the background there is a peaceful landscape."/>
+    </expression>
+    <expression tag="Typesetting.Paragraph">
+        <expression tag="String.Text" Value="Create a table that shows, for each of the seasons of the year, the name of the season and an image depicting how the scene would look in that season. Each image must be 166 × 92 pixels in size."/>
+    </expression>
+</expression>
+```
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Geometry.Angle` | Angle ∠ABC | One or more | Each subexpression is a point label | |
-| `Geometry.Triangle` | Triangle △ABC | Three | Each subexpression is a vertex label | |
-| `Geometry.Parallel` | Parallel relation AB ∥ CD | Two or more | Each subexpression is a geometric entity | |
-| `Geometry.Perpendicular` | Perpendicular relation AB ⊥ CD | Two | Subexpression 1: left entity; subexpression 2: right entity | |
-| `Geometry.Arc` | Arc ⌢ drawn over the subexpression | One | The label | |
-| `Geometry.Segment` | Line segment: overline drawn over the subexpression | One | The label | |
-| `Geometry.Ray` | Ray: right arrow drawn over the subexpression | One | The label | |
-| `Geometry.Line` | Line: double-headed arrow drawn over the subexpression | One | The label | |
+**AI response:**
 
----
+```xml
+<expression tag="Typesetting.Centering">
+    <expression tag="List.Table">
+        <expression tag="List.List">
+            <expression tag="List.List">
+                <expression tag="Visualization.Bold" Value="True" Set="True">
+                    <expression tag="String.Text" Value="Season"/>
+                </expression>
+                <expression tag="Visualization.Bold" Value="True" Set="True">
+                    <expression tag="String.Text" Value="Image"/>
+                </expression>
+            </expression>
+            <expression tag="List.List">
+                <expression tag="String.Text" Value="Spring"/>
+                <expression tag="Graphics.RasterGraphics" MediaRef="gen-0"/>
+            </expression>
+            <expression tag="List.List">
+                <expression tag="String.Text" Value="Summer"/>
+                <expression tag="Graphics.RasterGraphics" MediaRef="gen-1"/>
+            </expression>
+            <expression tag="List.List">
+                <expression tag="String.Text" Value="Autumn"/>
+                <expression tag="Graphics.RasterGraphics" MediaRef="gen-2"/>
+            </expression>
+            <expression tag="List.List">
+                <expression tag="String.Text" Value="Winter"/>
+                <expression tag="Graphics.RasterGraphics" MediaRef="gen-3"/>
+            </expression>
+        </expression>
+    </expression>
+</expression>
+```
 
-### Statistics
+The `List.Table` holds a single `List.List` subexpression (the matrix), which itself contains one `List.List` per row. The first row is the header (wrapped in `Visualization.Bold`); subsequent rows are data rows. The four AI-generated images are referenced by `MediaRef="gen-0"` through `MediaRef="gen-3"` in the order they are returned by the API.
 
-| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
-| --- | --- | --- | --- | --- |
-| `Statistics.Probability` | Simple probability P(A) | One | The event | |
-| `Statistics.ConditionalProbability` | Conditional probability P(A\|B) | Two | Subexpression 1: the event; subexpression 2: the condition | |
-| `Statistics.ExpectedValue` | Expected value E[X] | One | The random variable or expression | |
-| `Statistics.Variance` | Variance Var(X) | One | The random variable | |
-| `Statistics.StandardDeviation` | Standard deviation σ(X) | One | The random variable | |
-| `Statistics.Mean` | Sample mean: overline drawn over the subexpression | One | The expression to average | |
-| `Statistics.Median` | Median med(X) | One | The random variable or dataset | |
-| `Statistics.Mode` | Mode mode(X) | One | The random variable or dataset | |
+**Note:** this response is only complete when accompanied by four `inline_data` parts — one generated image per season, in the order `gen-0` through `gen-3`. The XML alone, without the image data, is an incomplete response.
+

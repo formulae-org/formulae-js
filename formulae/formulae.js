@@ -1659,6 +1659,11 @@ Formulae.onKeyDown = function(e) {
 			e.preventDefault();
 			Formulae.f1();
 			return;
+			
+		case "x":
+			e.preventDefault();
+			Expression.replacingEdition("Button");
+			return;
 	}
 }
 
@@ -2366,6 +2371,7 @@ Formulae.start = async function() {
 	Formulae.setExpression(null, "Null",                           Expression.Null);
 	Formulae.setExpression(null, "Error",                          Expression.ErrorExpression);
 	Formulae.setExpression(null, "Undefined",                      Expression.Undefined);
+	Formulae.setExpression(null, "Button",                         Expression.Button);
 	Formulae.setExpression(null, "Formulae.WaitingExpression",     Formulae.WaitingExpressionClass);
 	Formulae.setExpression(null, "Formulae.LocalConnectionError",  Formulae.LocalConnectionErrorClass);
 	Formulae.setExpression(null, "Formulae.RemoteConnectionError", Formulae.RemoteConnectionErrorClass);
