@@ -218,7 +218,22 @@ ReductionManager.reduceOld = async (expression, session) => {
 };
 */
 
+//////////////////////
+// Reduction engine //
+//////////////////////
+
 ReductionManager.reduce = async (expression, session) => {
+	if (session.isCanceled) {
+		//ReductionManager.setInError(expression, "Canceled");
+		throw new ReductionError();
+	}
+	
+	const now = Date.now();
+	if (now - session.lastYield > 16) {
+		await new Promise(r => setTimeout(r, 0));
+		session.lastYield = Date.now();
+	}
+	
 	let tag = expression.getTag();
 	let reducerInfo;
 	let result;
@@ -283,6 +298,8 @@ class ReductionSession {
 		this.Decimal    = Decimal.clone({ precision: precision, rounding: 1 });
 		this.arbitrary  = true;
 		this.numeric    = false;
+		this.isCanceled = false;
+		this.lastYield  = Date.now();
 	}
 	
 	async reduceAndGet(expression, indexOfChild) {

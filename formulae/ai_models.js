@@ -76,7 +76,7 @@ Formulae.AI.providers = (() => {
 
 		async onStart(params, primer) {}
 
-		async onPrompt(params, primer, xml, mediaMap) {
+		async onPrompt(params, primer, xml, mediaMap, controller) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
 				userContent = xml;
@@ -97,6 +97,7 @@ Formulae.AI.providers = (() => {
 			console.log(userContent);
 			
 			const response = await fetch(params.baseUrl + "/chat/completions", {
+				signal: controller.signal,
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -171,7 +172,7 @@ Formulae.AI.providers = (() => {
 
 		async onStart(params, primer) {}
 
-		async onPrompt(params, primer, xml, mediaMap) {
+		async onPrompt(params, primer, xml, mediaMap, controller) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
 				userContent = xml;
@@ -188,6 +189,7 @@ Formulae.AI.providers = (() => {
 			}
 
 			const response = await fetch("https://api.anthropic.com/v1/messages", {
+				signal: controller.signal,
 				method: "POST",
 				headers: {
 					"Content-Type":      "application/json",
@@ -285,7 +287,7 @@ Formulae.AI.providers = (() => {
 			}
 		}
 
-		async onPrompt(params, primer, xml, mediaMap) {
+		async onPrompt(params, primer, xml, mediaMap, controller) {
 			let parts = [];
 			for (let [ref, media] of Object.entries(mediaMap)) {
 				parts.push({ text: `[MediaRef: ${ref}]` });
@@ -308,6 +310,7 @@ Formulae.AI.providers = (() => {
 			const response = await fetch(
 				`https://generativelanguage.googleapis.com/v1beta/models/${params.model}:generateContent?key=${params.apiKey}`,
 				{
+					signal: controller.signal,
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(body)

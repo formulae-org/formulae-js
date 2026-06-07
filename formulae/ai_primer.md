@@ -1,5 +1,7 @@
 # Fōrmulæ — AI primer
 
+**Author:** Laurence R. Ugalde <laurence.ugalde@formulae.org>
+
 This document is a primer on using Fōrmulæ expressions as an interchange format with AI models.
 
 ---

@@ -112,7 +112,7 @@ Formulae.AI.reinsertMedia = function(xmlString, mediaMap) {
 	return new XMLSerializer().serializeToString(doc);
 };
 
-Formulae.AI.sendToAI = async function(xmlString) {
+Formulae.AI.sendToAI = async function(xmlString, controller) {
 	let info = Formulae.AI.getActiveProvider();
 	if (!info) throw new Error("No active AI connection configured");
 	let primer = await Formulae.AI._getPrimer();
@@ -122,7 +122,7 @@ Formulae.AI.sendToAI = async function(xmlString) {
 	}
 	let { strippedXml, mediaMap } = Formulae.AI.extractMedia(xmlString);
 	let { responseXml, responseMediaMap } = await info.provider.onPrompt(
-		info.connection.parameters, primer, strippedXml, mediaMap
+		info.connection.parameters, primer, strippedXml, mediaMap, controller
 	);
 	return Formulae.AI.reinsertMedia(responseXml, { ...mediaMap, ...responseMediaMap });
 };

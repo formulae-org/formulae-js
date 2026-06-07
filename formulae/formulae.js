@@ -1247,7 +1247,8 @@ Formulae.compute = (alt, isPersistent) => {
 	
 	let index = Formulae.sHandler.index;
 	
-	let wait = Formulae.createExpression("Formulae.WaitingExpression");
+	//let wait = Formulae.createExpression("Formulae.WaitingExpression");
+	let wait = Formulae.createExpression("Formulae.WaitingCancelExpression");
 	
 	let hResult, hNull = null;
 	
@@ -1283,10 +1284,13 @@ Formulae.compute = (alt, isPersistent) => {
 	
 	///////////// reduction
 	
-	let hReduction = hResult.clone();
-	hReduction.setExpression(Formulae.handlers[index].expression.clone());
+	//let hReduction = hResult.clone();
+	//hReduction.setExpression(Formulae.handlers[index].expression.clone());
+	
+	let hReduction = new ExpressionHandler(Formulae.handlers[index].expression.clone(), hResult.context, hResult.type);
 	
 	let session = new ReductionSession(null, null, 20);
+	wait.session = session;
 	
 	ReductionManager.internalizeNumbersHandler(hReduction, session); // Internalization
 	
@@ -1294,6 +1298,9 @@ Formulae.compute = (alt, isPersistent) => {
 	
 	setTimeout(async () => {
 		await ReductionManager.reduceHandler(hReduction, session);
+		
+		if (session.isCanceled) return;
+		
 		console.log(Formulae.ellaspedTime(new Date().valueOf() - start));
 		
 		if (alt || isPersistent) {
@@ -1333,7 +1340,10 @@ Formulae.converse = () => {
 	
 	let index = Formulae.sHandler.index;
 	
-	let wait = Formulae.createExpression("Formulae.WaitingExpression");
+	//let wait = Formulae.createExpression("Formulae.WaitingExpression");
+	let wait = Formulae.createExpression("Formulae.WaitingCancelExpression");
+	let controller = new AbortController();
+	wait.controller = controller;
 	
 	let hResult, hNull = null;
 	
@@ -1371,28 +1381,34 @@ Formulae.converse = () => {
 	
 	setTimeout(async () => {
 		let start = new Date().valueOf();
-
+		
 		try {
 			let xml = new XMLSerializer().serializeToString(await Formulae.handlers[index].expression.toXML());
-
-			let responseXml = await Formulae.AI.sendToAI(xml);
-
+			
+			let responseXml = await Formulae.AI.sendToAI(xml, controller);
+			
+			if (controller.signal.aborted) return;
+			
 			let promises = [];
 			let responseExpr = Formulae.xmlToExpression(responseXml, promises);
 			await Promise.all(promises);
-
+			
 			hResult.setExpression(responseExpr);
 		}
 		catch (e) {
+			if (e.name === "AbortError") {
+				return;
+			}
+			
 			console.log(e);
 			let errExpr = Formulae.createExpression("Error");
 			errExpr.set("Description", e.message);
 			errExpr.addChild(Formulae.createExpression("Null"));
 			hResult.setExpression(errExpr);
 		}
-
+		
 		console.log(Formulae.ellaspedTime(new Date().valueOf() - start));
-
+		
 		hResult.prepareDisplay();
 		hResult.display();
 	}, 0);
@@ -1658,11 +1674,6 @@ Formulae.onKeyDown = function(e) {
 		case "F1":
 			e.preventDefault();
 			Formulae.f1();
-			return;
-			
-		case "x":
-			e.preventDefault();
-			Expression.replacingEdition("Button");
 			return;
 	}
 }
@@ -2368,14 +2379,14 @@ Formulae.start = async function() {
 	Formulae.s_info = document.getElementById("s_info");
 	Formulae.h_info = document.getElementById("h_info");
 	
-	Formulae.setExpression(null, "Null",                           Expression.Null);
-	Formulae.setExpression(null, "Error",                          Expression.ErrorExpression);
-	Formulae.setExpression(null, "Undefined",                      Expression.Undefined);
-	Formulae.setExpression(null, "Button",                         Expression.Button);
-	Formulae.setExpression(null, "Formulae.WaitingExpression",     Formulae.WaitingExpressionClass);
-	Formulae.setExpression(null, "Formulae.LocalConnectionError",  Formulae.LocalConnectionErrorClass);
-	Formulae.setExpression(null, "Formulae.RemoteConnectionError", Formulae.RemoteConnectionErrorClass);
-	Formulae.setExpression(null, "Formulae.QuotaExceeded",         Formulae.QuotaExceededClass);
+	Formulae.setExpression(null, "Null",                             Expression.Null);
+	Formulae.setExpression(null, "Error",                            Expression.ErrorExpression);
+	Formulae.setExpression(null, "Undefined",                        Expression.Undefined);
+	Formulae.setExpression(null, "Formulae.WaitingExpression",       Formulae.WaitingExpressionClass);
+	Formulae.setExpression(null, "Formulae.WaitingCancelExpression", Formulae.WaitingCancelExpression);
+	Formulae.setExpression(null, "Formulae.LocalConnectionError",    Formulae.LocalConnectionErrorClass);
+	Formulae.setExpression(null, "Formulae.RemoteConnectionError",   Formulae.RemoteConnectionErrorClass);
+	Formulae.setExpression(null, "Formulae.QuotaExceeded",           Formulae.QuotaExceededClass);
 	
 	//////////////////////////////////////////////////////////////
 	
@@ -3282,6 +3293,46 @@ Formulae.IllegalArgumentsExpression = class extends Expression {
 		context.strokeStyle = bkpStrokeStyle;
 	}
 };
+
+Formulae.WaitingCancelExpression = class extends Expression.LabelExpression {
+	/*
+	constructor(handler) {
+		this.handler = handler;
+		super();
+	}
+	*/
+	
+	getTag() { return "Formulae.WaitingCancelExpression"; }
+	getName() { return "Cancel button"; }
+	getLabel() { return "Waiting. Action to cancel"; }
+}
+
+const actionWaitingCancel = {
+	isAvailableNow: () => true,
+	getDescription: () => "Cancel",
+	doAction: () => {
+		let controller = Formulae.sExpression.controller; // converse
+		if (controller) {
+			controller.abort();
+		}
+		
+		let session = Formulae.sExpression.session; // compute
+		if (session) {
+			session.isCanceled = true;
+			//return;
+		}
+		
+		const canceled = Formulae.createExpression("String.Text");
+		canceled.set("Value", "Canceled");
+		
+		Formulae.sExpression.replaceBy(canceled);
+		Formulae.sHandler.prepareDisplay();
+		Formulae.sHandler.display();
+		Formulae.setSelected(Formulae.sHandler, canceled, false);
+	}
+};
+
+Formulae.addAction("Formulae.WaitingCancelExpression", actionWaitingCancel);
 
 Formulae.WaitingExpressionClass = class extends Expression.LabelExpression {
 	getTag()   { return "Formulae.WaitingExpression"; }
