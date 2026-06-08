@@ -27,6 +27,7 @@ Formulae.ltr = true;
 Formulae.readMode = true;
 Formulae.parameters = new URL(window.location.href).searchParams;
 //Formulae.pathName = new URL(window.location.href).pathname;
+Formulae.isCompute = true;
 
 Formulae.remoteServers = [ "https://server.formulae.org" ];
 Formulae.localServer = "http://localhost:8001";
@@ -1072,6 +1073,12 @@ Formulae.changeType = function() {
 	Formulae.setSelected(Formulae.sHandler, Formulae.sExpression, false);
 }
 
+Formulae.setCompute = function(compute) {
+	Formulae.isCompute = compute;
+	document.getElementById("button-compute").setAttribute("aria-pressed", compute);
+	document.getElementById("button-converse").setAttribute("aria-pressed", !compute);
+}
+
 Formulae.sendSticky = async function() {
 	switch (Formulae.serverType) {
 		case 0: { // browser
@@ -1213,8 +1220,10 @@ Formulae.onEnter = alt => {
 	
 	if (isPersistent && Formulae.serverType == 2) return Formulae.beep();
 	
-	let tag = Formulae.sHandler.expression.getTag();
-	if (tag !== "Typesetting.Paragraph" && tag !== "Typesetting.MultiParagraph") {
+	//let tag = Formulae.sHandler.expression.getTag();
+	//if (tag !== "Typesetting.Paragraph" && tag !== "Typesetting.MultiParagraph") {
+	
+	if (Formulae.isCompute) {
 		Formulae.compute(alt, isPersistent);
 	}
 	else {
@@ -2313,7 +2322,7 @@ Formulae.toggleMode = function() {
 		"button-cut", "button-copy", "button-paste",
 		"button-ins-after", "button-ins-before", "button-delete",
 		"button-change-type", "button-execute_sticky",
-		"button-tools", "button-settings"
+		"button-tools", "button-settings", "button-compute", "button-converse"
 	].forEach(element => {
 		document.getElementById(element).style.display = display;
 	});
@@ -2454,6 +2463,9 @@ Formulae.start = async function() {
 	document.getElementById("button-settings").addEventListener("click", () => Formulae.Settings.showSettings());
 	
 	document.getElementById("button-mode").addEventListener("click", () => Formulae.toggleMode());
+	
+	document.getElementById("button-compute").addEventListener("click", () => Formulae.setCompute(true));
+	document.getElementById("button-converse").addEventListener("click", () => Formulae.setCompute(false));
 	
 	//////////////
 	// drag bar //
