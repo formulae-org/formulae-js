@@ -1,3 +1,5 @@
+![Fōrmulæ banner](banner.png)
+
 # Fōrmulæ — web application (`formulae-js`)
 
 Fōrmulæ is a web-based visual environment for **computing**, **composing**, and **conversing** with tree-structured expressions. You build expressions by navigating and editing a tree — never by typing syntax — and they are rendered as mathematical and scientific notation on an HTML canvas. It runs entirely in the browser; there is nothing to install.
