@@ -1445,10 +1445,13 @@ When using lists, the bullets (`Typesetting.BulletedList`) and numbers (`Typeset
 
 ### Human prompt structure
 
-A prompt is always one of:
+The prompt is a single Fōrmulæ expression. In principle it may be any expression type, but a well-formed prompt is normally one of:
 
-* A `Typesetting.Paragraph` expression (for short, single-section prompts).
-* A `Typesetting.MultiParagraph` expression (for longer, multi-section prompts).
+* A `String.Text` expression — for a very short, plain-text prompt (e.g. "Why is the sky blue?").
+* A `Typesetting.Paragraph` expression — for a prompt with inline formatting, or one long enough to wrap across several lines.
+* A `Typesetting.MultiParagraph` expression — for a much larger prompt, or one that embeds displayed expressions (tables, images, mathematical formulae, etc.).
+
+Other expression types are valid but unusual: a bare expression may be ambiguous (e.g. a lone image) or have an obvious computational answer (e.g. `2 + 2`, which would simply be answered `4`).
 
 ### AI response structure
 
