@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-'use strict';
+"use strict";
 
 Formulae.Settings = {};
 
@@ -80,7 +80,7 @@ Formulae.Settings.showSettings = function() {
 		let packageList = document.createElement("div");
 		packageList.style.cssText = "max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding:4px;";
 		col.appendChild(packageList);
-
+		
 		Formulae.packages.forEach(packageInfo => {
 			if (packageInfo.classExpression === null) {
 				button = document.createElement("button"); button.innerHTML = packageInfo.description;
@@ -96,7 +96,7 @@ Formulae.Settings.showSettings = function() {
 				packageList.appendChild(button);
 			}
 		});
-
+		
 		// module settings
 		
 		row = table.insertRow();
@@ -108,7 +108,7 @@ Formulae.Settings.showSettings = function() {
 		let packageSettingsList = document.createElement("div");
 		packageSettingsList.style.cssText = "max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; padding:4px;";
 		col.appendChild(packageSettingsList);
-
+		
 		Formulae.packages.forEach(packageInfo => {
 			if (packageInfo.classExpression !== null && packageInfo.classExpression.isConfigurable()) {
 				button = document.createElement("button"); button.innerHTML = packageInfo.description;
@@ -196,7 +196,7 @@ Formulae.Tools.showTools = function() {
 `;
 		Formulae.Tools.toolsForm = table;
 	}
-
+	
 	Formulae.modalContent.removeChild(Formulae.modalContent.childNodes[0]);
 	Formulae.modalContent.appendChild(Formulae.Tools.toolsForm);
 	Formulae.modal.style.display = "block";
@@ -223,7 +223,7 @@ Formulae.Settings.GitHubSettings = function() {
 <tr><td>Auth      <td><input type='text' size=20 name='auth'>
 <tr><th colspan=2><button>Ok</button>
 `;
-	
+		
 		Formulae.gitHubSettingsForm = table;
 	}
 	

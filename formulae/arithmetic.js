@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-'use strict';
+"use strict";
 
 class Arithmetic {}
 
@@ -264,7 +264,6 @@ NumberD.LN2 = new NumberD(Math.LN2);
 // NumberD.prototype.toNative -> By inheritance
 NumberD.prototype.toExternal = function(session) { return new session.Decimal(this.valueOf()); };
 
-
 /////////////////////////////////
 // Arbitrary precision integer //
 /////////////////////////////////
@@ -416,12 +415,13 @@ BigInt.prototype.sqrtInteger = function() {
 	let a = 1n;
 	let b = (this >> 5n) + 8n;
 	let mid;
-
+	
 	while (b >= a) {
 		mid = (a + b) >> 1n;
 		if (mid * mid > this) {
 			b = mid - 1n;
-		} else {
+		}
+		else {
 			a = mid + 1n;
 		}
 	}
@@ -1810,9 +1810,6 @@ Arithmetic.getNativeInteger = expr => {
 	return undefined;
 };
 
-
-
-
 Arithmetic.getNativeNumber = expr => {
 	if (!expr.isInternalNumber()) return undefined;
 	let number = expr.get("Value");
@@ -1837,9 +1834,6 @@ Arithmetic.getNativeBigInteger = expr => {
 	
 	return undefined;
 };
-
-
-
 
 Arithmetic.getInteger = expr => {
 	if (!expr.isInternalNumber()) return undefined;

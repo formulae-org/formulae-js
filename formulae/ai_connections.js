@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-'use strict';
+"use strict";
 
 Formulae.AI = Formulae.AI || {};
 
@@ -44,7 +44,8 @@ Formulae.AI._load = function() {
 	try {
 		let raw = window.localStorage.getItem(AI_CONNECTIONS_KEY);
 		Formulae.AI.connections = raw ? JSON.parse(raw) : [];
-	} catch (e) {
+	}
+	catch (e) {
 		Formulae.AI.connections = [];
 	}
 	Formulae.AI.activeConnectionId = window.localStorage.getItem(AI_ACTIVE_ID_KEY) || null;
@@ -54,7 +55,8 @@ Formulae.AI._save = function() {
 	window.localStorage.setItem(AI_CONNECTIONS_KEY, JSON.stringify(Formulae.AI.connections));
 	if (Formulae.AI.activeConnectionId !== null) {
 		window.localStorage.setItem(AI_ACTIVE_ID_KEY, Formulae.AI.activeConnectionId);
-	} else {
+	}
+	else {
 		window.localStorage.removeItem(AI_ACTIVE_ID_KEY);
 	}
 };
@@ -105,7 +107,8 @@ Formulae.AI.reinsertMedia = function(xmlString, mediaMap) {
 			el.setAttribute("Value", media.data);
 			if (media.format) el.setAttribute("Format", media.format);
 			el.removeAttribute("MediaRef");
-		} else if (ref && ref.startsWith("gen-")) {
+		}
+		else if (ref && ref.startsWith("gen-")) {
 			el.parentNode?.removeChild(el);
 		}
 	});
@@ -137,11 +140,12 @@ Formulae.AI._showMainView = function() {
 	let esc = Formulae.AI._esc;
 	let table = document.createElement("table");
 	table.classList.add("bordered");
-
+	
 	let rows = "";
 	if (Formulae.AI.connections.length === 0) {
 		rows = `<tr><td colspan=4 align=center><em>No connections defined</em></td></tr>`;
-	} else {
+	}
+	else {
 		Formulae.AI.connections.forEach(conn => {
 			let isActive = conn.id === Formulae.AI.activeConnectionId;
 			rows += `
@@ -156,7 +160,7 @@ Formulae.AI._showMainView = function() {
 </tr>`;
 		});
 	}
-
+	
 	table.innerHTML = `
 <tr><th colspan=4>AI Connections
 <tr><th>Name</th><th>Provider</th><th>Active</th><th>Actions</th>
@@ -165,9 +169,9 @@ ${rows}
   <button id="ai-add">Add&#x2026;</button>&nbsp;
   <button id="ai-close">Close</button>
 </td></tr>`;
-
+	
 	Formulae.setModal(table);
-
+	
 	table.querySelectorAll("input[type=radio][name=ai-active]").forEach(radio => {
 		radio.onchange = () => {
 			Formulae.AI.activeConnectionId = radio.dataset.id;
@@ -175,7 +179,7 @@ ${rows}
 			Formulae.AI._save();
 		};
 	});
-
+	
 	table.querySelectorAll("button[data-action]").forEach(btn => {
 		if (btn.dataset.action === "edit") {
 			btn.onclick = async () => {
@@ -195,7 +199,8 @@ ${rows}
 				}
 				Formulae.AI._showMainView();
 			};
-		} else if (btn.dataset.action === "delete") {
+		}
+		else if (btn.dataset.action === "delete") {
 			btn.onclick = () => {
 				let conn = Formulae.AI.connections.find(c => c.id === btn.dataset.id);
 				if (!conn) return;
@@ -211,7 +216,7 @@ ${rows}
 			};
 		}
 	});
-
+	
 	table.querySelector("#ai-add").onclick = () => Formulae.AI._showAddStep();
 	table.querySelector("#ai-close").onclick = () => Formulae.resetModal();
 };
@@ -220,7 +225,7 @@ Formulae.AI._showAddStep = function() {
 	let providerOptions = (Formulae.AI.providers || []).map(p =>
 		`<option>${Formulae.AI._esc(p.getProviderName())}</option>`
 	).join("");
-
+	
 	let table = document.createElement("table");
 	table.classList.add("bordered");
 	table.innerHTML = `
@@ -229,9 +234,9 @@ Formulae.AI._showAddStep = function() {
 <tr><td colspan=2 align=center>
   <button id="ai-back">&#x2190; Back</button>&nbsp;
   <button id="ai-next">Next &#x2192;</button>`;
-
+	
 	Formulae.setModal(table);
-
+	
 	table.querySelector("#ai-back").onclick = () => Formulae.AI._showMainView();
 	table.querySelector("#ai-next").onclick = async () => {
 		let providerName = table.querySelector("#ai-provider").value;
@@ -259,3 +264,4 @@ Formulae.AI._showAddStep = function() {
 // ─── Initialise ────────────────────────────────────────────────────────────
 
 Formulae.AI._load();
+

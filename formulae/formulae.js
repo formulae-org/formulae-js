@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-'use strict';
+"use strict";
 
 class Formulae {}
 
@@ -267,7 +267,8 @@ Formulae.xmlElementToExpression = function(xmlElement, promises, permisive = tru
 				}
 			}
 		}
-	} else { // invalid number of arguments
+	}
+	else { // invalid number of arguments
 		let attributes = xmlElement.getAttributeNames();
 		let attribute;
 		
@@ -948,7 +949,7 @@ Formulae.copyAsImage = function() {
 Formulae.saveAsImage = function() {
 	if (Formulae.saveAsImageForm === undefined) {
 		let table;
-
+		
 		table = document.createElement("table");
 		table.classList.add("bordered");
 		table.innerHTML =
@@ -971,7 +972,7 @@ Formulae.saveAsImage = function() {
 
 		Formulae.saveAsImageForm = table;
 	}
-
+	
 	let tableRows  = Formulae.saveAsImageForm.rows;
 	let background = tableRows[1].cells[1].childNodes;
 	let border     = tableRows[2].cells[1].firstChild;
@@ -2611,7 +2612,7 @@ Formulae.start = async function() {
 					Formulae.menu.style.visibility = "visible";
 				}
 			}
-				
+			
 			e.preventDefault();
 		},
 		false
@@ -2624,12 +2625,12 @@ Formulae.start = async function() {
 	//await Formulae.loadRefreshLocalization(true); // first time
 	
 	Formulae.setOrientation();
-
+	
 	const packagesConfig = await fetch("packages.json").then(r => r.json());
 	for (const p of packagesConfig.packages) {
 		Formulae.packages.set(p.name, new Formulae.PackageInfo(p.description, p.required, p.commonRequired));
 	}
-
+	
 	Formulae.messages = await Formulae.loadMessages(null);
 	Formulae.setLocalizationCodes();
 	
@@ -2779,8 +2780,8 @@ Formulae.loadPackages = async () => {
 				console.error(error);
 			}
 			*/
-
-			/*			
+			
+			/*
 			let promiseMessages = Formulae.loadMessages(packageName);
 			promises.push(promiseMessages);
 			
@@ -3108,7 +3109,7 @@ Formulae.refreshHandlers = function() {
 
 Formulae.refreshTypesettingHandlers = function() {
 	Formulae.clearHighlightedExpression();
-
+	
 	let expression;
 	
 	for (let i = 0, n = Formulae.handlers.length; i < n; ++i) {
@@ -3415,7 +3416,7 @@ Formulae.appendTimeOffset = function(offset) {
 	if (h < 10) s += "0";
 	
 	s += h + ":";
-
+	
 	let m = offset % 60;
 	if (m < 10) s += "0";
 	
@@ -3448,7 +3449,6 @@ Formulae.setModal = element => {
 };
 
 Formulae.resetModal = () => Formulae.modal.style.display = "none";
-
 
 Formulae.Package = class {};
 Formulae.Package.setExpressions = (module) => {};

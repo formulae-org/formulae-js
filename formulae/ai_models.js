@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-'use strict';
+"use strict";
 
 Formulae.AI = Formulae.AI || {};
 
@@ -36,10 +36,10 @@ Formulae.AI.providers = (() => {
 		};
 		return map[mimeType.toLowerCase()] ?? mimeType.split("/")[1];
 	}
-
+	
 	class OpenAICompatibleProvider {
 		getProviderName() { return "OpenAI-compatible"; }
-
+		
 		configure(existing, name = "", connId = null) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
@@ -73,9 +73,9 @@ Formulae.AI.providers = (() => {
 				};
 			});
 		}
-
+		
 		async onStart(params, primer) {}
-
+		
 		async onPrompt(params, primer, xml, mediaMap, controller) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
@@ -87,7 +87,8 @@ Formulae.AI.providers = (() => {
 					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
 					if (media.format.startsWith("image/")) {
 						userContent.push({ type: "image_url", image_url: { url: `data:${media.format};base64,${media.data}` } });
-					} else if (media.format.startsWith("audio/")) {
+					}
+					else if (media.format.startsWith("audio/")) {
 						userContent.push({ type: "input_audio", input_audio: { data: media.data, format: _audioFormatFromMime(media.format) } });
 					}
 				}
@@ -119,16 +120,16 @@ Formulae.AI.providers = (() => {
 				const msg = typeof data.error === 'string' ? data.error : (data.error.message ?? JSON.stringify(data.error));
 				throw new Error(msg);
 			}
-
+			
 			const message = data.choices[0].message;
 			
 			return { responseXml: message.content, responseMediaMap: {} };
 		}
 	}
-
+	
 	class AnthropicProvider {
 		getProviderName() { return "Anthropic"; }
-
+		
 		configure(existing, name = "", connId = null) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
@@ -169,14 +170,15 @@ Formulae.AI.providers = (() => {
 				};
 			});
 		}
-
+		
 		async onStart(params, primer) {}
-
+		
 		async onPrompt(params, primer, xml, mediaMap, controller) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
 				userContent = xml;
-			} else {
+			}
+			else {
 				userContent = [];
 				for (let [ref, media] of Object.entries(mediaMap)) {
 					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
@@ -187,7 +189,7 @@ Formulae.AI.providers = (() => {
 				}
 				userContent.push({ type: "text", text: xml });
 			}
-
+			
 			const response = await fetch("https://api.anthropic.com/v1/messages", {
 				signal: controller.signal,
 				method: "POST",
@@ -203,7 +205,7 @@ Formulae.AI.providers = (() => {
 					max_tokens: params.maxTokens
 				})
 			});
-
+			
 			const data = await response.json();
 			if (data.error) {
 				const msg = typeof data.error === 'string' ? data.error : (data.error.message ?? JSON.stringify(data.error));
@@ -212,12 +214,12 @@ Formulae.AI.providers = (() => {
 			return { responseXml: data.content[0].text, responseMediaMap: {} };
 		}
 	}
-
+	
 	class GoogleProvider {
 		constructor() { this._cacheName = null; }
-
+		
 		getProviderName() { return "Google (Gemini)"; }
-
+		
 		configure(existing, name = "", connId = null) {
 			return new Promise(resolve => {
 				let table = document.createElement("table");
@@ -262,7 +264,7 @@ Formulae.AI.providers = (() => {
 				};
 			});
 		}
-
+		
 		async onStart(params, primer) {
 			this._cacheName = null;
 			try {
@@ -282,11 +284,12 @@ Formulae.AI.providers = (() => {
 				const cache = await cacheResponse.json();
 				if (cache.error) throw new Error(cache.error.message);
 				this._cacheName = cache.name;
-			} catch (e) {
+			}
+			catch (e) {
 				console.warn("Gemini context cache creation failed, will use system_instruction per-request:", e.message);
 			}
 		}
-
+		
 		async onPrompt(params, primer, xml, mediaMap, controller) {
 			let parts = [];
 			for (let [ref, media] of Object.entries(mediaMap)) {
@@ -294,19 +297,20 @@ Formulae.AI.providers = (() => {
 				parts.push({ inline_data: { mime_type: media.format, data: media.data } });
 			}
 			parts.push({ text: xml });
-
+			
 			const body = { contents: [{ role: "user", parts }] };
-
+			
 			if (params.imageGeneration) {
 				body.generationConfig = { responseModalities: ["TEXT", "IMAGE"] };
 			}
-
+			
 			if (this._cacheName) {
 				body.cachedContent = this._cacheName;
-			} else {
+			}
+			else {
 				body.system_instruction = { parts: [{ text: primer }] };
 			}
-
+			
 			const response = await fetch(
 				`https://generativelanguage.googleapis.com/v1beta/models/${params.model}:generateContent?key=${params.apiKey}`,
 				{
@@ -318,13 +322,14 @@ Formulae.AI.providers = (() => {
 			);
 			const data = await response.json();
 			if (data.error) throw new Error(data.error.message);
-
+			
 			let responseParts = data.candidates[0].content.parts;
 			let xmlParts = [], responseMediaMap = {}, genIdx = 0;
 			for (let part of responseParts) {
 				if (part.text) {
 					xmlParts.push(part.text);
-				} else if (part.inlineData) {
+				}
+				else if (part.inlineData) {
 					responseMediaMap[`gen-${genIdx++}`] = {
 						data:   part.inlineData.data,
 						format: part.inlineData.mime_type
@@ -334,10 +339,11 @@ Formulae.AI.providers = (() => {
 			return { responseXml: xmlParts.join(""), responseMediaMap };
 		}
 	}
-
+	
 	return [
 		new OpenAICompatibleProvider(),
 		new AnthropicProvider(),
 		new GoogleProvider()
 	];
 })();
+

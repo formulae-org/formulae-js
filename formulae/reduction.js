@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-'use strict';
+"use strict";
 
 ///////////////////////
 // reduction manager //
@@ -84,7 +84,6 @@ ReductionManager.prepareReduction = expr => {
 	expr.children.forEach(child => ReductionManager.prepareReduction(child));
 	expr.clearReduced();
 };
-
 
 ReductionManager.reduceHandler = async (handler, session) => {
 	let expr = handler.expression;
