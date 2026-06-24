@@ -22,7 +22,7 @@ This repository is the **main program** — the part that is always present, wha
 
 ## Packages
 
-The main program handles expressions only in the abstract; the expressions for a specific field — arithmetic, typesetting, programming, … — live in separate **packages**, each in its own repository (`package-{name}-js`, listed under [formulae-org](https://github.com/formulae-org)). The program loads a base set of packages at startup and can load others on demand. Because the [programming package](https://github.com/formulae-org/package-programming-js) makes Fōrmulæ [Turing-complete](https://formulae.org/?script=examples/Universal_Turing_machine) and its expressions are pretty-printed, Fōrmulæ is also a **visual programming language**.
+The main program handles expressions only in the abstract; the expressions for a specific field — arithmetic, typesetting, programming, … — live in separate **packages**, each in its own repository (`package-{name}-js`, listed under [formulae-org](https://github.com/formulae-org)). The program loads a base set of packages at startup and can load others on demand. Because the [programming package](https://github.com/formulae-org/package-programming-js) makes Fōrmulæ [Turing-complete](https://formulae.org/?script=examples/Universal_Turing_machine) and its expressions are pretty-printed, Fōrmulæ is also a **visual programming language**. To build your own package, see the [**Developer's guide for packages**](https://formulae.org/?script=collaboration/guides/package_developer/index).
 
 ## Content
 
