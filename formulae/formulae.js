@@ -946,6 +946,56 @@ Formulae.copyAsImage = function() {
 }
 */
 
+// Renders an expression to an SVG string using the expression engine.
+// Layout is done on a real canvas (measureText needs accurate metrics); the
+// drawing is captured by an SVGContext shim. The input is cloned, so a live
+// REPL expression can be passed safely. Reusable beyond edition icons (docs,
+// website, sharing).
+Formulae.renderExpressionSVG = function(expression, border = 1, background = null) {
+	let e = expression.clone();
+
+	// 1. lay out on a real canvas
+	let realCanvas = document.createElement("canvas");
+	let realContext = realCanvas.getContext("2d");
+	let handler = new ExpressionHandler(e, realContext, Formulae.ROW_EXPORT);
+	handler.prepareDisplay(); // computes e.width/height, sizes the canvas, sets font/baseline, applies the RTL flip (to realContext)
+
+	let w = e.width + 2 * border;
+	let h = e.height + 2 * border;
+
+	// 2. draw to the SVG shim, sharing the font-metrics context
+	let svg = new SVGContext(realContext);
+	svg.fontInfo = realContext.fontInfo;
+	svg.canvas = { width: w, height: h, style: {} };
+	svg.fontInfo.setForContext(svg);
+	svg.textBaseline = "bottom";
+
+	// optional background, covering the whole area (drawn before the content transform)
+	if (background != null) {
+		svg.fillStyle = background;
+		svg.fillRect(0, 0, w, h);
+	}
+
+	// content margin / RTL flip (mirrors ExpressionHandler.prepareDisplay, using border)
+	if (Formulae.ltr) {
+		svg.translate(border, border);
+	}
+	else {
+		svg.translate(w - border, border);
+		svg.scale(-1, 1);
+	}
+
+	svg.fillStyle = "black";
+	e.display(svg, 0, 0);
+
+	return svg.toSVG(w, h);
+};
+
+// Convenience: SVG markup as a data URL usable directly in <img src="...">
+Formulae.renderExpressionSVGDataURL = function(expression) {
+	return "data:image/svg+xml," + encodeURIComponent(Formulae.renderExpressionSVG(expression));
+};
+
 Formulae.saveAsImage = function() {
 	if (Formulae.saveAsImageForm === undefined) {
 		let table;
@@ -966,6 +1016,9 @@ Formulae.saveAsImage = function() {
 <td>Border (pixels):
 <td><input type="number" value="10" min="-9999" max="9999">
 <tr>
+<td>Format
+<td><input type='radio' name='format' value='png' checked>PNG<br><input type='radio' name='format' value='svg'>SVG
+<tr>
 <th colspan=2><button>Ok</button>
 
 `;
@@ -976,7 +1029,7 @@ Formulae.saveAsImage = function() {
 	let tableRows  = Formulae.saveAsImageForm.rows;
 	let background = tableRows[1].cells[1].childNodes;
 	let border     = tableRows[2].cells[1].firstChild;
-	let ok         = tableRows[3].cells[0].firstChild;
+	let ok         = tableRows[4].cells[0].firstChild;
 	
 	ok.onclick = () => {
 		let b = parseInt(border.value);
@@ -986,7 +1039,25 @@ Formulae.saveAsImage = function() {
 		}
 		
 		Formulae.resetModal();
-		
+
+		// SVG export (vector) — renders through the expression engine via the SVGContext shim
+		if (Formulae.saveAsImageForm.querySelector("input[name='format']:checked").value === "svg") {
+			let bgColor = null;
+			if (background[3].checked) bgColor = "white";
+			else if (background[6].checked) bgColor = "lightgray";
+			else if (background[9].checked) bgColor = "wheat";
+
+			let svg = Formulae.renderExpressionSVG(Formulae.sExpression, b, bgColor);
+
+			let a = document.createElement('a');
+			a.download = 'download.svg';
+			a.href = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+			a.textContent = 'Download ready';
+			a.style = 'display:none';
+			a.click();
+			return;
+		}
+
 		let a = document.createElement('a');
 		a.download = 'download.png';
 		
