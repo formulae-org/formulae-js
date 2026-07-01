@@ -18,6 +18,32 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 "use strict";
 
+// Make Path2D remember the SVG path-data string it was constructed from, so the
+// SVG exporter (SVGContext.fill/stroke) can reproduce Path2D fills/strokes — e.g.
+// the calculus integral sign and the audio waveform, built as module-level
+// `new Path2D("M…")` constants. The subclass is a real Path2D, so canvas / REPL
+// rendering is unaffected. Installed at load, before any package module (which
+// build those constants at import time) runs.
+(function installPath2DRecorder() {
+	if (typeof Path2D === "undefined" || Path2D.__formulaeRecorder) return;
+	const NativePath2D = Path2D;
+	const recorded = new WeakMap();
+	const RecordingPath2D = class extends NativePath2D {
+		constructor(arg) {
+			super(arg);
+			if (typeof arg === "string") {
+				recorded.set(this, arg);
+			}
+			else if (arg instanceof NativePath2D && recorded.has(arg)) {
+				recorded.set(this, recorded.get(arg));
+			}
+		}
+	};
+	RecordingPath2D.__formulaeRecorder = true;
+	RecordingPath2D.getPathData = (path) => recorded.get(path);
+	globalThis.Path2D = RecordingPath2D;
+})();
+
 /*
 	An object that mimics the subset of the CanvasRenderingContext2D API that the
 	Fōrmulæ expression engine uses while drawing (display()), but instead of
@@ -187,30 +213,39 @@ class SVGContext {
 	closePath() { this.pathData += "Z "; }
 
 	fill(path) {
-		let d = this._resolvePath(path);
-		if (d === null) return;
-		this.elements.push("<path d=\"" + d.trim() + "\" fill=\"" + esc(this._fillStyle) + "\"/>");
+		if (path !== undefined) return this._emitPath2D(path, true);
+		if (this.pathData === "") return;
+		this.elements.push("<path d=\"" + this.pathData.trim() + "\" fill=\"" + esc(this._fillStyle) + "\"/>");
 	}
 
 	stroke(path) {
-		let d = this._resolvePath(path);
-		if (d === null) return;
+		if (path !== undefined) return this._emitPath2D(path, false);
+		if (this.pathData === "") return;
 		this.elements.push(
-			"<path d=\"" + d.trim() + "\" fill=\"none\" stroke=\"" + esc(this._strokeStyle) +
+			"<path d=\"" + this.pathData.trim() + "\" fill=\"none\" stroke=\"" + esc(this._strokeStyle) +
 			"\" stroke-width=\"" + fmt(this._lineWidth * this._sx()) + "\"/>"
 		);
 	}
 
-	// a Path2D argument carries SVG path data registered when it was built;
-	// no argument means use the accumulated current path
-	_resolvePath(path) {
-		if (path === undefined) return this.pathData;
-		if (typeof SVGContext.path2DData !== "undefined") {
-			let d = SVGContext.path2DData.get(path);
-			if (d !== undefined) return d;
+	// A Path2D built from an SVG path-data string (recorded by the Path2D subclass
+	// installed at load). Its coordinates are raw; the current matrix is applied via
+	// a transform attribute, because canvas fills/strokes a Path2D through the CTM.
+	_emitPath2D(path, isFill) {
+		let d = (typeof Path2D !== "undefined" && Path2D.getPathData) ? Path2D.getPathData(path) : undefined;
+		if (d === undefined) {
+			console.warn("SVGContext: Path2D without recorded path data; skipped");
+			return;
 		}
-		console.warn("SVGContext: Path2D without registered path data; skipped");
-		return null;
+		let transform = "matrix(" + this._matrix.map(fmtHi).join(" ") + ")";
+		if (isFill) {
+			this.elements.push("<path d=\"" + d + "\" transform=\"" + transform + "\" fill=\"" + esc(this._fillStyle) + "\"/>");
+		}
+		else {
+			this.elements.push(
+				"<path d=\"" + d + "\" transform=\"" + transform + "\" fill=\"none\" stroke=\"" +
+				esc(this._strokeStyle) + "\" stroke-width=\"" + fmt(this._lineWidth) + "\"/>"
+			);
+		}
 	}
 
 	//////////////////
@@ -302,9 +337,6 @@ class SVGContext {
 	}
 }
 
-// registry mapping a Path2D object to the SVG path-data string it was built from
-SVGContext.path2DData = new WeakMap();
-
 ///////////////
 // helpers   //
 ///////////////
@@ -312,6 +344,12 @@ SVGContext.path2DData = new WeakMap();
 function fmt(n) {
 	if (!isFinite(n)) return "0";
 	return (Math.round(n * 1000) / 1000).toString();
+}
+
+// higher precision, for transform matrices (scales can be ~0.02–0.1)
+function fmtHi(n) {
+	if (!isFinite(n)) return "0";
+	return (Math.round(n * 1e6) / 1e6).toString();
 }
 
 function esc(s) {
