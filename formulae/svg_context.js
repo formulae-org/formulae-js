@@ -253,38 +253,14 @@ class SVGContext {
 	fillText(text, x, y) {
 		let p = this._pt(x, y);
 		let f = parseFont(this._font);
-		// Emit at the alphabetic baseline (the one baseline renderers agree on), converting
-		// from the canvas textBaseline via the font metrics. dominant-baseline="text-after-edge"
-		// is implemented inconsistently and does not match canvas "bottom".
-		let baselineY = p[1] + this._baselineShift(text);
 		let attrs =
-			"x=\"" + fmt(p[0]) + "\" y=\"" + fmt(baselineY) + "\"" +
+			"x=\"" + fmt(p[0]) + "\" y=\"" + fmt(p[1]) + "\"" +
 			" font-family=\"" + esc(f.family) + "\" font-size=\"" + esc(f.size) + "\"" +
 			(f.weight !== "normal" ? " font-weight=\"" + f.weight + "\"" : "") +
 			(f.style  !== "normal" ? " font-style=\""  + f.style  + "\"" : "") +
+			" dominant-baseline=\"" + baselineToSVG(this._textBaseline) + "\"" +
 			" fill=\"" + esc(this._fillStyle) + "\"";
 		this.elements.push("<text " + attrs + ">" + esc(text) + "</text>");
-	}
-
-	// vertical shift (px) from the current canvas textBaseline to the SVG alphabetic baseline
-	_baselineShift(text) {
-		this.measureContext.font = this._font;
-		let m = this.measureContext.measureText(text || "M");
-		let asc  = m.fontBoundingBoxAscent;
-		let desc = m.fontBoundingBoxDescent;
-		if (asc === undefined || desc === undefined) { // older engines: approximate
-			let size = (this.fontInfo && this.fontInfo.size) || parseFloat(parseFont(this._font).size) || 16;
-			asc = size * 0.8;
-			desc = size * 0.2;
-		}
-		switch (this._textBaseline) {
-			case "top":         return asc;
-			case "hanging":     return asc * 0.8;
-			case "middle":      return (asc - desc) / 2;
-			case "ideographic": return -desc;
-			case "bottom":      return -desc;
-			default:            return 0; // alphabetic
-		}
 	}
 
 	strokeText(text, x, y) { this.fillText(text, x, y); }
