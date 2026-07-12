@@ -189,6 +189,16 @@ class SVGContext {
 	}
 
 	arc(cx, cy, r, startAngle, endAngle, anticlockwise = false) {
+		// SVG's elliptical-arc syntax degenerates to nothing when the start and end points coincide, which happens for a full
+		// turn (e.g. a full circle: cos/sin of 0 and 2π are identical) — split into two half-turns, which don't degenerate
+		if (Math.abs(endAngle - startAngle) >= 2 * Math.PI - 1e-9) {
+			let sign = anticlockwise ? -1 : 1;
+			let mid = startAngle + sign * Math.PI;
+			this.arc(cx, cy, r, startAngle, mid, anticlockwise);
+			this.arc(cx, cy, r, mid, startAngle + sign * 2 * Math.PI, anticlockwise);
+			return;
+		}
+
 		let rx = r * this._sx(), ry = r * this._sy();
 		let s = this._pt(cx + r * Math.cos(startAngle), cy + r * Math.sin(startAngle));
 		let e = this._pt(cx + r * Math.cos(endAngle),   cy + r * Math.sin(endAngle));
@@ -208,6 +218,31 @@ class SVGContext {
 
 	rect(x, y, w, h) {
 		this.moveTo(x, y); this.lineTo(x + w, y); this.lineTo(x + w, y + h); this.lineTo(x, y + h); this.closePath();
+	}
+
+	// radii: a single number, or an array of 1-4 numbers (CSS border-radius order: top-left, top-right, bottom-right, bottom-left)
+	roundRect(x, y, w, h, radii = 0) {
+		let tl, tr, br, bl;
+		if (Array.isArray(radii)) {
+			[ tl, tr = tl, br = tl, bl = tr ] = radii;
+		}
+		else {
+			tl = tr = br = bl = radii;
+		}
+
+		let cap = Math.min(w, h) / 2;
+		tl = Math.min(tl, cap); tr = Math.min(tr, cap); br = Math.min(br, cap); bl = Math.min(bl, cap);
+
+		this.moveTo(x + tl, y);
+		this.lineTo(x + w - tr, y);
+		if (tr > 0) this.arc(x + w - tr, y + tr, tr, -Math.PI / 2, 0);
+		this.lineTo(x + w, y + h - br);
+		if (br > 0) this.arc(x + w - br, y + h - br, br, 0, Math.PI / 2);
+		this.lineTo(x + bl, y + h);
+		if (bl > 0) this.arc(x + bl, y + h - bl, bl, Math.PI / 2, Math.PI);
+		this.lineTo(x, y + tl);
+		if (tl > 0) this.arc(x + tl, y + tl, tl, Math.PI, -Math.PI / 2);
+		this.closePath();
 	}
 
 	closePath() { this.pathData += "Z "; }

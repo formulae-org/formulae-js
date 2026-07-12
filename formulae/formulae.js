@@ -1940,29 +1940,74 @@ Formulae.addEdition = function(spec, image, name, edition) {
 	
 	let img = null;
 	if (image != null) {
-		img = document.createElement("IMG");
-		img.src = image;
-	}
-	
-	let span = null;
-	if (name != null) {
-		span = document.createElement("SPAN");
-		span.textContent = name;
+		if (image.startsWith("<expression")) {
+			img = document.createElement("IMG");
+			let expression = Formulae.xmlToExpression(image, []);       // deserialize
+			img.src = Formulae.renderExpressionSVGDataURL(expression);  // render to SVG data URL
+		}
+		else {
+			//img.src = image;
+			img = document.createElement("SPAN");
+			img.textContent = image;
+		}
 	}
 	
 	let newLi = document.createElement("LI");
 	newLi.className = "edition";
+	if (name != null) newLi.title = name;  // glyph-first: the description is a hover tooltip, not a visible label
 	newLi.addEventListener("click", () => {
 		if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
 		Formulae.clearHighlightedExpression();
 		edition();
 	});
-	
+
 	if (img != null) newLi.appendChild(img);
-	if (span != null) newLi.appendChild(span);
-	
+
 	ul.appendChild(newLi);
 }
+
+Formulae.addWrapperEditions = function(messages, path, prefix, leaves) {
+	leaves.forEach(leaf => {
+		Formulae.addEdition(
+			messages[ "path" + path ],
+			`<expression tag="${prefix}.${leaf}"><expression tag="Visualization.Selected"><expression tag="Null"/></expression></expression>`,
+			messages[ "leaf" + leaf],
+			() => Expression.wrapperEdition(`${prefix}.${leaf}`)
+		);
+	});
+};
+
+Formulae.addBinaryEdition = function(messages, path, leaf, tag, first = true) {
+	Formulae.addEdition(
+		messages[ "path" + path ],
+		first ?
+		`<expression tag="${tag}"><expression tag="Visualization.Selected"><expression tag="Null"/></expression><expression tag="Null"/></expression>` :
+		`<expression tag="${tag}"><expression tag="Null"/><expression tag="Visualization.Selected"><expression tag="Null"/></expression></expression>`,
+		messages[ "leaf" + leaf ],
+		() => Expression.binaryEdition(tag, !first)
+	);
+};
+
+Formulae.addBinaryEditions = function(messages, path, leaf1, leaf2, tag) {
+	Formulae.addBinaryEdition(messages, path, leaf1, tag, true );
+	Formulae.addBinaryEdition(messages, path, leaf2, tag, false);
+};
+
+// Icon for an edition whose current-selection slot is child 0: the produced expression
+// rendered with child 0 highlighted (Visualization.Selected) and the remaining slots
+// empty (Null). `attrs` supplies any serialized attributes the expression requires
+// (e.g. Dimensions/ClosedDomain, Order) and is prefixed with a space by the caller.
+// Used directly by packages whose editions don't fit addWrapperEditions/addBinaryEdition(s)
+// (irregular arity, Function-notation previews, or a child-0 selection that isn't a simple
+// wrapper) — formerly duplicated as a package-local `icon` helper across many edition.js files.
+
+Formulae.icon = function(tag, n, attrs = "") {
+	return
+		`<expression tag="${tag}"${attrs}><expression tag="Visualization.Selected"><expression tag="Null"/></expression>` +
+		'<expression tag="Null"/>'.repeat(n - 1) +
+		'</expression>'
+	;
+};
 
 Formulae.addAction = function(tag, action) {
 	let actions = Formulae.actionMap.get(tag);
@@ -2824,88 +2869,12 @@ Formulae.savePreferences = function() {
 Formulae.loadPackages = async () => {
 	let newPackagesLoaded = false;
 	
-	//let promises = [];
-	
-	//Formulae.packages.forEach(async (packageInfo, packageName) => {
-	//	if (packageInfo.required && packageInfo.module === null) {
-	//		console.log("loading " + packageName);
-			/*
-			try {
-				let promise = import("../packages/" + packageName + "/frontend.js").then(
-					async m => {
-						let module = m[Object.keys(m)[0]];
-						packageInfo.module = module;
-						
-						module.messages = await Formulae.loadMessages(packageName);
-						module.setExpressions(packageName);
-						//module.setEditions();
-						module.setActions();
-						module.setReducers();
-					}
-				);
-				
-				promises.push(promise);
-				newPackagesLoaded = true;
-			}
-			catch (error) {
-				console.error(error);
-			}
-			*/
-			
-			/*
-			let promiseMessages = Formulae.loadMessages(packageName);
-			promises.push(promiseMessages);
-			
-			let promiseBody = promiseMessages.then(
-				messages => {
-					console.log(messages);
-					let promiseModule = import("../packages/" + packageName + "/frontend.js");
-					promises.push(promiseModule);
-					promiseModule.then(
-						module => {
-							let clazz = module[Object.keys(module)[0]];
-							console.log(clazz);
-							packageInfo.module = clazz;
-							
-							clazz.messages = messages;
-							clazz.setExpressions(packageName);
-							//module.setEditions();
-							clazz.setActions();
-							clazz.setReducers();
-						}
-					);
-				}
-			);
-			promises.push(promiseBody);
-			*/
-			
-			/*
-			let messages = await Formulae.loadMessages(packageName);
-			let module = await import("../packages/" + packageName + "/frontend.js");
-			let clazz = module[Object.keys(module)[0]];
-			packageInfo.module = clazz;
-			
-			clazz.messages = messages;
-			clazz.setExpressions(packageName);
-			//module.setEditions();
-			clazz.setActions();
-			clazz.setReducers();
-			
-			newPackagesLoaded = true;
-			*/
-	//	}
-	//});
-	
-	//console.log(promises.length);
-	//console.log(newPackagesLoaded);
-	//await Promise.all(promises);
-	
-	/////////////
-	// commons //
-	/////////////
-	
 	let packagesArray = Array.from(Formulae.packages);
 	let promises;
+	
+	///////////////////////
+	// messages, commons //
+	///////////////////////
 	
 	promises = [];
 	packagesArray.map(async p => {
@@ -2936,9 +2905,9 @@ Formulae.loadPackages = async () => {
 	
 	await Promise.all(promises);
 	
-	////////////////////////////////////
-	// expressions, editions, reducers //
-	////////////////////////////////////
+	/////////////////
+	// expressions //
+	/////////////////
 	
 	promises = [];
 	packagesArray.map(async p => {
@@ -2958,8 +2927,22 @@ Formulae.loadPackages = async () => {
 					console.log(packageName + " EXPRESSIONS DONE");
 				});
 			}
-			
-			fileName = "../packages/" + packageName + "/edition.js";
+		}
+	});
+	
+	await Promise.all(promises);
+	
+	////////////////////////
+	// editions, reducers //
+	////////////////////////
+	
+	promises = [];
+	packagesArray.map(async p => {
+		let packageName = p[0];
+		let packageInfo = p[1];
+		
+		if (packageInfo.required) {
+			let fileName = "../packages/" + packageName + "/edition.js";
 			if (packageInfo.classEdition === null) {
 				let promiseEdition = import(fileName);
 				promises.push(promiseEdition);
@@ -2989,43 +2972,6 @@ Formulae.loadPackages = async () => {
 	});
 	
 	await Promise.all(promises);
-	
-	/*
-	promises = Array.from(Formulae.packages.keys()).map(
-		async packageName => {
-			let packageInfo = Formulae.packages.get(packageName);
-			if (packageInfo.required && packageInfo.classExpression === null) {
-				newPackagesLoaded = true;
-				console.log("loading " + packageName);
-				
-				//if (packageInfo.messages === null) {
-				//	packageInfo.messages = await Formulae.loadMessages(packageName);
-				//}
-				
-				let module;
-				
-				module = await import("../packages/" + packageName + "/expression.js");
-				packageInfo.classExpression = module[Object.keys(module)[0]];
-				packageInfo.classExpression.messages = packageInfo.messages;
-				packageInfo.classExpression.common = packageInfo.common;
-				packageInfo.classExpression.setExpressions(packageName);
-				
-				module = await import("../packages/" + packageName + "/edition.js");
-				packageInfo.classEdition = module[Object.keys(module)[0]];
-				packageInfo.classEdition.messages = packageInfo.messages;
-				packageInfo.classEdition.common = packageInfo.common;
-				packageInfo.classEdition.setActions(); // <-- here ???
-				
-				module = await import("../packages/" + packageName + "/reduction.js");
-				packageInfo.classReduction = module[Object.keys(module)[0]];
-				packageInfo.classReduction.messages = packageInfo.messages;
-				packageInfo.classReduction.common = packageInfo.common;
-				//packageInfo.classReduction.setReducers();
-			}
-		}
-	);
-	await Promise.all(promises);
-	*/
 	
 	///////////////////////////////////////////////////////
 	// Reducers only, in order to ensure order they load //
