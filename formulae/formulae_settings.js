@@ -89,8 +89,8 @@ Formulae.Settings.showSettings = function() {
 					async () => {
 						Formulae.resetModal();
 						packageInfo.required = true;
-						await Formulae.loadPackages();
-						Formulae.loadReloadEditions();
+						await Formulae.loadViewResources();
+						await Formulae.ensureEditResources();   // always in edit mode here (settings is edit-only): loads editions/reducers and rebuilds the panel
 					}
 				);
 				packageList.appendChild(button);

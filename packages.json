@@ -35,7 +35,6 @@
 		{ "name": "org.formulae.programming.quantum",     "description": "Quantum programming (experimental)", "required": false, "commonRequired": false },
 		{ "name": "org.formulae.filesystem",              "description": "Filesystem (experimental)",          "required": false, "commonRequired": false },
 		{ "name": "org.formulae.library",                 "description": "Library book (experimental)",        "required": false, "commonRequired": false },
-		{ "name": "org.formulae.programming.prototyping", "description": "Prototyping (experimental)",         "required": false, "commonRequired": false },
-		{ "name": "org.formulae.morse",                   "description": "Morse code (experimental)",          "required": false, "commonRequired": false }
+		{ "name": "org.formulae.programming.prototyping", "description": "Prototyping (experimental)",         "required": false, "commonRequired": false }
 	]
 }

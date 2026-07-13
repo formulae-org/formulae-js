@@ -1638,7 +1638,6 @@ Expression.SummationLikeSymbol = class extends Expression.SummationLike {
 		let bkp = context.fontInfo.size;
 		context.fontInfo.setSizeAbsolute(context, this.heightSymbol);
 		this.widthSymbol = Math.floor(context.measureText(this.symbol).width);
-		console.log(context.measureText(this.symbol));
 		context.fontInfo.setSizeAbsolute(context, bkp);
 		
 		super.prepareDisplay(context);

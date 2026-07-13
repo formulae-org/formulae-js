@@ -158,9 +158,6 @@ Formulae.scriptToXML = async function() {
 	return doc;
 }
 
-// return whether it loaded new packages packages
-// in order that the caller can know that it should call Formulae.loadReloadEditions()
-
 Formulae.xmlToScript = async function(xml) {
 	let parser = new DOMParser();
 	let doc = parser.parseFromString(xml, "text/xml");
@@ -176,8 +173,8 @@ Formulae.xmlToScript = async function(xml) {
 		}
 	});
 	
-	let newPackagesLoaded = await Formulae.loadPackages();
-	
+	await Formulae.loadViewResources();
+
 	//////////////////////////////////////
 	
 	let rowElement;
@@ -212,8 +209,13 @@ Formulae.xmlToScript = async function(xml) {
 	}
 	
 	await Promise.all(firstPromises);
-	
-	return newPackagesLoaded;
+
+	// If already editing, load the deferred edition/reducer resources for any newly-required
+	// package and rebuild the panel. In view mode this is skipped — it happens when (if) the
+	// user enters edit mode, so viewing a document never pays the icon-building cost.
+	if (!Formulae.readMode) {
+		await Formulae.ensureEditResources();
+	}
 }
 
 Formulae.xmlToExpression = function(xmlText, promises, permisive = true) {
@@ -2002,11 +2004,12 @@ Formulae.addBinaryEditions = function(messages, path, leaf1, leaf2, tag) {
 // wrapper) — formerly duplicated as a package-local `icon` helper across many edition.js files.
 
 Formulae.icon = function(tag, n, attrs = "") {
-	return
-		`<expression tag="${tag}"${attrs}><expression tag="Visualization.Selected"><expression tag="Null"/></expression>` +
-		'<expression tag="Null"/>'.repeat(n - 1) +
-		'</expression>'
-	;
+	// NOTE: the returned value MUST begin on this same line as `return` — a bare `return`
+	// followed by a newline triggers automatic semicolon insertion (`return;`), making this
+	// function return undefined and every icon blank. Do not let a formatter split it.
+	return `<expression tag="${tag}"${attrs}><expression tag="Visualization.Selected"><expression tag="Null"/></expression>`
+		+ '<expression tag="Null"/>'.repeat(n - 1)
+		+ '</expression>';
 };
 
 Formulae.addAction = function(tag, action) {
@@ -2108,16 +2111,12 @@ Formulae.openFile = function(e) {
 		//	});
 		//}
 		
-		let newPackagesLoaded = await Formulae.xmlToScript(e.target.result);
-		
+		await Formulae.xmlToScript(e.target.result);
+
 		if (!Formulae.readMode) {
 			Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
 		}
-		
-		if (newPackagesLoaded) {
-			Formulae.loadReloadEditions();
-		}
-		
+
 		// TODO set new title
 	};
 	
@@ -2160,14 +2159,10 @@ Formulae.pull = async function() {
 	
 	Formulae.deleteAllExpressions();
 	
-	let newPackagesLoaded = await Formulae.xmlToScript(xml);
-	
+	await Formulae.xmlToScript(xml);
+
 	if (!Formulae.readMode) {
 		Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
-	}
-	
-	if (newPackagesLoaded) {
-		Formulae.loadReloadEditions();
 	}
 }
 
@@ -2278,16 +2273,12 @@ Formulae.loadFile = async () => {
 	}
 	
 	let xml = await response.text();
-	let newPackagesLoaded = await Formulae.xmlToScript(xml);
-	
+	await Formulae.xmlToScript(xml);
+
 	if (!Formulae.readMode) {
 		Formulae.setSelected(Formulae.handlers[0], Formulae.handlers[0].expression.moveTo(Expression.DOWN), false);
 	}
-	
-	if (newPackagesLoaded) {
-		Formulae.loadReloadEditions();
-	}
-	
+
 	if (Formulae.fileName != "Main page.formulae") {
 		let description = "Fōrmulæ - " + Formulae.fileTitle;
 		document.title = description;
@@ -2428,7 +2419,13 @@ Formulae.outputForText = function() {
 	});
 }
 
-Formulae.toggleMode = function() {
+Formulae.toggleMode = async function() {
+	if (Formulae.readMode) {
+		// entering edit mode: load the deferred edition + reducer resources and build the
+		// panel (once). Awaited so the sidebar appears already populated rather than empty.
+		await Formulae.ensureEditResources();
+	}
+
 	Formulae.readMode = !Formulae.readMode;
 	let display = Formulae.readMode ? "none" : "block";
 	
@@ -2751,13 +2748,13 @@ Formulae.start = async function() {
 	Formulae.setLocalizationCodes();
 	
 	if (Formulae.scriptAtStart) {
-		// it calls loadPackages and loadReloadEdition)
+		// view mode: loadFile → xmlToScript loads only the view resources (expressions);
+		// edition/reducer resources are deferred until the user first enters edit mode
 		await Formulae.loadFile(); // if any
 	}
 	else {
-		await Formulae.loadPackages();
-		Formulae.newFile();
-		Formulae.loadReloadEditions();
+		await Formulae.loadViewResources();
+		Formulae.newFile();   // a blank document enters edit mode (newFile → toggleMode), which loads the edit resources
 	}
 	
 	//if (!Formulae.supportsMouse()) {
@@ -2866,9 +2863,10 @@ Formulae.savePreferences = function() {
 	alert(Formulae.messages.labelSettingsSaved);
 };
 
-Formulae.loadPackages = async () => {
-	let newPackagesLoaded = false;
-	
+// View-mode resources: messages, commons, and expressions (how expressions are defined and
+// visualized). These are all the app needs to display a document. Editions and reducers are
+// loaded separately and lazily — see loadEditResources / ensureEditResources.
+Formulae.loadViewResources = async () => {
 	let packagesArray = Array.from(Formulae.packages);
 	let promises;
 	
@@ -2931,68 +2929,79 @@ Formulae.loadPackages = async () => {
 	});
 	
 	await Promise.all(promises);
-	
-	////////////////////////
-	// editions, reducers //
-	////////////////////////
-	
-	promises = [];
+};
+
+// Deferred edit-mode resources: editions (menu icons + context actions) and reducers.
+// Loaded lazily the first time the user enters edit mode — building the panel's SVG icons is
+// the slow part of startup, and view mode needs none of it. Idempotent: only imports the
+// resources of packages not yet loaded, so re-entering edit mode is a cheap no-op, and a
+// package that becomes required later (a file pulls it in, or the settings loader) is picked
+// up on the next call. The edition panel is (re)built once, in deterministic order, by
+// loadReloadEditions — not per-import — so icons render exactly once.
+Formulae.loadEditResources = async () => {
+	let packagesArray = Array.from(Formulae.packages);
+	let promises = [];
+	let newEditions = false;
+
 	packagesArray.map(async p => {
 		let packageName = p[0];
 		let packageInfo = p[1];
-		
+
 		if (packageInfo.required) {
-			let fileName = "../packages/" + packageName + "/edition.js";
 			if (packageInfo.classEdition === null) {
-				let promiseEdition = import(fileName);
+				newEditions = true;
+				let promiseEdition = import("../packages/" + packageName + "/edition.js");
 				promises.push(promiseEdition);
 				promiseEdition.then(module => {
 					packageInfo.classEdition = module[Object.keys(module)[0]];
 					packageInfo.classEdition.messages = packageInfo.messages;
 					packageInfo.classEdition.common = packageInfo.common;
-					packageInfo.classEdition.setEditions();
-					packageInfo.classEdition.setActions();
+					packageInfo.classEdition.setActions();   // editions themselves are built by loadReloadEditions below
 					console.log(packageName + " EDITIONS DONE");
 				});
 			}
-			
-			fileName = "../packages/" + packageName + "/reduction.js";
+
 			if (packageInfo.classReduction === null) {
-				let promiseReduction = import(fileName);
+				let promiseReduction = import("../packages/" + packageName + "/reduction.js");
 				promises.push(promiseReduction);
 				promiseReduction.then(module => {
 					packageInfo.classReduction = module[Object.keys(module)[0]];
 					packageInfo.classReduction.messages = packageInfo.messages;
 					packageInfo.classReduction.common = packageInfo.common;
-					//packageInfo.classReduction.setReducers();
 					console.log(packageName + " REDUCERS DONE");
 				});
 			}
 		}
 	});
-	
+
 	await Promise.all(promises);
-	
-	///////////////////////////////////////////////////////
-	// Reducers only, in order to ensure order they load //
-	///////////////////////////////////////////////////////
-	
+
+	// reducers, in package order to guarantee their load order
 	for (let p of packagesArray) {
 		let packageName = p[0];
 		let packageInfo = p[1];
-		
+
 		if (packageInfo.required && !packageInfo.reducersSet) {
-			//let module = await import("../packages/" + packageName + "/reduction.js");
-			//packageInfo.classReduction = module[Object.keys(module)[0]];
-			//packageInfo.classReduction.messages = packageInfo.messages;
-			//packageInfo.classReduction.common = packageInfo.common;
 			packageInfo.classReduction.setReducers();
 			packageInfo.reducersSet = true;
 			console.log(packageName + " REDUCERSET DONE");
 		}
 	}
-	
-	return newPackagesLoaded;
+
+	// build the edition panel once, in deterministic order, only if new editions were loaded
+	if (newEditions) Formulae.loadReloadEditions();
+};
+
+// Idempotent, serialized gate for the deferred resources: concurrent triggers (entering edit
+// mode, a file loading a package while already editing) await the same run rather than
+// double-importing — which would double-register context actions and reducers.
+
+Formulae.editResourcesReady = Promise.resolve();
+
+Formulae.ensureEditResources = function() {
+	return Formulae.editResourcesReady = Formulae.editResourcesReady
+		.catch(() => {})   // a failed prior run must not wedge the chain
+		.then(() => Formulae.loadEditResources());
 };
 
 Formulae.loadReloadEditions = () => {
@@ -3065,8 +3074,8 @@ Formulae.loadRefreshLocalization = async function(firstTime) {
 		await Formulae.loadFile(); // if any
 	}
 	else {
-		Formulae.loadReloadEdition();
-		
+		Formulae.loadReloadEditions();   // safe no-op in view mode (no editions loaded); rebuilds with the new locale in edit mode
+
 		Formulae.refreshHandlers();
 	}
 };
