@@ -50,6 +50,7 @@ Formulae.AI.providers = (() => {
 <tr><td>Base URL<td><input type="text" id="ai-baseUrl" size=40 placeholder="https://openrouter.ai/api/v1">
 <tr><td>API key<td><input type="password" id="ai-apiKey" size=40>
 <tr><td>Model<td><input type="text" id="ai-model" size=40 placeholder="e.g. openai/gpt-4o">
+<tr><td>Max tokens<td><input type="number" id="ai-maxTokens" size=10 value="4096">
 <tr><td colspan=2 align=center>
   <button id="ai-back">&#x2190; Back</button>&nbsp;
   <button id="ai-save">Save</button>`;
@@ -58,25 +59,27 @@ Formulae.AI.providers = (() => {
 				table.querySelector("#ai-baseUrl").value = existing?.baseUrl || "";
 				table.querySelector("#ai-apiKey").value = existing?.apiKey || "";
 				table.querySelector("#ai-model").value = existing?.model || "";
+				table.querySelector("#ai-maxTokens").value = existing?.maxTokens ?? 4096;
 				table.querySelector("#ai-back").onclick = () => resolve(null);
 				table.querySelector("#ai-save").onclick = () => {
 					let connName = table.querySelector("#ai-connName").value.trim();
 					let baseUrl = table.querySelector("#ai-baseUrl").value.trim().replace(/\/$/, "");
 					let apiKey = table.querySelector("#ai-apiKey").value.trim();
 					let model = table.querySelector("#ai-model").value.trim();
+					let maxTokens = parseInt(table.querySelector("#ai-maxTokens").value) || 4096;
 					if (!connName) { alert("Connection name is required"); return; }
 					if (Formulae.AI.connections.some(c => c.id !== connId && c.name === connName)) { alert("A connection with this name already exists"); return; }
 					if (!baseUrl) { alert("Base URL is required"); return; }
 					if (!apiKey)  { alert("API key is required"); return; }
 					if (!model)   { alert("Model is required"); return; }
-					resolve({ name: connName, baseUrl, apiKey, model });
+					resolve({ name: connName, baseUrl, apiKey, model, maxTokens });
 				};
 			});
 		}
 		
 		async onStart(params, primer) {}
 		
-		async onPrompt(params, primer, xml, mediaMap, controller) {
+		async onPrompt(params, primer, xml, mediaMap, controller, history = []) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
 				userContent = xml;
@@ -94,9 +97,9 @@ Formulae.AI.providers = (() => {
 				}
 				userContent.push({ type: "text", text: xml });
 			}
-			
+
 			console.log(userContent);
-			
+
 			const response = await fetch(params.baseUrl + "/chat/completions", {
 				signal: controller.signal,
 				method: "POST",
@@ -108,9 +111,11 @@ Formulae.AI.providers = (() => {
 					model: params.model,
 					messages: [
 						{ role: "system", content: primer      },
+						...history,
 						{ role: "user",   content: userContent }
 					],
-					stream: false
+					stream: false,
+					max_tokens: params.maxTokens
 				})
 			});
 			
@@ -173,12 +178,18 @@ Formulae.AI.providers = (() => {
 		
 		async onStart(params, primer) {}
 		
-		async onPrompt(params, primer, xml, mediaMap, controller) {
+		async onPrompt(params, primer, xml, mediaMap, controller, history = []) {
 			let userContent;
 			if (Object.keys(mediaMap).length === 0) {
 				userContent = xml;
 			}
 			else {
+				for (let media of Object.values(mediaMap)) {
+					if (!media.format.startsWith("image/")) {
+						throw new Error(`This Anthropic connection does not support ${media.format} input -- the Messages API has no audio-input capability. Use an OpenAI-compatible or Google connection instead.`);
+					}
+				}
+
 				userContent = [];
 				for (let [ref, media] of Object.entries(mediaMap)) {
 					userContent.push({ type: "text", text: `[MediaRef: ${ref}]` });
@@ -189,7 +200,7 @@ Formulae.AI.providers = (() => {
 				}
 				userContent.push({ type: "text", text: xml });
 			}
-			
+
 			const response = await fetch("https://api.anthropic.com/v1/messages", {
 				signal: controller.signal,
 				method: "POST",
@@ -201,7 +212,7 @@ Formulae.AI.providers = (() => {
 				body: JSON.stringify({
 					model:      params.model,
 					system:     primer,
-					messages:   [{ role: "user", content: userContent }],
+					messages:   [...history, { role: "user", content: userContent }],
 					max_tokens: params.maxTokens
 				})
 			});
@@ -236,6 +247,7 @@ Formulae.AI.providers = (() => {
     <option value="gemini-2.0-flash">
     <option value="gemini-2.0-flash-preview-image-generation">
     <option value="gemini-1.5-pro">
+    <option value="gemini-2.5-flash-image">
   </datalist>
 <tr><td>Image generation<td><label><input type="checkbox" id="ai-imageGen"> Enable (requires image-capable model)</label>
 <tr><td colspan=2 align=center>
@@ -290,15 +302,20 @@ Formulae.AI.providers = (() => {
 			}
 		}
 		
-		async onPrompt(params, primer, xml, mediaMap, controller) {
+		async onPrompt(params, primer, xml, mediaMap, controller, history = []) {
 			let parts = [];
 			for (let [ref, media] of Object.entries(mediaMap)) {
 				parts.push({ text: `[MediaRef: ${ref}]` });
 				parts.push({ inline_data: { mime_type: media.format, data: media.data } });
 			}
 			parts.push({ text: xml });
-			
-			const body = { contents: [{ role: "user", parts }] };
+
+			const body = {
+				contents: [
+					...history.map(t => ({ role: t.role === "assistant" ? "model" : t.role, parts: [{ text: t.content }] })),
+					{ role: "user", parts }
+				]
+			};
 			
 			if (params.imageGeneration) {
 				body.generationConfig = { responseModalities: ["TEXT", "IMAGE"] };
@@ -311,6 +328,9 @@ Formulae.AI.providers = (() => {
 				body.system_instruction = { parts: [{ text: primer }] };
 			}
 			
+			console.log("body");
+			console.log(body);
+			
 			const response = await fetch(
 				`https://generativelanguage.googleapis.com/v1beta/models/${params.model}:generateContent?key=${params.apiKey}`,
 				{
@@ -321,6 +341,8 @@ Formulae.AI.providers = (() => {
 				}
 			);
 			const data = await response.json();
+			console.log("data");
+			console.log(data);
 			if (data.error) throw new Error(data.error.message);
 			
 			let responseParts = data.candidates[0].content.parts;

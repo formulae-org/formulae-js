@@ -1492,11 +1492,11 @@ The user asks the AI to provide the expression for a water molecule. The human p
 
 ## Multimodality
 
-Both the prompt and the AI response can include binary media (images, audio, etc.), enabling multimodality.
+Both the prompt and the AI response can include images and audio. Images have two representations: one requiring binary media, handled through the mechanism below — and one represented directly as literal, readable Fōrmulæ expression content, usable by any model regardless of multimodal capability. Audio currently has one representation, using the same binary-media mechanism as raster images.
 
 ### Media references
 
-Binary media (images, audio, etc.) is never embedded inline in the XML. Instead, each media expression carries a `MediaRef` attribute that identifies it by name, and the actual content is passed to you natively through the API.
+Binary media (images, audio) is never embedded inline in the XML. Instead, each media expression carries a `MediaRef` attribute that identifies it by name, and the actual content is passed to you natively through the API.
 
 **Input media** — when a prompt contains an image, you will see it as:
 
@@ -1518,33 +1518,105 @@ The label `[MediaRef: media-0]` will appear in the conversation immediately befo
 <expression tag="Graphics.RasterGraphics" MediaRef="media-0"/>
 ```
 
-**AI-generated media in a response** — if you generate new images, you must do two things together:
+**AI-generated media in a response** — if you generate new media, you must do two things together:
 
-1. Place a placeholder expression in the XML for each image, using sequential identifiers starting from `gen-0`:
+1. Place a placeholder expression in the XML for each item, using sequential identifiers starting from `gen-0`:
 
 ```xml
 <expression tag="Graphics.RasterGraphics" MediaRef="gen-0"/>
 <expression tag="Graphics.RasterGraphics" MediaRef="gen-1"/>
 ```
 
-2. **Actively generate each image and include it as an `inline_data` part** in the same response, one per `gen-N` placeholder, in the same order. The system reads those parts and pairs them with the matching `MediaRef` identifiers. If the image data is not present as a separate part, the placeholder cannot be resolved and the image will be missing from the output.
+2. **Actively generate each item and include it as an `inline_data` part** in the same response, one per `gen-N` placeholder, in the same order. The system reads those parts and pairs them with the matching `MediaRef` identifiers. If the data is not present as a separate part, the placeholder cannot be resolved and the item will be missing from the output.
 
 In other words: the XML carries the structure, and the API parts carry the binary data. A response that omits the `inline_data` parts for any `gen-N` placeholder is an **incomplete response**.
 
-**Before finishing your response:** if your XML contains any `gen-N` MediaRef identifiers, confirm that you have generated and included one `inline_data` part for each, in order. If any are missing, generate the image before completing the response.
+**Before finishing your response:** if your XML contains any `gen-N` MediaRef identifiers, confirm that you have generated and included one `inline_data` part for each, in order. If any are missing, generate the item before completing the response.
 
-If you cannot guarantee that a requested image will be generated and included as an `inline_data` part — for example, because of safety restrictions, content policy, or a generation failure — **do not include the `Graphics.RasterGraphics` element at all**. A `gen-N` placeholder with no matching `inline_data` part produces a broken result in the output. When in doubt, omit the image and provide a text description instead.
+If you cannot guarantee that requested media will be generated and included as an `inline_data` part — because of safety restrictions, content policy, a generation failure, or because the connection you're running on has no generation capability for that media type at all — **do not include the media element**. A `gen-N` placeholder with no matching `inline_data` part produces a broken result in the output. When in doubt, omit it and provide a text description instead.
 
-### Expression reference for media
+### Images
+
+There are two ways to represent an image: as a `Graphics.VectorGraphics` expression, holding literal, readable SVG source text — or as a `Graphics.RasterGraphics` expression, holding binary bitmap data through the media mechanism above.
+
+When a prompt contains an image, it's identifiable directly by its tag.
+
+When you need to generate an image, decide which representation to use:
+
+1. If the request explicitly specifies a representation, use it.
+2. Otherwise, if the image can be built as SVG — shapes, paths, text, modest fills or gradients, in a reasonably-sized document — use `Graphics.VectorGraphics`. Needing an unreasonable number of elements to approximate something, or needing to embed a raster image to look right, is a sign the content is photographic rather than vectorial: use raster instead.
+3. Otherwise, if you have image-generation capability, use `Graphics.RasterGraphics`.
+4. Otherwise, decline gracefully per the rule above.
+
+If you're genuinely unsure between steps 2 and 3, prefer vector — it works regardless of the connected model's own image-generation capability, while raster generation depends on a capability not every connection has.
+
+#### Vector images
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Graphics.VectorGraphics` | Represents a vector graphics as literal SVG source text | Zero | | "Value": the literal SVG source text; "Format": the image format (always "image/svg+xml") |
+
+Unlike `Graphics.RasterGraphics`, a `Graphics.VectorGraphics` never uses `MediaRef` and is never paired with a native binary part — every model, including text-only models with no image understanding or generation capability, reads and writes its content directly, the same way it would any other structured text.
+
+**Reading a vector image**: reason from what the markup actually describes (element types, coordinates, labels, text content). For a visually dense or heavily path-based SVG, the structure may not fully convey what the image looks like once rendered; say so plainly rather than confidently describing a visual impression you can't actually verify from the markup.
+
+**Writing a vector image**:
+
+- Wrap it in a `Typesetting.Centering`, matching every other displayed-expression example in this primer.
+- Write the SVG's own internal attributes with single quotes (e.g. `<rect width='100' height='50'/>`) rather than double quotes — this keeps the outer XML escaping to just `&lt;`, `&gt;`, and `&amp;` instead of also escaping every internal `"`.
+- If a literal quote character needs to appear anywhere in the generated SVG — a label like `Dog's house`, a quoted term — always write it as the named entity: `&apos;` for an apostrophe, `&quot;` for a double quote. This applies whether the character is inside element text or inside an attribute value. Never write a raw `'` or `"` when you mean it as a displayed character rather than a delimiter — the named entity is always correct, in every position, and removes any need to track which quoting context you're in.
+- Never embed a raster image inside generated SVG (no base64 `data:` URI `<image>` elements) — that defeats the purpose of choosing vector in the first place.
+- Do not use `MediaRef`, `gen-N`, or any placeholder — write the complete `Value` inline, in one shot, the same way you would write any other text attribute.
+- Scripting and interactivity inside SVG have no effect — rendering is always inert — so don't spend output on them.
+
+**Example — reading a vector image.** The prompt asks what a symbol represents; the AI reads the markup directly rather than needing to "see" a rendered image.
+
+**Human prompt:**
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="What electronic component does this symbol represent?"/>
+    <expression tag="Typesetting.Centering">
+        <expression tag="Graphics.VectorGraphics" Value="&lt;svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'&gt;&lt;line x1='10' y1='30' x2='40' y2='30' stroke='black'/&gt;&lt;rect x='40' y='15' width='40' height='30' fill='none' stroke='black'/&gt;&lt;line x1='80' y1='30' x2='110' y2='30' stroke='black'/&gt;&lt;/svg&gt;" Format="image/svg+xml"/>
+    </expression>
+</expression>
+```
+
+**AI response:**
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="This is a resistor: a rectangle between two straight leads, the standard schematic symbol for a fixed resistor."/>
+</expression>
+```
+
+**Example — writing a vector image.** The prompt asks for a diagram; the AI generates SVG markup directly, in one shot.
+
+**Human prompt:**
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="Generate the diagram of an RC electrical circuit."/>
+</expression>
+```
+
+**AI response:**
+
+```xml
+<expression tag="Typesetting.Centering">
+    <expression tag="Graphics.VectorGraphics" Value="&lt;svg xmlns='http://www.w3.org/2000/svg' width='200' height='100'&gt;&lt;rect x='10' y='40' width='30' height='20' fill='none' stroke='black'/&gt;&lt;line x1='40' y1='50' x2='80' y2='50' stroke='black'/&gt;&lt;circle cx='100' cy='50' r='20' fill='none' stroke='black'/&gt;&lt;/svg&gt;" Format="image/svg+xml"/>
+</expression>
+```
+
+#### Raster images
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
 | `Graphics.RasterGraphics` | Represents a raster (bitmap) graphics | Zero | | "MediaRef": identifier referencing the media content passed natively via the API (e.g., "media-0" for input media, "gen-0" for AI-generated media) |
-| `Audio.WaveformAudio` | Represents a waveform audio clip | Zero | | "MediaRef": identifier referencing the audio content passed natively via the API (e.g., "media-0" for input audio) |
 
-### Example 1 — Image identification
+Use the media mechanism above for both reading and generating a raster image. Reserve raster for genuinely photographic or naturalistic content — a real scene, object, or subject, rendered the way a camera would capture it.
 
-The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI identifies the image and responds with a formatted `Typesetting.MultiParagraph` containing bold text and a bulleted list.
+**Example — reading a raster image.** The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI identifies the image and responds with a formatted `Typesetting.MultiParagraph` containing bold text and a bulleted list.
 
 **Human prompt:**
 
@@ -1589,32 +1661,7 @@ The user embeds an image inside a `Typesetting.MultiParagraph` prompt. The AI id
 
 The image is passed natively via the API and referenced in the XML by `MediaRef="media-0"`. Any expression can appear as an inline item inside a paragraph, enabling multimodal prompts.
 
-### Example 2 — Audio transcription
-
-The user embeds an audio clip inside a `Typesetting.Paragraph` prompt. The AI transcribes it and responds with a `Typesetting.Paragraph`.
-
-**Human prompt:**
-
-```xml
-<expression tag="Typesetting.Paragraph">
-    <expression tag="String.Text" Value="Transcribe the following speech:"/>
-    <expression tag="Audio.WaveformAudio" MediaRef="media-0"/>
-</expression>
-```
-
-**AI response:**
-
-```xml
-<expression tag="Typesetting.Paragraph">
-    <expression tag="String.Text" Value="The quick brown fox jumps over the lazy dog."/>
-</expression>
-```
-
-The audio clip is passed natively via the API and referenced in the XML by `MediaRef="media-0"`.
-
-### Example 3 — Image generation and table
-
-The user sends a text-only `Typesetting.MultiParagraph` asking for a seasonal table with generated images. The AI responds with a centered displayed `List.Table`.
+**Example — generating raster images.** The user sends a text-only request for a seasonal table with generated images. The AI responds with a centered displayed `List.Table`.
 
 **Human prompt:**
 
@@ -1667,4 +1714,37 @@ The user sends a text-only `Typesetting.MultiParagraph` asking for a seasonal ta
 The `List.Table` holds a single `List.List` subexpression (the matrix), which itself contains one `List.List` per row. The first row is the header (wrapped in `Visualization.Bold`); subsequent rows are data rows. The four AI-generated images are referenced by `MediaRef="gen-0"` through `MediaRef="gen-3"` in the order they are returned by the API.
 
 **Note:** this response is only complete when accompanied by four `inline_data` parts — one generated image per season, in the order `gen-0` through `gen-3`. The XML alone, without the image data, is an incomplete response.
+
+### Audio
+
+Audio is represented as an `Audio.WaveformAudio` expression, holding binary waveform data through the media mechanism above.
+
+When a prompt contains audio, it's identifiable directly by its tag.
+
+| Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
+| --- | --- | --- | --- | --- |
+| `Audio.WaveformAudio` | Represents a waveform audio clip | Zero | | "MediaRef": identifier referencing the audio content passed natively via the API (e.g., "media-0" for input audio) |
+
+**Example — reading audio.** The user embeds an audio clip inside a `Typesetting.Paragraph` prompt. The AI transcribes it and responds with a `Typesetting.Paragraph`.
+
+**Human prompt:**
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="Transcribe the following speech:"/>
+    <expression tag="Audio.WaveformAudio" MediaRef="media-0"/>
+</expression>
+```
+
+**AI response:**
+
+```xml
+<expression tag="Typesetting.Paragraph">
+    <expression tag="String.Text" Value="The quick brown fox jumps over the lazy dog."/>
+</expression>
+```
+
+The audio clip is passed natively via the API and referenced in the XML by `MediaRef="media-0"`.
+
+If you cannot generate requested audio — no capability, safety restriction, or generation failure — decline gracefully per the rule above: omit it, describe in text instead.
 
