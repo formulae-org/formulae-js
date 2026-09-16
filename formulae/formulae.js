@@ -27,7 +27,7 @@ Formulae.ltr = true;
 Formulae.readMode = true;
 Formulae.parameters = new URL(window.location.href).searchParams;
 //Formulae.pathName = new URL(window.location.href).pathname;
-Formulae.isCompute = true;
+Formulae.isCompute = false;
 
 Formulae.remoteServers = [ "https://server.formulae.org" ];
 Formulae.localServer = "http://localhost:8001";
@@ -2436,7 +2436,7 @@ Formulae.toggleMode = async function() {
 		"button-cut", "button-copy", "button-paste",
 		"button-ins-after", "button-ins-before", "button-delete",
 		"button-change-type", "button-execute_sticky",
-		"button-tools", "button-settings", "button-compute", "button-converse"
+		"button-tools", "button-settings", "button-converse", "button-compute"
 	].forEach(element => {
 		document.getElementById(element).style.display = display;
 	});
@@ -2578,8 +2578,8 @@ Formulae.start = async function() {
 	
 	document.getElementById("button-mode").addEventListener("click", () => Formulae.toggleMode());
 	
-	document.getElementById("button-compute").addEventListener("click", () => Formulae.setCompute(true));
 	document.getElementById("button-converse").addEventListener("click", () => Formulae.setCompute(false));
+	document.getElementById("button-compute").addEventListener("click", () => Formulae.setCompute(true));
 	
 	//////////////
 	// drag bar //

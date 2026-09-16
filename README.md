@@ -2,7 +2,7 @@
 
 # Fōrmulæ — web application (`formulae-js`)
 
-Fōrmulæ is a web-based visual environment for **computing**, **composing**, and **conversing** with tree-structured expressions. You build expressions by navigating and editing a tree — never by typing syntax — and they are rendered as mathematical and scientific notation on an HTML canvas. It runs entirely in the browser; there is nothing to install.
+Fōrmulæ is a web-based visual environment for **composing**, **conversing**, and **computing** with tree-structured expressions. You build expressions by navigating and editing a tree — never by typing syntax — and they are rendered as mathematical and scientific notation on an HTML canvas. It runs entirely in the browser; there is nothing to install.
 
 🌐 **Live at [formulae.org](https://formulae.org)** · 📦 **Organization: [formulae-org](https://github.com/formulae-org)**
 
@@ -16,9 +16,9 @@ This repository is the **main program** — the part that is always present, wha
 
 ## The three modes
 
-- **Compute** — evaluate expressions: arithmetic, symbolic algebra, logic, lists, strings, control flow, and more.
 - **Compose** — present expressions: paragraphs, tables, equations, images, links, colors and lists. Because composing and computing share the same expressions, one file is both a runnable program and a formatted, human-readable document.
 - **Converse** — send an expression to an AI model as a prompt. The model replies with a Fōrmulæ expression that renders in place, so equations, tables, code and inline images can appear in both the prompt and the response. Seet the [AI Converse demo](https://formulae.org/?script=examples/AI%20converse).
+- **Compute** — evaluate expressions: arithmetic, symbolic algebra, logic, lists, strings, control flow, and more.
 
 ## Packages
 
