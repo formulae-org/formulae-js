@@ -1383,6 +1383,8 @@ The `Typesetting.Rule` is an expression that shows a horizontal line, using the 
 
 The `Typesetting.Centering` expression centers its single subexpression horizontally within the available width.
 
+It is a block-level element, and it centers on the width of the whole document rather than on that of whatever contains it. It therefore belongs in exactly two positions: as the entire response, or as an element of a `Typesetting.MultiParagraph`. Never place one inside another expression — a `List.Table` cell, an item of a typesetting list, a paragraph running alongside text. There it would claim half the document's width for its container and break the surrounding layout. An expression sitting inside a container is written there directly; the container aligns it.
+
 #### Multiparagraphs
 
 A `Typesetting.MultiParagraph` expression, despite its name, can hold a combination of two or more of the following elements:
@@ -1562,7 +1564,7 @@ Unlike `Graphics.RasterGraphics`, a `Graphics.VectorGraphics` never uses `MediaR
 
 **Writing a vector image**:
 
-- Wrap it in a `Typesetting.Centering`, matching every other displayed-expression example in this primer.
+- **Fit the viewport to the drawing.** Nothing crops or trims the image: whatever blank space the viewport contains is part of it, and becomes a margin around the drawing in the document — misaligning it inside a table cell or a line of text, and showing up as an outline whenever the reader points at it. Give `width` and `height` the extent of the geometry itself, plus only what the stroke needs: an outline of `stroke-width='1'` bleeds half a unit past its path on each side, so keep the geometry one unit clear of the edges. A 40×40 square with a 1-wide outline belongs in a 42×42 viewport, not a 60×60 one. If round coordinates are easier to work with, draw in whatever coordinate system you like and add a `viewBox` that frames the content tightly, with `width`/`height` giving the rendered size. Space wanted *around* an image belongs to the document layout, not to the image.
 - Write the SVG's own internal attributes with single quotes (e.g. `<rect width='100' height='50'/>`) rather than double quotes — this keeps the outer XML escaping to just `&lt;`, `&gt;`, and `&amp;` instead of also escaping every internal `"`.
 - If a literal quote character needs to appear anywhere in the generated SVG — a label like `Dog's house`, a quoted term — always write it as the named entity: `&apos;` for an apostrophe, `&quot;` for a double quote. This applies whether the character is inside element text or inside an attribute value. Never write a raw `'` or `"` when you mean it as a displayed character rather than a delimiter — the named entity is always correct, in every position, and removes any need to track which quoting context you're in.
 - Never embed a raster image inside generated SVG (no base64 `data:` URI `<image>` elements) — that defeats the purpose of choosing vector in the first place.
@@ -1577,7 +1579,7 @@ Unlike `Graphics.RasterGraphics`, a `Graphics.VectorGraphics` never uses `MediaR
 <expression tag="Typesetting.Paragraph">
     <expression tag="String.Text" Value="What electronic component does this symbol represent?"/>
     <expression tag="Typesetting.Centering">
-        <expression tag="Graphics.VectorGraphics" Value="&lt;svg xmlns='http://www.w3.org/2000/svg' width='120' height='60'&gt;&lt;line x1='10' y1='30' x2='40' y2='30' stroke='black'/&gt;&lt;rect x='40' y='15' width='40' height='30' fill='none' stroke='black'/&gt;&lt;line x1='80' y1='30' x2='110' y2='30' stroke='black'/&gt;&lt;/svg&gt;" Format="image/svg+xml"/>
+        <expression tag="Graphics.VectorGraphics" Value="&lt;svg xmlns='http://www.w3.org/2000/svg' width='102' height='32'&gt;&lt;line x1='1' y1='16' x2='31' y2='16' stroke='black'/&gt;&lt;rect x='31' y='1' width='40' height='30' fill='none' stroke='black'/&gt;&lt;line x1='71' y1='16' x2='101' y2='16' stroke='black'/&gt;&lt;/svg&gt;" Format="image/svg+xml"/>
     </expression>
 </expression>
 ```
@@ -1604,7 +1606,7 @@ Unlike `Graphics.RasterGraphics`, a `Graphics.VectorGraphics` never uses `MediaR
 
 ```xml
 <expression tag="Typesetting.Centering">
-    <expression tag="Graphics.VectorGraphics" Value="&lt;svg xmlns='http://www.w3.org/2000/svg' width='200' height='100'&gt;&lt;rect x='10' y='40' width='30' height='20' fill='none' stroke='black'/&gt;&lt;line x1='40' y1='50' x2='80' y2='50' stroke='black'/&gt;&lt;circle cx='100' cy='50' r='20' fill='none' stroke='black'/&gt;&lt;/svg&gt;" Format="image/svg+xml"/>
+    <expression tag="Graphics.VectorGraphics" Value="&lt;svg xmlns='http://www.w3.org/2000/svg' width='112' height='42'&gt;&lt;rect x='1' y='11' width='30' height='20' fill='none' stroke='black'/&gt;&lt;line x1='31' y1='21' x2='71' y2='21' stroke='black'/&gt;&lt;circle cx='91' cy='21' r='20' fill='none' stroke='black'/&gt;&lt;/svg&gt;" Format="image/svg+xml"/>
 </expression>
 ```
 
