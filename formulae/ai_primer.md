@@ -1049,10 +1049,34 @@ There does not exist an expression to represent time with day granularity (a "da
 
 | Tag | Description | Number of subexpressions | Description of subexpressions | Serialized attributes |
 | --- | --- | --- | --- | --- |
-| `Visualization.Rectangle` | An invisible rectangle with explicit layout metrics; used as a spacer or placeholder with defined baseline positions | Zero | | "Width": width in pixels (positive integer); "Height": height in pixels (positive integer); "HorizontalBaseline": y-coordinate of the horizontal baseline within [0, Height]; "VerticalBaseline": x-coordinate of the vertical baseline within [0, Width] |
+| `Visualization.Rectangle` | A rectangle of explicit dimensions and baseline positions, optionally drawing a black 1-pixel border and its two baselines as grey (#7f7f7f) 1-pixel lines; with both switched off it is invisible and serves as a spacer or strut | Zero | | "Width": width in pixels (positive integer); "Height": height in pixels (positive integer); "HorizontalBaseline": y-coordinate of the horizontal baseline within [0, Height]; "VerticalBaseline": x-coordinate of the vertical baseline within [0, Width]; "ShowBorder": "True" or "False", whether the border is drawn (defaults to "False" when the attribute is absent, so that a file written before it existed keeps its authored appearance); "ShowBaselines": "True" or "False", whether the baselines are drawn (defaults to "False" when absent) |
 | `Visualization.HorizontalArray` | Lays out two or more expressions in a horizontal row, with 5-pixel gaps between them | Two or more | Each subexpression is an element placed left-to-right | |
 | `Visualization.VerticalArray` | Lays out two or more expressions in a vertical column, with 5-pixel gaps between them | Two or more | Each subexpression is an element placed top-to-bottom | |
 | `Visualization.CodeBlock` | A block of preformatted code text displayed in a monospaced font on a light gray background | Zero | | "Value": the code text (string) |
+| `Visualization.VerticalBaselineAtLeft` | Declares that its subexpression's vertical baseline lies at its left edge; the subexpression is rendered unchanged, with the same dimensions and horizontal baseline | One | The expression whose vertical baseline is redeclared | |
+| `Visualization.VerticalBaselineAtCenter` | Declares that its subexpression's vertical baseline lies at its horizontal center; the subexpression is rendered unchanged, with the same dimensions and horizontal baseline | One | The expression whose vertical baseline is redeclared | |
+| `Visualization.VerticalBaselineAtRight` | Declares that its subexpression's vertical baseline lies at its right edge; the subexpression is rendered unchanged, with the same dimensions and horizontal baseline | One | The expression whose vertical baseline is redeclared | |
+| `Visualization.HorizontalBaselineAtTop` | Declares that its subexpression's horizontal baseline lies at its top edge; the subexpression is rendered unchanged, with the same dimensions and vertical baseline | One | The expression whose horizontal baseline is redeclared | |
+| `Visualization.HorizontalBaselineAtMiddle` | Declares that its subexpression's horizontal baseline lies at its vertical middle; the subexpression is rendered unchanged, with the same dimensions and vertical baseline | One | The expression whose horizontal baseline is redeclared | |
+| `Visualization.HorizontalBaselineAtBottom` | Declares that its subexpression's horizontal baseline lies at its bottom edge; the subexpression is rendered unchanged, with the same dimensions and vertical baseline | One | The expression whose horizontal baseline is redeclared | |
+
+**Aligning the cells of a table.** Cells of a table or matrix are aligned on their baselines: within a **column** on their vertical baselines, within a **row** on their horizontal baselines. This is how a table is aligned:
+
+- To make a column flush left, centered or flush right, wrap **every** cell of that column in `Visualization.VerticalBaselineAtLeft`, `...AtCenter` or `...AtRight`. The column's width does not change.
+- To make a row top-, middle- or bottom-aligned, wrap **every** cell of that row in `Visualization.HorizontalBaselineAtTop`, `...AtMiddle` or `...AtBottom`. The row's height does not change.
+
+The two families are independent: a cell may be wrapped in one of each to fix both its column and its row alignment.
+
+```xml
+<expression tag="List.List">
+	<expression tag="String.Text" Value="Total"/>
+	<expression tag="Visualization.VerticalBaselineAtRight">
+		<expression tag="Math.Number" Value="1250"/>
+	</expression>
+</expression>
+```
+
+Wrap the cells of one column (or row) consistently — mixing wrapped and unwrapped cells, or two different wrappers of the same family, enlarges it and displaces its contents. Outside a table, matrix, `Visualization.VerticalArray` (vertical family) or `Visualization.HorizontalArray` (horizontal family) these wrappers have no visible effect at all, so do not use them to try to align text inside a paragraph.
 
 ### Visualization — Text and font formatting
 

@@ -61,10 +61,13 @@ Formulae.AI._save = function() {
 	}
 };
 
+// Falls back to the built-in demo connection when the user has none of their own
 Formulae.AI.getActiveProvider = function() {
-	if (!Formulae.AI.activeConnectionId) return null;
 	let connection = Formulae.AI.connections.find(c => c.id === Formulae.AI.activeConnectionId);
-	if (!connection) return null;
+	if (!connection) {
+		if (!Formulae.AI.demoProvider) return null;
+		return { provider: Formulae.AI.demoProvider, connection: { name: "Demo", parameters: {} } };
+	}
 	let provider = Formulae.AI.providers?.find(p => p.getProviderName() === connection.providerName);
 	if (!provider) return null;
 	return { provider, connection };
@@ -262,6 +265,103 @@ Formulae.AI.sendToAI = async function(xmlString, controller) {
 	return Formulae.AI.reinsertMedia(responseXml, { ...mediaMap, ...responseMediaMap });
 };
 
+// ─── Demo connection restrictions ──────────────────────────────────────────
+//
+// The Gemini API Additional Terms forbid offering the API to people under 18,
+// and forbid offering the unpaid tier to users in the EEA, Switzerland or the
+// UK. Age is self-declared once and remembered; the region is guessed from the
+// browser's time zone and checked every time.
+
+const AI_DEMO_CONSENT_KEY = "aiDemoConsent";
+
+// Time zones of the EEA (EU, Iceland, Liechtenstein, Norway), Switzerland and
+// the UK, including EU outermost regions, plus a few nearby zones and legacy
+// aliases, on the safe side
+Formulae.AI.DEMO_RESTRICTED_TIME_ZONES = new Set([
+	"Europe/Vienna", "Europe/Brussels", "Europe/Sofia", "Europe/Zagreb",
+	"Asia/Nicosia", "Asia/Famagusta", "Europe/Nicosia", "Europe/Prague",
+	"Europe/Copenhagen", "Atlantic/Faroe", "Europe/Tallinn", "Europe/Helsinki",
+	"Europe/Mariehamn", "Europe/Paris", "America/Cayenne", "America/Guadeloupe",
+	"America/Martinique", "America/Marigot", "Indian/Reunion", "Indian/Mayotte",
+	"Europe/Berlin", "Europe/Busingen", "Europe/Athens", "Europe/Budapest",
+	"Europe/Dublin", "Eire", "Europe/Rome", "Europe/Riga", "Europe/Vilnius",
+	"Europe/Luxembourg", "Europe/Malta", "Europe/Amsterdam", "Europe/Warsaw",
+	"Poland", "Europe/Lisbon", "Atlantic/Madeira", "Atlantic/Azores", "Portugal",
+	"Europe/Bucharest", "Europe/Bratislava", "Europe/Ljubljana", "Europe/Madrid",
+	"Africa/Ceuta", "Atlantic/Canary", "Europe/Stockholm",
+	"Atlantic/Reykjavik", "Iceland", "Europe/Vaduz", "Europe/Oslo",
+	"Arctic/Longyearbyen", "Atlantic/Jan_Mayen",
+	"Europe/Zurich",
+	"Europe/London", "Europe/Belfast", "GB", "GB-Eire", "Europe/Guernsey",
+	"Europe/Isle_of_Man", "Europe/Jersey", "Europe/Gibraltar",
+	"CET", "MET", "EET", "WET"
+]);
+
+Formulae.AI._browserTimeZone = function() {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+	}
+	catch (e) {
+		return "";
+	}
+};
+
+Formulae.AI.isDemoRestrictedRegion = () => Formulae.AI.DEMO_RESTRICTED_TIME_ZONES.has(Formulae.AI._browserTimeZone());
+
+Formulae.AI.isDemoAllowed = function() {
+	return !Formulae.AI.isDemoRestrictedRegion() && window.localStorage.getItem(AI_DEMO_CONSENT_KEY) === "1";
+};
+
+// Shows why the demo can't be used yet; calls onAccept if the user confirms their age
+Formulae.AI.showDemoDialog = function(onAccept) {
+	let table = document.createElement("table");
+	table.classList.add("bordered");
+
+	if (Formulae.AI.isDemoRestrictedRegion()) {
+		table.innerHTML = `
+<tr><th>Free demo AI
+<tr><td>
+  You have no AI connection of your own, and the free demo AI is not available in the<br>
+  European Economic Area, Switzerland or the United Kingdom (detected from your time zone,<br>
+  <code>${Formulae.AI._esc(Formulae.AI._browserTimeZone())}</code>). To converse, connect your own AI model.
+<tr><td align=center>
+  <button id="ai-demo-close">Close</button>&nbsp;
+  <button id="ai-demo-connections">Use my own AI&#x2026;</button>`;
+		Formulae.setModal(table);
+	}
+	else {
+		// The wording about Google's use of prompts applies to the unpaid tier only
+		table.innerHTML = `
+<tr><th>Free demo AI
+<tr><td>
+  You have no AI connection of your own, so Fōrmulæ will use its free demo AI, provided by Google Gemini.
+  <ul>
+    <li>You must be 18 years of age or older to use it.
+    <li>Your prompts are sent to Google, which may use them to improve its products.<br>
+        Do not include personal or confidential information.
+    <li>It is shared with other users and has a daily usage limit.<br>
+        When the limit is reached, or demand is high, a request can fail; try again later.
+  </ul>
+  <label><input type="checkbox" id="ai-demo-age"> I am 18 years of age or older</label>
+<tr><td align=center>
+  <button id="ai-demo-close">Cancel</button>&nbsp;
+  <button id="ai-demo-connections">Use my own AI&#x2026;</button>&nbsp;
+  <button id="ai-demo-accept" disabled>Continue</button>`;
+		Formulae.setModal(table);
+
+		let accept = table.querySelector("#ai-demo-accept");
+		table.querySelector("#ai-demo-age").onchange = event => accept.disabled = !event.target.checked;
+		accept.onclick = () => {
+			window.localStorage.setItem(AI_DEMO_CONSENT_KEY, "1");
+			Formulae.resetModal();
+			onAccept();
+		};
+	}
+
+	table.querySelector("#ai-demo-close").onclick = () => Formulae.resetModal();
+	table.querySelector("#ai-demo-connections").onclick = () => Formulae.AI.showConnectionsManager();
+};
+
 // ─── UI ────────────────────────────────────────────────────────────────────
 
 Formulae.AI.showConnectionsManager = function() {
@@ -275,7 +375,7 @@ Formulae.AI._showMainView = function() {
 	
 	let rows = "";
 	if (Formulae.AI.connections.length === 0) {
-		rows = `<tr><td colspan=4 align=center><em>No connections defined</em></td></tr>`;
+		rows = `<tr><td colspan=4 align=center><em>No connections defined — using the free demo AI (Google Gemini)</em></td></tr>`;
 	}
 	else {
 		Formulae.AI.connections.forEach(conn => {
@@ -386,6 +486,7 @@ Formulae.AI._showAddStep = function() {
 			Formulae.AI.connections.push(newConn);
 			if (Formulae.AI.activeConnectionId === null) {
 				Formulae.AI.activeConnectionId = newConn.id;
+				Formulae.AI._sessionStarted = false; // the demo connection may have started the session
 			}
 			Formulae.AI._save();
 		}

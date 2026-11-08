@@ -369,3 +369,137 @@ Formulae.AI.providers = (() => {
 	];
 })();
 
+// Built-in demo connection, used when the user has configured no connection
+// of their own. It calls Gemini through Firebase AI Logic, which keeps the
+// Gemini key on Google's servers; App Check (Google Cloud Fraud Defense,
+// formerly reCAPTCHA Enterprise) keeps other sites
+// from spending the shared free quota. Not listed in Formulae.AI.providers, so
+// it is never offered in the "Add connection" dialog.
+
+Formulae.AI.demoProvider = (() => {
+	const FIREBASE_SDK = "https://www.gstatic.com/firebasejs/13.0.0";
+
+	// Public identifiers of the "Formulae web" app in the formulae-org project, not secrets
+	const FIREBASE_CONFIG = {
+		apiKey:            "AIzaSyAltjHdvVX6K7sHM1cywEjA44VKCnpBVTw",
+		authDomain:        "formulae-org.firebaseapp.com",
+		projectId:         "formulae-org",
+		storageBucket:     "formulae-org.firebasestorage.app",
+		messagingSenderId: "857655120060",
+		appId:             "1:857655120060:web:32cad943cfbc09d1cb40b9"
+	};
+
+	// Fraud Defense (reCAPTCHA Enterprise) site key registered in Firebase console → App Check
+	// (a native key; the earlier legacy key 6LdiTgou… failed App Check's assessment with "App attestation failed")
+	const RECAPTCHA_SITE_KEY = "6LegmxUuAAAAABxrxPlB0mddWpFY2pmjMb2yUk6T";
+
+	// Tried in order, moving to the next one on "high demand" or an exhausted
+	// quota (free-tier limits are per model). gemini-3.8-flash was dropped
+	// (2026-11-07): on the free tier it mostly failed with "high demand" or
+	// deadline errors, while gemini-3.1-flash-lite answered in seconds
+	const MODELS = [ "gemini-3.1-flash-lite", "gemini-3.5-flash-lite" ];
+
+	// Thinking over the ~30k-token primer made answers take minutes and hit server deadlines
+	const GENERATION_CONFIG = { thinkingConfig: { thinkingLevel: "LOW" } };
+
+	const SETTINGS_HINT = "To keep conversing, connect your own AI model in Settings → AI connections.";
+
+	const isHighDemand = e => /high demand|overloaded|unavailable/i.test(e.message);
+	const isDeadline   = e => /deadline|timed? ?out|has expired/i.test(e.message);
+	const isQuota      = e => /quota|429|exhausted/i.test(e.message);
+
+	class DemoProvider {
+		constructor() {
+			this._ai = null;
+			this._models = new Map();
+		}
+
+		getProviderName() { return "Demo (Google Gemini, free)"; }
+
+		async _getModel(name, primer) {
+			if (this._models.has(name)) return this._models.get(name);
+
+			// Kept as a promise, so concurrent prompts don't initialize the app twice
+			this._ai ??= this._initAI();
+			const ai = await this._ai;
+			if (this._models.has(name)) return this._models.get(name);
+			const { getGenerativeModel } = await import(`${FIREBASE_SDK}/firebase-ai.js`);
+
+			const model = getGenerativeModel(ai, { model: name, systemInstruction: primer, generationConfig: GENERATION_CONFIG });
+			this._models.set(name, model);
+			return model;
+		}
+
+		async _initAI() {
+			const { initializeApp } = await import(`${FIREBASE_SDK}/firebase-app.js`);
+			const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import(`${FIREBASE_SDK}/firebase-app-check.js`);
+			const { getAI, GoogleAIBackend } = await import(`${FIREBASE_SDK}/firebase-ai.js`);
+
+			const app = initializeApp(FIREBASE_CONFIG, "formulae-demo-ai");
+
+			if (RECAPTCHA_SITE_KEY) {
+				// On a local server, App Check prints a debug token to the console, to be registered in the Firebase console
+				if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+					self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+				}
+				initializeAppCheck(app, {
+					provider: new ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY),
+					isTokenAutoRefreshEnabled: true
+				});
+			}
+
+			return getAI(app, { backend: new GoogleAIBackend() });
+		}
+
+		async onStart(params, primer) {}
+
+		async onPrompt(params, primer, xml, mediaMap, controller, history = []) {
+			let parts = [];
+			for (let [ref, media] of Object.entries(mediaMap)) {
+				parts.push({ text: `[MediaRef: ${ref}]` });
+				parts.push({ inlineData: { mimeType: media.format, data: media.data } });
+			}
+			parts.push({ text: xml });
+
+			const request = {
+				contents: [
+					...history.map(t => ({ role: t.role === "assistant" ? "model" : t.role, parts: [{ text: t.content }] })),
+					{ role: "user", parts }
+				]
+			};
+
+			for (let i = 0; ; ++i) {
+				const model = await this._getModel(MODELS[i], primer);
+				const start = performance.now();
+				try {
+					const result = await model.generateContent(request, { signal: controller.signal });
+					console.info(`Demo AI: answered by ${MODELS[i]} in ${((performance.now() - start) / 1000).toFixed(1)} s`);
+					return { responseXml: result.response.text(), responseMediaMap: {} };
+				}
+				catch (e) {
+					console.info(`Demo AI: ${MODELS[i]} failed after ${((performance.now() - start) / 1000).toFixed(1)} s: ${e.message}`);
+					if (controller.signal.aborted) throw e;
+
+					if ((isHighDemand(e) || isQuota(e)) && i + 1 < MODELS.length) continue;
+
+					if (isQuota(e)) {
+						throw new Error(`The free demo AI has reached its usage limit for now. ${SETTINGS_HINT}`);
+					}
+					if (isHighDemand(e)) {
+						throw new Error(`The free demo AI is busy right now, because many people are using it. Please try again in a few minutes. ${SETTINGS_HINT}`);
+					}
+					if (/app ?check/i.test(e.message)) {
+						throw new Error(`The free demo AI could not verify this browser, so it is not available right now. Please try again later. ${SETTINGS_HINT}`);
+					}
+					if (isDeadline(e)) {
+						throw new Error(`The free demo AI took too long to answer, probably because many people are using it. Please try again. ${SETTINGS_HINT}`);
+					}
+					throw e;
+				}
+			}
+		}
+	}
+
+	return new DemoProvider();
+})();
+

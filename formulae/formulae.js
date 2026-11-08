@@ -1412,11 +1412,17 @@ Formulae.compute = (alt, isPersistent) => {
 }
 
 Formulae.converse = () => {
-	if (!Formulae.AI?.getActiveProvider()) {
+	let info = Formulae.AI?.getActiveProvider();
+	if (!info) {
 		alert("AI provider is not configured.");
 		return;
 	}
-	
+
+	if (info.provider === Formulae.AI.demoProvider && !Formulae.AI.isDemoAllowed()) {
+		Formulae.AI.showDemoDialog(() => Formulae.converse());
+		return;
+	}
+
 	Formulae.beforeChanges();
 	
 	//Formulae.clearHighlightedExpression();
