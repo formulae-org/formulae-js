@@ -1905,7 +1905,13 @@ Formulae.deleteAllExpressions = function() {
 	}
 };
 
-Formulae.addEdition = function(spec, image, name, edition) {
+// options (optional):
+//   caption: true   -> also show `name` as a visible caption beside the icon
+//            string -> show this string as the caption instead (tooltip stays `name`)
+// Captions are the exception, not the rule (glyph-first): use one only when the icon is
+// faithful but the produced expression can't be inferred from it (e.g. Visualization.Key,
+// horizontal/vertical arrays). Invisible wrappers should use a plain-text `image` instead.
+Formulae.addEdition = function(spec, image, name, edition, options = {}) {
 	let ul = document.getElementById("tree");
 	let tokens = spec.split(".");
 	let token;
@@ -1971,28 +1977,38 @@ Formulae.addEdition = function(spec, image, name, edition) {
 
 	if (img != null) newLi.appendChild(img);
 
+	let caption = options.caption === true ? name : options.caption;
+	if (caption != null && caption !== false && caption !== "") {
+		let span = document.createElement("SPAN");
+		span.className = "edition-caption";
+		span.textContent = caption;
+		newLi.appendChild(span);
+	}
+
 	ul.appendChild(newLi);
 }
 
-Formulae.addWrapperEditions = function(messages, path, prefix, leaves) {
+Formulae.addWrapperEditions = function(messages, path, prefix, leaves, options = {}) {
 	leaves.forEach(leaf => {
 		Formulae.addEdition(
 			messages[ "path" + path ],
 			`<expression tag="${prefix}.${leaf}"><expression tag="Visualization.Selected"><expression tag="Null"/></expression></expression>`,
 			messages[ "leaf" + leaf],
-			() => Expression.wrapperEdition(`${prefix}.${leaf}`)
+			() => Expression.wrapperEdition(`${prefix}.${leaf}`),
+			options
 		);
 	});
 };
 
-Formulae.addBinaryEdition = function(messages, path, leaf, tag, first = true) {
+Formulae.addBinaryEdition = function(messages, path, leaf, tag, first = true, options = {}) {
 	Formulae.addEdition(
 		messages[ "path" + path ],
 		first ?
 		`<expression tag="${tag}"><expression tag="Visualization.Selected"><expression tag="Null"/></expression><expression tag="Null"/></expression>` :
 		`<expression tag="${tag}"><expression tag="Null"/><expression tag="Visualization.Selected"><expression tag="Null"/></expression></expression>`,
 		messages[ "leaf" + leaf ],
-		() => Expression.binaryEdition(tag, !first)
+		() => Expression.binaryEdition(tag, !first),
+		options
 	);
 };
 
