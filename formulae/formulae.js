@@ -169,7 +169,15 @@ Formulae.xmlToScript = async function(xml) {
 	scriptElement.getAttribute("Modules").split(",").forEach(packageName => {
 		if (packageName !== "") { // for empty package list
 			console.log(packageName);
-			Formulae.packages.get(packageName).required = true;
+			let packageInfo = Formulae.packages.get(packageName);
+			if (packageInfo === undefined) {
+				// not in packages.json: open the script anyway; its expressions from this package
+				// are read permissively and shown as "Unknown expression" error boxes
+				console.warn("Script requires unknown package " + packageName + ", ignored");
+			}
+			else {
+				packageInfo.required = true;
+			}
 		}
 	});
 	
