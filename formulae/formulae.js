@@ -135,6 +135,43 @@ Formulae.createExpression = function(tag, ...children) {
 	return expr;
 };
 
+// Output provenance: how an output row was produced. It is kept in handler.provenance as
+//    { source, duration, provider, model, reasoning }
+// source is "compute" or "converse", duration is in milliseconds, the last three are
+// for converse only and may be null. A null provenance means "origin unknown".
+//
+// It is saved as attributes of the Formulae.Script.Row element. All of them are optional:
+// files written before provenance existed have none, so their rows load as origin unknown.
+// (They are NOT assumed to be computed: those files contain AI answers too.)
+
+Formulae.PROVENANCE_SOURCES = [ "compute", "converse" ];
+
+Formulae.provenanceToRow = function(provenance, rowElement) {
+	if (provenance == null) return;
+	
+	rowElement.setAttribute("Source", provenance.source);
+	if (provenance.duration  != null) rowElement.setAttribute("Duration",  String(provenance.duration));
+	if (provenance.provider  != null) rowElement.setAttribute("Provider",  provenance.provider);
+	if (provenance.model     != null) rowElement.setAttribute("Model",     provenance.model);
+	if (provenance.reasoning != null) rowElement.setAttribute("Reasoning", provenance.reasoning);
+};
+
+Formulae.provenanceFromRow = function(rowElement) {
+	let source = rowElement.getAttribute("Source");
+	if (!Formulae.PROVENANCE_SOURCES.includes(source)) return null; // absent or unrecognized
+	
+	let duration = rowElement.getAttribute("Duration");
+	duration = duration !== null && /^\d+$/.test(duration) ? Number(duration) : null;
+	
+	return {
+		source:    source,
+		duration:  duration,
+		provider:  rowElement.getAttribute("Provider"),
+		model:     rowElement.getAttribute("Model"),
+		reasoning: rowElement.getAttribute("Reasoning")
+	};
+};
+
 Formulae.scriptToXML = async function() {
 	let doc = document.implementation.createDocument("", "", null);
 	let scriptElement = doc.createElement("expression");
@@ -147,6 +184,7 @@ Formulae.scriptToXML = async function() {
 		rowElement = doc.createElement("expression");
 		rowElement.setAttribute("tag", "Formulae.Script.Row");
 		rowElement.setAttribute("type", Formulae.handlers[i].type);
+		Formulae.provenanceToRow(Formulae.handlers[i].provenance, rowElement);
 		rowElement.appendChild(await Formulae.handlers[i].expression.getXMLElement(doc, moduleNames));
 		
 		scriptElement.appendChild(rowElement);
@@ -198,6 +236,7 @@ Formulae.xmlToScript = async function(xml) {
 		promises = [];
 		expression = Formulae.xmlElementToExpression(rowElement.children[0], promises);
 		handler = Formulae.addExpression(expression, rowElement.getAttribute("type"));
+		handler.provenance = Formulae.provenanceFromRow(rowElement);
 		
 		if (promises.length == 0) {
 			handler.prepareDisplay();
@@ -1237,6 +1276,7 @@ Formulae.onEnter = function(alt) {
 		
 		if (hResult.type == Formulae.ROW_OUTPUT) { // previous result
 			hResult.setExpression(wait);
+			hResult.provenance = null; // the previous result's origin no longer applies
 		}
 		else { // no previous result, it needs to be created
 			hResult = Formulae.insertExpression(wait, Formulae.ROW_OUTPUT, index + 1);
@@ -1352,6 +1392,7 @@ Formulae.compute = (alt, isPersistent) => {
 		
 		if (hResult.type == Formulae.ROW_OUTPUT) { // previous result
 			hResult.setExpression(wait);
+			hResult.provenance = null; // the previous result's origin no longer applies
 		}
 		else { // no previous result, it needs to be created
 			hResult = Formulae.insertExpression(wait, Formulae.ROW_OUTPUT, index + 1);
@@ -1400,6 +1441,7 @@ Formulae.compute = (alt, isPersistent) => {
 		}
 		
 		hResult.setExpression(hReduction.expression);
+		hResult.provenance = { source: "compute", duration: new Date().valueOf() - start, provider: null, model: null, reasoning: null };
 		
 		ReductionManager.externalizeNumbersHandler(hResult, session); // Externalization
 		
@@ -1453,6 +1495,7 @@ Formulae.converse = () => {
 		
 		if (hResult.type == Formulae.ROW_OUTPUT) { // previous result
 			hResult.setExpression(wait);
+			hResult.provenance = null; // the previous result's origin no longer applies
 		}
 		else { // no previous result, it needs to be created
 			hResult = Formulae.insertExpression(wait, Formulae.ROW_OUTPUT, index + 1);
@@ -1479,18 +1522,33 @@ Formulae.converse = () => {
 	setTimeout(async () => {
 		let start = new Date().valueOf();
 		
+		// Provider and model are taken from the active connection first, so an error row
+		// records which connection failed; a successful answer then refines the model
+		// (the server may report a more precise one, the demo connection has no parameters)
+		let active = Formulae.AI.getActiveProvider();
+		let provenance = {
+			source:    "converse",
+			duration:  null,
+			provider:  active?.provider.getProviderName() ?? null,
+			model:     active?.connection.parameters.model ?? null,
+			reasoning: null
+		};
+		
 		try {
 			let xml = new XMLSerializer().serializeToString(await Formulae.handlers[index].expression.toXML());
 			
-			let responseXml = await Formulae.AI.sendToAI(xml, controller);
+			let response = await Formulae.AI.sendToAI(xml, controller);
 			
 			if (controller.signal.aborted) return;
 			
 			let promises = [];
-			let responseExpr = Formulae.xmlToExpression(responseXml, promises);
+			let responseExpr = Formulae.xmlToExpression(response.xml, promises);
 			await Promise.all(promises);
 			
 			hResult.setExpression(responseExpr);
+			provenance.provider  = response.provider;
+			provenance.model     = response.model ?? provenance.model;
+			provenance.reasoning = response.reasoning;
 		}
 		catch (e) {
 			if (e.name === "AbortError") {
@@ -1504,7 +1562,10 @@ Formulae.converse = () => {
 			hResult.setExpression(errExpr);
 		}
 		
-		console.log(Formulae.ellaspedTime(new Date().valueOf() - start));
+		provenance.duration = new Date().valueOf() - start;
+		hResult.provenance = provenance;
+		
+		console.log(Formulae.ellaspedTime(provenance.duration));
 		
 		hResult.prepareDisplay();
 		hResult.display();

@@ -223,6 +223,8 @@ Formulae.AI._buildCorrection = function(verdict) {
 	}
 };
 
+// Returns { xml, provider, model, reasoning }. The last three describe how the
+// answer was produced (output provenance); model and reasoning may be null.
 Formulae.AI.sendToAI = async function(xmlString, controller) {
 	let info = Formulae.AI.getActiveProvider();
 	if (!info) throw new Error("No active AI connection configured");
@@ -243,10 +245,10 @@ Formulae.AI.sendToAI = async function(xmlString, controller) {
 	// what was in the prompt.
 	let history = [];
 	let currentXml = strippedXml, currentMediaMap = mediaMap;
-	let responseXml, responseMediaMap;
+	let responseXml, responseMediaMap, model, reasoning;
 
 	for (let attempt = 0; ; attempt++) {
-		({ responseXml, responseMediaMap } = await info.provider.onPrompt(
+		({ responseXml, responseMediaMap, model, reasoning } = await info.provider.onPrompt(
 			info.connection.parameters, primer, currentXml, currentMediaMap, controller, history
 		));
 
@@ -262,7 +264,12 @@ Formulae.AI.sendToAI = async function(xmlString, controller) {
 		currentMediaMap = {};
 	}
 
-	return Formulae.AI.reinsertMedia(responseXml, { ...mediaMap, ...responseMediaMap });
+	return {
+		xml:       Formulae.AI.reinsertMedia(responseXml, { ...mediaMap, ...responseMediaMap }),
+		provider:  info.provider.getProviderName(),
+		model:     model ?? null,
+		reasoning: reasoning ?? null
+	};
 };
 
 // ─── Demo connection restrictions ──────────────────────────────────────────

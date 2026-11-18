@@ -128,7 +128,13 @@ Formulae.AI.providers = (() => {
 			
 			const message = data.choices[0].message;
 			
-			return { responseXml: message.content, responseMediaMap: {} };
+			return {
+				responseXml: message.content,
+				responseMediaMap: {},
+				model: data.model ?? params.model,
+				// reasoning is not standardized among OpenAI-compatible servers
+				reasoning: message.reasoning_content ?? message.reasoning ?? null
+			};
 		}
 	}
 	
@@ -222,7 +228,15 @@ Formulae.AI.providers = (() => {
 				const msg = typeof data.error === 'string' ? data.error : (data.error.message ?? JSON.stringify(data.error));
 				throw new Error(msg);
 			}
-			return { responseXml: data.content[0].text, responseMediaMap: {} };
+			// The answer is not necessarily the first block: thinking blocks precede it
+			const blocks = data.content ?? [];
+			const thinking = blocks.filter(b => b.type === "thinking" && b.thinking).map(b => b.thinking);
+			return {
+				responseXml: blocks.filter(b => b.type === "text").map(b => b.text).join(""),
+				responseMediaMap: {},
+				model: data.model ?? params.model,
+				reasoning: thinking.length > 0 ? thinking.join("\n\n") : null
+			};
 		}
 	}
 	
@@ -346,9 +360,12 @@ Formulae.AI.providers = (() => {
 			if (data.error) throw new Error(data.error.message);
 			
 			let responseParts = data.candidates[0].content.parts;
-			let xmlParts = [], responseMediaMap = {}, genIdx = 0;
+			let xmlParts = [], thoughtParts = [], responseMediaMap = {}, genIdx = 0;
 			for (let part of responseParts) {
-				if (part.text) {
+				if (part.thought) { // thought summary, not part of the answer
+					if (part.text) thoughtParts.push(part.text);
+				}
+				else if (part.text) {
 					xmlParts.push(part.text);
 				}
 				else if (part.inlineData) {
@@ -358,7 +375,12 @@ Formulae.AI.providers = (() => {
 					};
 				}
 			}
-			return { responseXml: xmlParts.join(""), responseMediaMap };
+			return {
+				responseXml: xmlParts.join(""),
+				responseMediaMap,
+				model: data.modelVersion ?? params.model,
+				reasoning: thoughtParts.length > 0 ? thoughtParts.join("\n\n") : null
+			};
 		}
 	}
 	
@@ -474,7 +496,7 @@ Formulae.AI.demoProvider = (() => {
 				try {
 					const result = await model.generateContent(request, { signal: controller.signal });
 					console.info(`Demo AI: answered by ${MODELS[i]} in ${((performance.now() - start) / 1000).toFixed(1)} s`);
-					return { responseXml: result.response.text(), responseMediaMap: {} };
+					return { responseXml: result.response.text(), responseMediaMap: {}, model: MODELS[i], reasoning: null };
 				}
 				catch (e) {
 					console.info(`Demo AI: ${MODELS[i]} failed after ${((performance.now() - start) / 1000).toFixed(1)} s: ${e.message}`);

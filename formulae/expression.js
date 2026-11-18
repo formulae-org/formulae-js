@@ -293,6 +293,7 @@ class ExpressionHandler extends Scopable {
 		
 		this.type = type;
 		this.index = 0;
+		this.provenance = null; // how an output row was produced, see Formulae.provenanceToRow
 		
 		if (expression !== undefined) {
 			this.setExpression(expression);
