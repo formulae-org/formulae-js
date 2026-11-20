@@ -99,6 +99,39 @@ div.row {
 	padding: 10px;
 }
 
+/* AI label of a converse output row. It is an HTML element, not drawn on the canvas,
+   so it is not part of image exports. It follows the canvas (row code assumes the
+   canvas is the first child) and is shown below it, at the start of the line, where
+   the expression starts too, so it stays in place however wide the expression is. */
+div.row .provenance {
+	justify-self: start;
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	margin-top: 4px;
+	font-family: sans-serif;
+	font-size: 0.8em;
+	color: #333;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+div.row .provenance img {
+	height: 1.5em;
+}
+
+.provenance-details {
+	max-width: min(40em, 90vw);
+}
+
+.provenance-details pre {
+	white-space: pre-wrap;
+	max-height: 40vh;
+	overflow: auto;
+	margin: 0;
+	font-family: sans-serif;
+}
+
 
 ul, #tree {
   list-style-type: none;

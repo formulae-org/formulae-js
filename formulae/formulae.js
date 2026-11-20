@@ -136,9 +136,11 @@ Formulae.createExpression = function(tag, ...children) {
 };
 
 // Output provenance: how an output row was produced. It is kept in handler.provenance as
-//    { source, duration, provider, model, reasoning }
-// source is "compute" or "converse", duration is in milliseconds, the last three are
-// for converse only and may be null. A null provenance means "origin unknown".
+//    { source, date, duration, provider, model, reasoning }
+// source is "compute" or "converse", date is milliseconds since the epoch (when the result
+// was produced), duration is in milliseconds, the last three are for converse only.
+// Any field but source may be null. A null provenance means "origin unknown".
+// Always assign it with Formulae.setProvenance, which also updates the row's AI label.
 //
 // It is saved as attributes of the Formulae.Script.Row element. All of them are optional:
 // files written before provenance existed have none, so their rows load as origin unknown.
@@ -150,6 +152,7 @@ Formulae.provenanceToRow = function(provenance, rowElement) {
 	if (provenance == null) return;
 	
 	rowElement.setAttribute("Source", provenance.source);
+	if (provenance.date      != null) rowElement.setAttribute("Date",      String(provenance.date));
 	if (provenance.duration  != null) rowElement.setAttribute("Duration",  String(provenance.duration));
 	if (provenance.provider  != null) rowElement.setAttribute("Provider",  provenance.provider);
 	if (provenance.model     != null) rowElement.setAttribute("Model",     provenance.model);
@@ -160,16 +163,125 @@ Formulae.provenanceFromRow = function(rowElement) {
 	let source = rowElement.getAttribute("Source");
 	if (!Formulae.PROVENANCE_SOURCES.includes(source)) return null; // absent or unrecognized
 	
-	let duration = rowElement.getAttribute("Duration");
-	duration = duration !== null && /^\d+$/.test(duration) ? Number(duration) : null;
+	let integer = name => {
+		let value = rowElement.getAttribute(name);
+		return value !== null && /^\d+$/.test(value) ? Number(value) : null;
+	};
 	
 	return {
 		source:    source,
-		duration:  duration,
+		date:      integer("Date"),
+		duration:  integer("Duration"),
 		provider:  rowElement.getAttribute("Provider"),
 		model:     rowElement.getAttribute("Model"),
 		reasoning: rowElement.getAttribute("Reasoning")
 	};
+};
+
+Formulae.setProvenance = function(handler, provenance) {
+	handler.provenance = provenance;
+	Formulae.updateProvenanceLabel(handler);
+};
+
+// "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" -> "nemotron-3-nano-omni-30b-a3b-reasoning"
+Formulae.shortModelName = function(model) {
+	let name = model.substring(model.lastIndexOf("/") + 1);
+	let colon = name.indexOf(":");
+	if (colon > 0) name = name.substring(0, colon);
+	return name.length > 40 ? name.substring(0, 39) + "…" : name;
+};
+
+Formulae.updateProvenanceLabel = function(handler) {
+	let div = handler.context?.canvas?.parentElement;
+	if (!div) return; // not a row of the script
+	
+	let label = div.querySelector(":scope > .provenance");
+	let provenance = handler.provenance;
+	
+	if (provenance == null || provenance.source != "converse") {
+		if (label) label.remove();
+		return;
+	}
+	
+	if (!label) {
+		label = document.createElement("div");
+		label.classList.add("provenance");
+		label.setAttribute("role", "button");
+		label.tabIndex = 0;
+		label.addEventListener("click", () => Formulae.showProvenance(handler));
+		label.addEventListener("keydown", event => {
+			if (event.key === "Enter" || event.key === " ") {
+				event.preventDefault();
+				event.stopPropagation();
+				Formulae.showProvenance(handler);
+			}
+		});
+		div.appendChild(label); // after the canvas, displayed before it (see formulae.css)
+	}
+	
+	let img = document.createElement("img");
+	img.src = "formulae/img/ai.svg";
+	img.alt = "AI";
+	
+	let text = provenance.model != null ? Formulae.shortModelName(provenance.model) : (provenance.provider ?? "");
+	
+	label.replaceChildren(img, document.createTextNode(text));
+	label.title = [ provenance.provider, provenance.model ].filter(x => x != null).join(" · ");
+	label.setAttribute("aria-label", Formulae.messages.labelAIGenerated + (label.title ? ": " + label.title : ""));
+};
+
+Formulae.showProvenance = function(handler) {
+	let provenance = handler.provenance;
+	if (provenance == null) return;
+	
+	let table = document.createElement("table");
+	table.classList.add("bordered", "provenance-details");
+	
+	let addRow = (name, value) => {
+		let tr = table.insertRow();
+		let th = document.createElement("th"); th.textContent = name; th.style.textAlign = "start";
+		let td = document.createElement("td"); td.append(value);
+		tr.append(th, td);
+	};
+	
+	let tr = table.insertRow();
+	let th = document.createElement("th"); th.colSpan = 2; th.textContent = Formulae.messages.labelAIDetails;
+	tr.appendChild(th);
+	
+	if (provenance.provider != null) addRow(Formulae.messages.labelProvider, provenance.provider);
+	if (provenance.model    != null) addRow(Formulae.messages.labelModel,    provenance.model);
+	if (provenance.date     != null) {
+		addRow(
+			Formulae.messages.labelDate,
+			new Date(provenance.date).toLocaleString(Formulae.locale, { timeZone: Formulae.timeZone, dateStyle: "long", timeStyle: "medium" })
+		);
+	}
+	if (provenance.duration != null) addRow(Formulae.messages.labelDuration, Formulae.ellaspedTime(provenance.duration));
+	if (provenance.reasoning != null && provenance.reasoning !== "") {
+		let pre = document.createElement("pre");
+		pre.textContent = provenance.reasoning;
+		addRow(Formulae.messages.labelReasoning, pre);
+	}
+	
+	let label = handler.context.canvas.parentElement.querySelector(":scope > .provenance"); // focus returns to it
+	let close = document.createElement("button");
+	close.textContent = Formulae.messages.labelClose;
+	close.onclick = () => {
+		Formulae.modal.style.display = "none";
+		Formulae.modal.removeEventListener("keydown", onEscape);
+		label?.focus();
+	};
+	let onEscape = event => { if (event.key === "Escape") close.onclick(); }; // returns the focus to the label
+	Formulae.modal.addEventListener("keydown", onEscape);
+	tr = table.insertRow();
+	let td = tr.insertCell(); td.colSpan = 2; td.style.textAlign = "end";
+	td.appendChild(close);
+	
+	Formulae.modalContent.removeChild(Formulae.modalContent.childNodes[0]);
+	Formulae.modalContent.appendChild(table);
+	
+	Formulae.modal.style.display = "block";
+	close.focus();
 };
 
 Formulae.scriptToXML = async function() {
@@ -236,7 +348,7 @@ Formulae.xmlToScript = async function(xml) {
 		promises = [];
 		expression = Formulae.xmlElementToExpression(rowElement.children[0], promises);
 		handler = Formulae.addExpression(expression, rowElement.getAttribute("type"));
-		handler.provenance = Formulae.provenanceFromRow(rowElement);
+		Formulae.setProvenance(handler, Formulae.provenanceFromRow(rowElement));
 		
 		if (promises.length == 0) {
 			handler.prepareDisplay();
@@ -1276,7 +1388,7 @@ Formulae.onEnter = function(alt) {
 		
 		if (hResult.type == Formulae.ROW_OUTPUT) { // previous result
 			hResult.setExpression(wait);
-			hResult.provenance = null; // the previous result's origin no longer applies
+			Formulae.setProvenance(hResult, null); // the previous result's origin no longer applies
 		}
 		else { // no previous result, it needs to be created
 			hResult = Formulae.insertExpression(wait, Formulae.ROW_OUTPUT, index + 1);
@@ -1392,7 +1504,7 @@ Formulae.compute = (alt, isPersistent) => {
 		
 		if (hResult.type == Formulae.ROW_OUTPUT) { // previous result
 			hResult.setExpression(wait);
-			hResult.provenance = null; // the previous result's origin no longer applies
+			Formulae.setProvenance(hResult, null); // the previous result's origin no longer applies
 		}
 		else { // no previous result, it needs to be created
 			hResult = Formulae.insertExpression(wait, Formulae.ROW_OUTPUT, index + 1);
@@ -1441,7 +1553,8 @@ Formulae.compute = (alt, isPersistent) => {
 		}
 		
 		hResult.setExpression(hReduction.expression);
-		hResult.provenance = { source: "compute", duration: new Date().valueOf() - start, provider: null, model: null, reasoning: null };
+		let end = new Date().valueOf();
+		Formulae.setProvenance(hResult, { source: "compute", date: end, duration: end - start, provider: null, model: null, reasoning: null });
 		
 		ReductionManager.externalizeNumbersHandler(hResult, session); // Externalization
 		
@@ -1495,7 +1608,7 @@ Formulae.converse = () => {
 		
 		if (hResult.type == Formulae.ROW_OUTPUT) { // previous result
 			hResult.setExpression(wait);
-			hResult.provenance = null; // the previous result's origin no longer applies
+			Formulae.setProvenance(hResult, null); // the previous result's origin no longer applies
 		}
 		else { // no previous result, it needs to be created
 			hResult = Formulae.insertExpression(wait, Formulae.ROW_OUTPUT, index + 1);
@@ -1528,6 +1641,7 @@ Formulae.converse = () => {
 		let active = Formulae.AI.getActiveProvider();
 		let provenance = {
 			source:    "converse",
+			date:      null,
 			duration:  null,
 			provider:  active?.provider.getProviderName() ?? null,
 			model:     active?.connection.parameters.model ?? null,
@@ -1562,8 +1676,9 @@ Formulae.converse = () => {
 			hResult.setExpression(errExpr);
 		}
 		
-		provenance.duration = new Date().valueOf() - start;
-		hResult.provenance = provenance;
+		provenance.date     = new Date().valueOf();
+		provenance.duration = provenance.date - start;
+		Formulae.setProvenance(hResult, provenance);
 		
 		console.log(Formulae.ellaspedTime(provenance.duration));
 		

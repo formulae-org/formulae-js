@@ -572,6 +572,13 @@
 	"labelSelectColor" : "Seleccionar color",
 	"labelColor" : "Color",
 	"labelOpacity" : "Opacidad",
-	"labelSample" : "Muestra"
+	"labelSample" : "Muestra",
+	"labelAIGenerated" : "Respuesta generada por IA",
+	"labelAIDetails" : "Detalles de la respuesta de IA",
+	"labelProvider" : "Proveedor",
+	"labelModel" : "Modelo",
+	"labelDate" : "Fecha",
+	"labelDuration" : "Duración",
+	"labelReasoning" : "Razonamiento",
+	"labelClose" : "Cerrar"
 }
-

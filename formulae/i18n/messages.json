@@ -572,6 +572,13 @@
 	"labelSelectColor" : "Select color",
 	"labelColor" : "Color",
 	"labelOpacity" : "Opacity",
-	"labelSample" : "Sample"
+	"labelSample" : "Sample",
+	"labelAIGenerated" : "AI-generated answer",
+	"labelAIDetails" : "AI answer details",
+	"labelProvider" : "Provider",
+	"labelModel" : "Model",
+	"labelDate" : "Date",
+	"labelDuration" : "Duration",
+	"labelReasoning" : "Reasoning",
+	"labelClose" : "Close"
 }
-
