@@ -284,6 +284,40 @@ Formulae.showProvenance = function(handler) {
 	close.focus();
 };
 
+// Conversation start: a flag on an input (or definition) row. AI conversation history
+// does not go above the nearest flagged row (see Formulae.AI.buildHistory).
+
+Formulae.setConversationStart = function(handler, value) {
+	handler.conversationStart = value;
+	
+	let div = handler.context?.canvas?.parentElement;
+	if (div) {
+		let label = div.querySelector(":scope > .conversation-start");
+		if (value && !label) {
+			label = document.createElement("div");
+			label.classList.add("conversation-start");
+			label.textContent = Formulae.messages.labelNewConversation;
+			div.appendChild(label); // after the canvas, displayed before it (see formulae.css)
+		}
+		else if (!value && label) {
+			label.remove();
+		}
+	}
+	
+	if (handler === Formulae.sHandler) Formulae.refreshConversationButton();
+};
+
+Formulae.toggleConversationStart = function() {
+	if (Formulae.sHandler.type == Formulae.ROW_OUTPUT) return Formulae.beep();
+	Formulae.beforeChanges();
+	Formulae.setConversationStart(Formulae.sHandler, !Formulae.sHandler.conversationStart);
+};
+
+Formulae.refreshConversationButton = function() {
+	let button = document.getElementById("button-new-conversation");
+	if (button) button.setAttribute("aria-pressed", Formulae.sHandler?.conversationStart === true);
+};
+
 Formulae.scriptToXML = async function() {
 	let doc = document.implementation.createDocument("", "", null);
 	let scriptElement = doc.createElement("expression");
@@ -297,6 +331,7 @@ Formulae.scriptToXML = async function() {
 		rowElement.setAttribute("tag", "Formulae.Script.Row");
 		rowElement.setAttribute("type", Formulae.handlers[i].type);
 		Formulae.provenanceToRow(Formulae.handlers[i].provenance, rowElement);
+		if (Formulae.handlers[i].conversationStart) rowElement.setAttribute("ConversationStart", "true");
 		rowElement.appendChild(await Formulae.handlers[i].expression.getXMLElement(doc, moduleNames));
 		
 		scriptElement.appendChild(rowElement);
@@ -349,6 +384,7 @@ Formulae.xmlToScript = async function(xml) {
 		expression = Formulae.xmlElementToExpression(rowElement.children[0], promises);
 		handler = Formulae.addExpression(expression, rowElement.getAttribute("type"));
 		Formulae.setProvenance(handler, Formulae.provenanceFromRow(rowElement));
+		if (rowElement.getAttribute("ConversationStart") === "true") Formulae.setConversationStart(handler, true); // absent: false
 		
 		if (promises.length == 0) {
 			handler.prepareDisplay();
@@ -647,6 +683,7 @@ Formulae.setSelected = function(handler, expression, removePrevious) {
 	
 	Formulae.sExpression = expression;
 	Formulae.sHandler = handler;
+	Formulae.refreshConversationButton();
 	
 	let context = Formulae.sHandler.context;
 	
@@ -1651,7 +1688,11 @@ Formulae.converse = () => {
 		try {
 			let xml = new XMLSerializer().serializeToString(await Formulae.handlers[index].expression.toXML());
 			
-			let response = await Formulae.AI.sendToAI(xml, controller);
+			let budget = active?.provider === Formulae.AI.demoProvider ? Formulae.AI.DEMO_HISTORY_BUDGET : Formulae.AI.HISTORY_BUDGET;
+			let history = await Formulae.AI.buildHistory(index, budget);
+			console.info(`AI history: ${history.length / 2} earlier pair(s) sent`);
+			
+			let response = await Formulae.AI.sendToAI(xml, controller, history);
 			
 			if (controller.signal.aborted) return;
 			
@@ -2642,7 +2683,7 @@ Formulae.toggleMode = async function() {
 		"button-cut", "button-copy", "button-paste",
 		"button-ins-after", "button-ins-before", "button-delete",
 		"button-change-type", "button-execute_sticky",
-		"button-tools", "button-settings", "button-converse", "button-compute"
+		"button-tools", "button-settings", "button-converse", "button-compute", "button-new-conversation"
 	].forEach(element => {
 		document.getElementById(element).style.display = display;
 	});
@@ -2786,6 +2827,7 @@ Formulae.start = async function() {
 	
 	document.getElementById("button-converse").addEventListener("click", () => Formulae.setCompute(false));
 	document.getElementById("button-compute").addEventListener("click", () => Formulae.setCompute(true));
+	document.getElementById("button-new-conversation").addEventListener("click", () => Formulae.toggleConversationStart());
 	
 	//////////////
 	// drag bar //

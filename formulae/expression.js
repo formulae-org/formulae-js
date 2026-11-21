@@ -294,6 +294,7 @@ class ExpressionHandler extends Scopable {
 		this.type = type;
 		this.index = 0;
 		this.provenance = null; // how an output row was produced, see Formulae.provenanceToRow
+		this.conversationStart = false; // see Formulae.setConversationStart
 		
 		if (expression !== undefined) {
 			this.setExpression(expression);

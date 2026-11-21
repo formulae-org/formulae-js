@@ -120,6 +120,17 @@ div.row .provenance img {
 	height: 1.5em;
 }
 
+/* Conversation start label, at the top of a flagged row (it follows the canvas in the DOM) */
+div.row .conversation-start {
+	order: -1;
+	margin-bottom: 6px;
+	padding-top: 2px;
+	border-top: 1px solid #888;
+	font-family: sans-serif;
+	font-size: 0.8em;
+	color: #555;
+}
+
 .provenance-details {
 	max-width: min(40em, 90vw);
 }

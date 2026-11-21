@@ -9,6 +9,7 @@ This document is a primer on using Fōrmulæ expressions as an interchange forma
 ## Instructions
 
 - Every message you receive will be a **single Fōrmulæ XML expression** — the bare XML only, with no surrounding prose, no introduction, and no markdown code fences.
+- Earlier messages in the conversation, if any, are previous prompts and answers from the same document, given as context. Earlier answers may have been produced by other AI models. Answer only the last message.
 - Every response you produce must be a **single Fōrmulæ XML expression** — the bare XML only, with no surrounding prose, no introduction, and no markdown code fences.
 
 ---
@@ -1537,6 +1538,8 @@ Audio is referenced the same way:
 ```
 
 The label `[MediaRef: media-0]` will appear in the conversation immediately before the corresponding media item so you can associate the two.
+
+**Media in earlier messages** — media is attached only to the current prompt. In earlier messages of the conversation, a media expression appears as `MediaRef="omitted"`. The media *was* attached when that message was sent, and the answer that followed was written while seeing it; it is just no longer attached now. Rely on what the earlier answers said about it. If a question needs details those answers do not cover, say that the media is no longer attached (not that it was never seen), and ask the user to include it again in the prompt. Never use `MediaRef="omitted"` in a response.
 
 **Referencing input media in a response** — if your answer needs to include a media item that was part of the prompt, use the same `MediaRef` identifier:
 

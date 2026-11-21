@@ -100,6 +100,69 @@ Formulae.AI.extractMedia = function(xmlString) {
 	return { strippedXml: new XMLSerializer().serializeToString(doc), mediaMap };
 };
 
+// ─── Conversation history ──────────────────────────────────────────────────
+//
+// The context of a prompt is derived from the rows above it, not from a hidden log:
+// the converse pairs (input row + AI answer) from the nearest row flagged as a
+// conversation start (inclusive), or from the top of the script. Computed results,
+// composing rows, definition rows, rows of unknown origin and error answers are not
+// sent. Media in earlier turns is not attached again: its data is replaced by
+// MediaRef="omitted". When the turns exceed the budget (characters), the oldest
+// pairs are dropped whole.
+
+Formulae.AI.HISTORY_BUDGET      = 200000; // ≈ 50k tokens
+Formulae.AI.DEMO_HISTORY_BUDGET =  40000; // ≈ 10k tokens
+
+Formulae.AI.omitMedia = function(xmlString) {
+	let doc = new DOMParser().parseFromString(xmlString, "text/xml");
+	let changed = false;
+	doc.querySelectorAll("expression").forEach(el => {
+		if (Formulae.AI.MEDIA_TAGS.has(el.getAttribute("tag")) && (el.hasAttribute("Value") || el.hasAttribute("MediaRef"))) {
+			el.removeAttribute("Value");
+			el.removeAttribute("Format");
+			el.setAttribute("MediaRef", "omitted");
+			changed = true;
+		}
+	});
+	return changed ? new XMLSerializer().serializeToString(doc) : xmlString;
+};
+
+// index: the row of the prompt being sent
+Formulae.AI.buildHistory = async function(index, budget) {
+	let handlers = Formulae.handlers;
+	if (handlers[index].conversationStart) return [];
+	
+	let first = 0;
+	for (let i = index - 1; i >= 0; --i) {
+		if (handlers[i].conversationStart) { first = i; break; }
+	}
+	
+	let pairs = [];
+	for (let i = first; i < index - 1; ++i) {
+		let input = handlers[i], output = handlers[i + 1];
+		if (input.type != Formulae.ROW_INPUT || output.type != Formulae.ROW_OUTPUT) continue;
+		if (output.provenance?.source != "converse") continue;
+		if (output.expression.getTag() == "Error") continue;
+		
+		pairs.push([
+			{ role: "user",      content: Formulae.AI.omitMedia(new XMLSerializer().serializeToString(await input .expression.toXML())) },
+			{ role: "assistant", content: Formulae.AI.omitMedia(new XMLSerializer().serializeToString(await output.expression.toXML())) }
+		]);
+		++i; // the output row is consumed
+	}
+	
+	let total = 0, kept = 0;
+	for (let j = pairs.length - 1; j >= 0; --j) {
+		let size = pairs[j][0].content.length + pairs[j][1].content.length;
+		if (total + size > budget) break;
+		total += size;
+		++kept;
+	}
+	if (kept < pairs.length) console.info(`AI history: ${pairs.length - kept} older pair(s) dropped, over the budget of ${budget} characters`);
+	
+	return pairs.slice(pairs.length - kept).flat();
+};
+
 Formulae.AI.reinsertMedia = function(xmlString, mediaMap) {
 	if (Object.keys(mediaMap).length === 0 && !xmlString.includes("MediaRef=")) return xmlString;
 	let doc = new DOMParser().parseFromString(xmlString, "text/xml");
@@ -111,7 +174,7 @@ Formulae.AI.reinsertMedia = function(xmlString, mediaMap) {
 			if (media.format) el.setAttribute("Format", media.format);
 			el.removeAttribute("MediaRef");
 		}
-		else if (ref && ref.startsWith("gen-")) {
+		else if (ref && (ref.startsWith("gen-") || ref === "omitted")) { // unresolved
 			el.parentNode?.removeChild(el);
 		}
 	});
@@ -225,7 +288,8 @@ Formulae.AI._buildCorrection = function(verdict) {
 
 // Returns { xml, provider, model, reasoning }. The last three describe how the
 // answer was produced (output provenance); model and reasoning may be null.
-Formulae.AI.sendToAI = async function(xmlString, controller) {
+// history: earlier turns, see Formulae.AI.buildHistory
+Formulae.AI.sendToAI = async function(xmlString, controller, history = []) {
 	let info = Formulae.AI.getActiveProvider();
 	if (!info) throw new Error("No active AI connection configured");
 	let primer = await Formulae.AI._getPrimer();
@@ -243,7 +307,6 @@ Formulae.AI.sendToAI = async function(xmlString, controller) {
 	// need each provider's media-encoding logic to run twice; skipped for
 	// now since Tier 1 failures are about response structure, not about
 	// what was in the prompt.
-	let history = [];
 	let currentXml = strippedXml, currentMediaMap = mediaMap;
 	let responseXml, responseMediaMap, model, reasoning;
 

@@ -580,5 +580,6 @@
 	"labelDate" : "Date",
 	"labelDuration" : "Duration",
 	"labelReasoning" : "Reasoning",
-	"labelClose" : "Close"
+	"labelClose" : "Close",
+	"labelNewConversation" : "New conversation"
 }

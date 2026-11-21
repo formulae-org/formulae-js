@@ -580,5 +580,6 @@
 	"labelDate" : "Fecha",
 	"labelDuration" : "Duración",
 	"labelReasoning" : "Razonamiento",
-	"labelClose" : "Cerrar"
+	"labelClose" : "Cerrar",
+	"labelNewConversation" : "Nueva conversación"
 }
